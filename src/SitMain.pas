@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT Main Unit                                                           }
 {                                                                         }
-{ Copyright (c) 2011-2013 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
 { *********************************************************************** }
 
@@ -87,16 +87,15 @@ type
     procedure bCloseClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
-    sit: TSit;
+    FSit: TSupportInformationBase;
     procedure DoExport(ADirect: Boolean);
-    procedure OpenLogo;
-    procedure SetLanguage(ALangID: integer);
+    procedure OpenLogo();
+    procedure SetLanguage(ALangID: Word);
   public
     procedure ChangeLanguage(AMenuItem: TMenuItem; ALangID: integer);
-    function MessageBox(Text: string; CaptionID, Flags: Integer): Integer; overload;
+    {function MessageBox(Text: string; CaptionID, Flags: Integer): Integer; overload;
     function MessageBox(Text: string; CaptionID: Integer = 39): Integer; overload;
-    function MessageBox(TextID, CaptionID: Integer; Flags: Integer): Integer; overload;
-    property SitProp: TSit read sit;
+    function MessageBox(TextID, CaptionID: Integer; Flags: Integer): Integer; overload;}
   end;
 
 var
@@ -210,41 +209,47 @@ OpenLogoDialog := TOpenPictureDialog.Create(Self);     //init OpenLogoDialog
   end; //of finally
 end;
 
+{ private TMain.SetLanguage
 
-procedure TForm1.SetLanguage(ALangID: integer);           //Sprache lokalisieren
+  Updates all component captions with new language text. }
+
+procedure TForm1.SetLanguage(ALangID: integer);
 begin
   sit.LangID := ALangID;
 
   with sit do
     begin
-    mmFile.Caption := GetString(0);                       //"Datei" Menü
+    // Set captions for TMenuItems
+    mmFile.Caption := GetString(0);
     mmImport.Caption := GetString(1);
     mmExport.Caption := GetString(2);
     mmExportEdit.Caption := GetString(3);
 
-    mmEdit.Caption := GetString(4);                       //"Bearbeiten" Menü
+    mmEdit.Caption := GetString(4);
     mmShowValues.Caption := GetString(5);
     mmDelValues.Caption := GetString(6);
     mmDelEdit.Caption := GetString(7);
     mmDelLogo.Caption := GetString(8);
 
-    mmView.Caption := GetString(9);                       //"Ansicht" Menü
+    mmView.Caption := GetString(9);
     mmLang.Caption := GetString(10);
 
-    mmHelp.Caption := GetString(66);                      //"Hilfe" Menü
+    mmHelp.Caption := GetString(66);
     mmUpdate.Caption := GetString(11);
     mmDwnldCert.Caption := GetString(12);
     mmReport.Caption := GetString(70);
     mmInfo.Caption := GetString(13);
 
-    eLogo.EditLabel.Caption := GetString(14);             //Labels
+    // Set captions for labels
+    eLogo.EditLabel.Caption := GetString(14);
     eMan.EditLabel.Caption := GetString(15);
     ePhone.EditLabel.Caption := GetString(16);
     eHours.EditLabel.Caption := GetString(17);
     eModel.EditLabel.Caption := GetString(18);
     eUrl.EditLabel.Caption := GetString(19);
 
-    bAccept.Caption := GetString(20);                     //Buttons
+    // Set captions for buttons
+    bAccept.Caption := GetString(20);
     bClose.Caption := GetString(21);
 
     Form3.bFinished.Caption := GetString(62);
@@ -260,7 +265,7 @@ begin
   SetLanguage(ALangID);
 end;
 
-
+{
 function TForm1.MessageBox(Text: string; CaptionID, Flags: Integer): Integer;
 begin
   result := Application.MessageBox(PChar(Text), PChar(sit.GetString(CaptionID)), Flags);
@@ -288,83 +293,79 @@ function TForm1.MessageBox(TextID, CaptionID: Integer; Flags: Integer): Integer;
 begin
   result := Application.MessageBox(PChar(sit.GetString(TextID)),
               PChar(sit.GetString(CaptionID)), Flags);
-end;
+end;}
 
-{ VCL Events }
+{ TMain.FormCreate }
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  sit := TSit.Create;                   //init Objekt
+  if TWinUtils.CheckWindows() then
+     FSit := TSupportInformation.Create
+  else
+     FSit := TSupportInformationXP.Create;
 end;
 
+{ TMain.FormDestroy }
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  sit.Free;                             //Objekt freigeben
+  FSit.Free;
 end;
 
 
-procedure TForm1.FormShow(Sender: TObject);           //wenn Form angezeigt wird
+procedure TForm1.FormShow(Sender: TObject);
 const
   BCM_FIRST = $1600;
   BCM_SETSHIELD = BCM_FIRST + $000C;
 
-var
-  version: char;
-
 begin
-version := sit.GetWinVersion[1];      //Win Version auslesen
+  // Check for incompatibility
+  if (FSit.GetWinVersion()[1] = 'u')) then
+     begin
+     MessageBox(sit.GetString(64) + FSit.GetWinVersion() + sit.GetString(65), 42);
+     bAccept.Enabled := false;
+     mmFile.Enabled := false;
+     mmEdit.Enabled := false;
+     eLogo.Enabled := false;
+     eMan.Enabled := false;
+     ePhone.Enabled := false;
+     eHours.Enabled := false;
+     eModel.Enabled := false;
+     eUrl.Enabled := false;
+     bClose.Default := true;
+     Exit;
+     end; //of begin
 
-if not (sit.CheckWindows or (version = 'X') or (version = '2') or (version = 'u')) then
-   begin
-   MessageBox(sit.GetString(64) + sit.GetWinVersion + sit.GetString(65), 42);
-   bAccept.Enabled := false;
-   mmFile.Enabled := false;
-   mmEdit.Enabled := false;
-   eLogo.Enabled := false;
-   eMan.Enabled := false;
-   ePhone.Enabled := false;
-   eHours.Enabled := false;
-   eModel.Enabled := false;
-   eUrl.Enabled := false;
-   bClose.Default := true;
-   Exit;
-   end; //of begin
+  // Show support information
+  mmShowValuesClick(Self);
 
-mmShowValuesClick(Sender);           //Einträge anzeigen
-SendMessage(bAccept.Handle, BCM_SETSHIELD, 0, Integer(true));  //UAC-Shield Button
+  // Make UAC-Shield button
+  SendMessage(bAccept.Handle, BCM_SETSHIELD, 0, integer(True));  
 end;
 
 
-procedure TForm1.bAcceptClick(Sender: TObject);               //übernehmen Click
-var
-  sitData: TSitData;
-
+procedure TForm1.bAcceptClick(Sender: TObject);
 begin
   if (MessageBox(sit.GetString(33), 43, MB_ICONQUESTION or MB_YESNO) = IDYES) then
      begin
-     sitData := TSitData.Create(eLogo.Text, eMan.Text, eModel.Text, eUrl.Text,
-                                ePhone.Text, eHours.Text);  //init
-       try
-         if sitData.CheckWindows then    //Win7 oder Vista
-            sitData.SetRegData           //in Registry schreiben
-         else
-            begin
-            sitData.SetIniData;          //in OEMINFO.ini schreiben
+     FSit.Logo := eLogo.Text;
+     FSit.Manufacturer = eMan.Text;
+     FSit.Model := eModel.Text;
+     FSit.Url := eUrl.Text;
+     FSit.Phone := ePhone.Text;
+     FSit.Hours := eHours.Text;
+     
+     try
+       // Add support information      
+       if FSit.Add() then
+          MessageBox(sit.GetString(38));
 
-            if FileExists(eLogo.Text) then
-               CopyFile(PChar(eLogo.Text), PChar(sit.GetOemLogoDir), false);          //Bild kopieren
-
-            sit.AccessIniData(sit.GetOemInfoDir, 'Logo', 'Logo', sit.GetOemLogoDir);  //Pfad in OEMINFO.ini
-            end;  //of if
-
-         MessageBox(sit.GetString(38));
-
-       finally                           //freigeben
-         sitData.Free;
-       end;  //of finally
+     finally
+       sitData.Free;
+     end;  //of finally
      end;  //of begin
 
-  mmShowValues.Click;                    //Refresh
+  mmShowValues.Click;
 end;
 
 
@@ -490,26 +491,30 @@ mmDelEditClick(Sender);
   end; //of except
 end;
 
+{ TMain.mmDelValuesClick
 
-procedure TForm1.mmDelValuesClick(Sender: TObject);           //Einträge löschen
+  MainMenu entry that allows users to delete support information. }
+
+procedure TForm1.mmDelValuesClick(Sender: TObject);
 begin
   if (MessageBox(sit.GetString(34), 43, MB_ICONQUESTION or MB_YESNO) = IDYES) then
-     begin
-     if sit.CheckWindows then
-        begin
-        if (MessageBox(35, 41, MB_ICONQUESTION or MB_YESNO) = IDYES) then
-           DoExport(true);                  //exportieren
+    begin
+    if (MessageBox(35, 41, MB_ICONQUESTION or MB_YESNO) = IDYES) then
+       DoExport(True);                  //exportieren
 
-        if sit.RegDelete then               //löschen
-           begin
-           MessageBox(sit.GetString(37));
-           mmDelValues.Enabled := false;
-           end  //of begin
-        else
-           sit.CreateError(44, 52);
-        end  //of begin
-     else
-        begin
+    // Delete information
+    if FSit.Remove() then
+    begin
+      MessageBox(sit.GetString(37));
+      mmDelValues.Enabled := False;
+    end  //of begin
+    else
+      MessageBox(44, 52);
+    end  //of begin
+
+
+    else
+      begin
         if FileExists(sit.GetOemLogoDir) then
            mmDelLogoClick(Sender);          //Logo löschen
 
@@ -524,6 +529,9 @@ begin
      end;  //of begin
 end;
 
+{ TMain.mmDelEditClick
+
+  MainMenu entry that allows users to clear text fields. }
 
 procedure TForm1.mmDelEditClick(Sender: TObject);
 begin
@@ -537,20 +545,20 @@ begin
   eMan.SetFocus;                            //Fokus auf Hersteller
 end;
 
+{ TMain.mmDelLogoClick
 
-procedure TForm1.mmDelLogoClick(Sender: TObject);                 //Logo löschen
+  MainMenu entry that allows users to delete the OEMLOGO.bmp }
+
+procedure TForm1.mmDelLogoClick(Sender: TObject);
 begin
   if (MessageBox(sit.GetString(36), 41, MB_ICONQUESTION or MB_YESNO) = IDYES) then
-     if DeleteFile(sit.GetOemLogoDir) then
-        begin
-        mmDelLogo.Visible := false;
-        eLogo.Clear;
-
-        if FileExists(sit.GetOemInfoDir) then      //Pfad aus ini löschen
-           sit.AccessIniData(sit.GetOemInfoDir, 'Logo', 'Logo', '');
-        end  //of begin
-     else
-        sit.CreateError(45, 52);
+    if FSit.DeleteLogo() then
+    begin
+      mmDelLogo.Visible := False;
+      eLogo.Clear;
+    end  //of begin
+    else
+      sit.CreateError(45, 52);
 end;
 
 
@@ -571,42 +579,51 @@ begin
   ChangeLanguage(mmFra, 300);
 end;
 
+{ TMain.mmUpdateClick
+
+  MainMenu entry that allows users to manually search for updates. }
 
 procedure TForm1.mmUpdateClick(Sender: TObject);
 begin
-  with Form3 do
-    begin
-    UserUpdate := true;             //Messaging einschalten
-
-    if UpdateExists then            //falls Update existiert...
-       DoUpdate                     //Download
-    else
-       CheckForUpdate;              //andernfalls danach suchen
-	  end;  //of with
+  FUpdateCheck.CheckForUpdate(True);
 end;
 
+{ TMain.mmDwnldCertClick
 
-procedure TForm1.mmDwnldCertClick(Sender: TObject);      //Zertifikat downloaden
+  MainMenu entry that allows to download the PM Code Works certificate. }
+
+procedure TForm1.mmDwnldCertClick(Sender: TObject);
 begin
-  mmDwnldCert.Enabled := false;
-  Enabled := false;
-  Form3.Initialize(sit.GetString(12), false);
+  // Certificate already installed?
+  if (TGameWake.PMCertExists() and (FLang.MessageBox(FLang.GetString(67) +^J
+     + FLang.GetString(68), mtQuestion) = IDYES)) then
+     // Download certificate
+     with TUpdate.Create(Self, FLang, FLang.GetString(8)) do
+       Download(dtCert);
 end;
 
+{ TMain.mmReportClick
+
+  MainMenu entry that allows users to easily report a bug by opening the web
+  browser and using the "report bug" formular. }
 
 procedure TForm1.mmReportClick(Sender: TObject);
 begin
-  ShellExecute(Application.Handle, 'open', PChar(URL_CONTACT), nil, nil,
-    SW_ShowNormal);
+  FSit.OpenUrl(URL_CONTACT);
 end;
 
+{ TMain.mmInfoClick
 
-procedure TForm1.mmInfoClick(Sender: TObject);                //info Form öffnen
+  MainMenu entry that shows a info page with build number and version history. }
+
+procedure TForm1.mmInfoClick(Sender: TObject);
+var
+  Info: TInfo;
+
 begin
-  Enabled := false;
-  if not Assigned(Form2) then
-     Application.CreateForm(TForm2, Form2);
-  Form2.Show;
+  Application.CreateForm(TInfo, Info);
+  Info.ShowModal;
+  Info.Free;
 end;
 
 { Edit-Felder }
@@ -648,12 +665,18 @@ begin
   eUrl.SelectAll;
 end;
 
-{ Hyperlink zur Website }
+{ TMain.lCopyClick
+
+  Opens the homepage of PM Code Works in a web browser. }
+
 procedure TForm1.lCopyClick(Sender: TObject);
 begin
-  ShellExecute(Application.Handle, 'open', PChar(URL_BASE), nil, nil, SW_ShowNormal);
+  FSit.OpenUrl(URL_BASE);
 end;
 
+{ TMain.lCopyMouseEnter
+
+  Allows a label to have the look like a hyperlink.  }
 
 procedure TForm1.lCopyMouseEnter(Sender: TObject);
 begin
@@ -665,6 +688,9 @@ begin
     end;  //of with
 end;
 
+{ TMain.lCopyMouseLeave
+
+  Allows a label to have the look of a normal label again. }
 
 procedure TForm1.lCopyMouseLeave(Sender: TObject);
 begin

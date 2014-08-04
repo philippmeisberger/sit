@@ -26,16 +26,17 @@ type
     bFinished: TButton;
     iBack: TImage;
     lSize: TLabel;
+    lSit: TLabel;
     procedure FormActivate(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure bFinishedClick(Sender: TObject);
+    procedure lSitClick(Sender: TObject);
   private
     FOnCancel: TOnCancelEvent;
     FOnContinue: TOnContinueEvent;
     FOnExit: TOnExitEvent;
     FUpdate, FUpdateExists, FUserUpdate: Boolean;
     FFileName: string;
-    sit: TSit;
     procedure Cancel;
     { Download-Thread Events }
     procedure OnThreadError(Sender: TThread);
@@ -70,8 +71,8 @@ uses SitMain;
 procedure TForm3.Cancel;                                           //"Abbrechen"
 begin
   DeleteFile(FFileName);                   //Datei löschen
-  lSize.Caption := sit.GetString(61);
-  bFinished.Caption := sit.GetString(62);
+  lSize.Caption := TSit.GetString(61);
+  bFinished.Caption := TSit.GetString(62);
   bFinished.Enabled := true;
 
   if FUpdate then                          //falls Update-Fehler
@@ -98,9 +99,9 @@ var
   end;  //of function
 
 begin
-  bFinished.Caption := sit.GetString(62);
+  bFinished.Caption := TSit.GetString(62);
 
-  if SelectDirectory(sit.GetString(59), '', dir) then   //"Ordner wählen" - Dialog
+  if SelectDirectory(TSit.GetString(59), '', dir) then   //"Ordner wählen" - Dialog
      try
        with TDownloadThread.Create do             //init Thread (suspended!)
          begin
@@ -143,7 +144,7 @@ end;
 
 procedure TForm3.bFinishedClick(Sender: TObject);                      //Fertig
 begin
-  if (bFinished.Caption = sit.GetString(62)) then  //falls Thread fertig...
+  if (bFinished.Caption = TSit.GetString(62)) then  //falls Thread fertig...
      begin
      bFinished.Enabled := false;            //Button deaktivieren
      Hide;                                  //Download Form verstecken
@@ -159,7 +160,7 @@ begin
      begin                                  //falls Thread nicht fertig...
      OnCancel(Sender);                      //Thread pausieren
 
-     if (Form1.MessageBox(63, 41, MB_ICONQUESTION or MB_YESNO) = IDYes) then
+     if (Form1.MessageBox(63, mtInfo, true) = IDYes) then
         begin
         OnExit(Sender);                     //Thread beenden
         Cancel;
@@ -169,10 +170,17 @@ begin
      end;  //of if
 end;
 
+
+procedure TForm3.lSitClick(Sender: TObject);
+begin
+  ShellExecute(Application.Handle, 'open', PChar(URL_BASE + 'sit.html'), nil,
+    nil, SW_SHOWNORMAL);
+end;
+
 { Download-Thread Events }
 procedure TForm3.OnThreadError(Sender: TThread);                    //Fehlerfall
 begin
-  sit.CreateError(57, 50, 57);
+  TSit.CreateError(57, 50);
   Cancel;
 end;
 
@@ -188,17 +196,17 @@ end;
 procedure TForm3.OnThreadWorkBegin(Sender: TThread; const AWorkCountMax: Integer);
 begin
   pbProgress.Max := AWorkCountMax;
-  bFinished.Caption := sit.GetString(60);
+  bFinished.Caption := TSit.GetString(60);
   bFinished.Enabled := true;
 end;
 
 
 procedure TForm3.OnThreadWorkEnd(Sender: TObject; AResponseCode: integer);
 begin
-  bFinished.Caption := sit.GetString(62);
-  Form1.mmUpdate.Caption := sit.GetString(11);
+  bFinished.Caption := TSit.GetString(62);
+  Form1.mmUpdate.Caption := TSit.GetString(11);
 
-  if not FUpdate and (lSize.Caption <> sit.GetString(61)) then         //falls Zertifikat heruntergeladen wurde...
+  if not FUpdate and (lSize.Caption <> TSit.GetString(61)) then        //falls Zertifikat heruntergeladen wurde...
      ShellExecute(0, nil, PChar('regedit'), PChar(ExtractFileName(FFileName)),
                   PChar(ExtractFilePath(FFileName)), SW_SHOWNORMAL);  //Dialog: Datei in REG einbinden?
 end;
@@ -207,15 +215,14 @@ end;
 procedure TForm3.OnCheckError(Sender: TThread);
 begin
   if FUserUpdate then
-     Form1.MessageBox(sit.GetString(68) +^J+ sit.GetString(69), 57,
-                      MB_ICONERROR);
+     Form1.MessageBox(TSit.GetString(68) +^J+ TSit.GetString(69), mtError, true);
 end;
 
 
 procedure TForm3.OnNoUpdateAvailable(Sender: TThread);
 begin
   if FUserUpdate then
-     Form1.MessageBox(54, 57, MB_ICONINFORMATION);
+     Form1.MessageBox(54, mtInfo, true);
 end;
 
 
@@ -223,11 +230,10 @@ procedure TForm3.OnUpdateAvailable(Sender: TThread; const ANewBuild: integer);
 begin
   FUpdateExists := true;
 
-  if (Form1.MessageBox(sit.GetString(55) +^J+ sit.GetString(56), 41,
-     MB_ICONQUESTION or MB_YESNO) = IDYes) then
+  if (Form1.MessageBox(TSit.GetString(55) +^J+ TSit.GetString(56), mtQuestion, true) = IDYes) then
      DoUpdate
   else
-     Form1.mmUpdate.Caption := sit.GetString(58);
+     Form1.mmUpdate.Caption := TSit.GetString(58);
 end;
 { of Threads }
 
@@ -243,9 +249,7 @@ end;
 
 procedure TForm3.CheckForUpdate;                            //nach Update suchen
 begin
-  sit := Form1.SitProp;                                     //init Instanz
-
-  with TUpdateCheckThread.Create(sit.GetBuildNumber) do     //init Thread (suspended!)
+  with TUpdateCheckThread.Create(TSit.GetBuildNumber) do    //init Thread (suspended!)
     begin
     OnUpdate := OnUpdateAvailable;                          //Events verknüpfen
     OnNoUpdate := OnNoUpdateAvailable;
@@ -259,7 +263,7 @@ procedure TForm3.DoUpdate;                                      //Update starten
 begin
   Form1.mmUpdate.Enabled := false;
   Form1.Enabled := false;
-  Initialize(sit.GetString(57), true);
+  Initialize(TSit.GetString(57), true);
 end;  //of begin
 
 end.

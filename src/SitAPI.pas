@@ -1,8 +1,8 @@
 { *********************************************************************** }
 {                                                                         }
-{ SIT API Interface Unit                                                  }
+{ SIT API Interface Unit v3.0                                             }
 {                                                                         }
-{ Copyright (c) 2011-2012 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,423 +11,197 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, TLHelp32, IniFiles;
+  Windows, Classes, SysUtils, Registry, TLHelp32, IniFiles, WinUtils;
 
 const
   OEMINFO_KEY = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
-  SUPP_SEC = 'Support Information';
   LOGO_DIR = '\System32\OEMLOGO.bmp';
   INFO_DIR = '\System32\OEMINFO.ini';
   URL_BASE = 'http://www.pm-codeworks.de/';
-  URL_DIR = URL_BASE +'media/';
   URL_CONTACT = URL_BASE +'kontakt.html';
 
+  INFO_ICON = 'Logo';
+  INFO_MAN = 'Manufacturer';
+  INFO_MODEL = 'Model';
+  INFO_PHONE = 'SupportPhone';
+  INFO_HOURS = 'SupportHours';
+  INFO_URL = 'SupportURL';
+  INFO_GENERAL = 'General';
+  
 type
-  { Exception class }
-  ESitError = class(Exception);
-
-  { Base class }
-  TSit = class
+  { Support information base class }
+  TSupportInformationBase = class(TWinUtils)
   private
-    FLangID: Integer;
-    function ChangeFSRedirection(AAccess: Boolean): Boolean;
-    function DelIniValue(AFileName, ASection, AValueName: string): Boolean;
-    function DelRegValue(AValueName: string): Boolean;
-    function ExtendHKey(AMainKey: string): HKEY;
-    function GetKeyValue(AMainKey, AKeyPath, AValueName: string): string;
-    function GetNativeSystemInfo(var ASystemInfo: TSystemInfo): Boolean; //not by me
-    function GetWinDir: string;
-    function IsWindows64: Boolean;  //not by me
-    function SetIniValue(AFileName, ASection, AValueName, AValue: string): Boolean;
-    function SetKeyAccessMode: Cardinal;
-    function SetRegValue(AValueName, AValue: string): Boolean;
+    FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
   public
-    constructor Create(ALangID: integer = 100);
-    function AccessIniData(AFileName, ASection, AValueName, AValue: string): Boolean;
-    function AccessRegData(AValueName, AValue: string): Boolean;
-    function CheckWindows: Boolean;
-    function CreateError(AMsgTypeID, AContentID: Integer; ATitleID: Integer = 42): Integer; overload;
-    function CreateError(AMsgType: string; AContentID: Integer; ATitleID: Integer = 42): Integer; overload;
-    function DelGooseFoots(AName: string): string;
-    function DataExists: Boolean;
-    class function GetBuildNumber: integer;                     //not by me
-    function GetIniValue(AFileName, ASection, AValueName: string): string;
-    function GetOemInfoDir: string;
-    function GetOemLogoDir: string;
-    function GetRegValue(AValueName: string): string;
-    function GetString(const AIndex: integer): string;
-    function GetWinVersion: string;
-    function RegDelete: Boolean;
-    function SetCaption: string;
-
-    property LangID: Integer read FLangID write FLangID;
+    constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
+    procedure Clear();
+    function DeleteIcon(): Boolean; override;
+    function Exists(): Boolean; virtual; abstract;
+    function GetOEMLogo(): string; virtual; abstract;
+    procedure Load(); virtual; abstract;
+    procedure LoadFromIni(const AFilename: string);
+    function Remove(): Boolean; virtual; abstract;
+    function Save(): Boolean; virtual; abstract;
+    procedure SaveAsIni(const AFilename: string);
+    { external }
+    property Logo: string read FIcon write FIcon;
+    property Manufacturer: string read FMan write FMan;
+    property Model: string read FModel write FModel;
+    property Url: string read FUrl write FUrl;
+    property Phone: string read FPhone write FPhone;
+    property Hours: string read FHours write FHours;
   end;
 
-  { Data Access class }
-  TSitData = class(TSit)
-  private
-    FLogo, FMan, FModel, FUrl, FPhone, FHours: string;
+  { Support information class }
+  TSupportInformation = class(TSupportInformationBase)
   public
-    constructor Create(ALogo, AMan, AModel, AUrl, APhone, AHours: string);
-    procedure SaveAsIni(AFilename: string; ADirect: Bool);
-    procedure SaveAsReg(AFilename: string; ADirect: Bool);
-    procedure SetIniData;
-    procedure SetRegData;
+    function DeleteIcon(): Boolean; override;
+    function Exists(): Boolean; override;
+    function GetOEMLogo(): string; override;
+    procedure Load(); override;
+    procedure LoadFromReg(const AFilename: string);
+    function Remove(): Boolean; override;
+    procedure SaveAsReg(const AFilename: string);
+    function Save(): Boolean; override;
+    procedure Show(); override;
+  end;
+
+  { Support information class until Windows XP }
+  TSupportInformationXP = class(TSupportInformationBase)
+  private
+    function GetOEMInfo(): string;
+  public
+    function DeleteIcon(): Boolean; override;
+    function Exists(): Boolean; override;
+    function GetOEMLogo(): string; override;
+    procedure Load(); override;
+    function Remove(): Boolean; override;
+    function Save(): Boolean; override;
+    procedure Show(); override;
   end;
 
 
 implementation
 
-uses SITMain;
+{ TSupportInformationBase }
 
-constructor TSit.Create(ALangID: integer = 100);
+{ public TSupportInformationBase.Create
+
+  General constructor for creating a TSupportInformationBase instance. }
+  
+constructor TSupportInformationBase.Create(AIcon, AMan, AModel, AUrl, APhone,
+  AHours: string);
 begin
   inherited Create;
-  FLangID := ALangID;
+  FIcon := AIcon;
+  FMan := AMan;
+  FModel := AModel;
+  FUrl := AUrl;
+  FPhone := APhone;
+  FHours := AHours;
 end;
 
-{ private }
-function TSit.ChangeFSRedirection(AAccess: Boolean): Boolean;  //32Bit Zugriffe auf
-type                                                           //64Bit Systemen emulieren
-  TWow64DisableWow64FsRedirection = function(var Wow64FsEnableRedirection: LongBool): LongBool; stdCall;
-  TWow64EnableWow64FsRedirection = function(var Wow64FsEnableRedirection: LongBool): LongBool; stdCall;
+{ protected TSupportInformationBase.AccessData
 
+  Commits changes on *.ini based support information. }
+
+{function TSupportInformationBase.AccessData(AIniFile: TIniFile; const ASection,
+  AValueName, AValue: string): Boolean;
 var
-  hHandle: THandle;
-  Wow64DisableWow64FsRedirection: TWow64DisableWow64FsRedirection;
-  Wow64EnableWow64FsRedirection: TWow64EnableWow64FsRedirection;
-  Wow64FsEnableRedirection: LongBool;
-
-begin
-  result := true;
-
-  if not IsWindows64 then           //kein 64-Bit-Win?
-     Exit;
-
-    try
-      hHandle := GetModuleHandle('kernel32.dll');
-      @Wow64EnableWow64FsRedirection := GetProcAddress(hHandle, 'Wow64EnableWow64FsRedirection');
-      @Wow64DisableWow64FsRedirection := GetProcAddress(hHandle, 'Wow64DisableWow64FsRedirection');
-
-      if (AAccess = true) then
-         begin
-         if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
-            (@Wow64DisableWow64FsRedirection <> nil)) then
-            Wow64DisableWow64FsRedirection(Wow64FsEnableRedirection);
-         end
-      else
-        if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
-           (@Wow64DisableWow64FsRedirection <> nil)) then
-           Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection);
-
-    except
-      result := false;
-    end;
-end;
-
-
-function TSit.DelIniValue(AFileName, ASection, AValueName: string): Boolean;
-var
-  ini: TIniFile;
   list: TStringList;
-
+  
 begin
-list := TStringList.Create;                     //init temp Liste
-ini := TIniFile.Create(AFileName);              //init Ini Datei
-
-  try
-    if (ini.SectionExists(ASection) and ini.ValueExists(ASection, AValueName)) then  //Existiert Sektion und Wert
-       begin
-       ini.DeleteKey(ASection, AValueName);     //Eintrag löschen
-       ini.ReadSection(ASection, list);
-
-       if (list.Count = 0) then
-          ini.EraseSection(ASection);           //Sektion löschen, falls leer
-       end;  //of begin
-    
+  if (AValue <> '') then
+  begin
+    AIniFile.WriteString(ASection, AValueName, AValue);
     result := true;
-
-  except                                        //im Fehlerfall
-    result := false;
-  end;  //of except
-
-list.Free;                                      //freigeben
-ini.Free;
-end;
-
-
-function TSit.DelRegValue(AValueName: string): Boolean;
-var
-  reg: TRegistry;
-
-begin
-reg := TRegistry.Create(SetKeyAccessMode);        //init von reg mit setzen der Rechte
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;            //HKEY öffnen
-    reg.OpenKey(OEMINFO_KEY, false);              //SubKey öffnen
-    result := reg.DeleteValue(AValueName);        //Wert löschen
-
-  finally                                         //freigeben
-    reg.Free;
-  end; //of finally
-end;
-
-
-function TSit.ExtendHKey(AMainKey: string): HKEY;   //wandelt HKEY-Kurzschreibweise
-begin                                               //in Langfassung vom Typ HKEY
-if (AMainKey = 'HKCU') then
-   result := HKEY_CURRENT_USER
-else
-   if ((AMainKey = 'HKLM') or (AMainKey = 'Startup User') or (AMainKey = 'Startup Common')
-      or (AMainKey = 'Startup')) then
-      result := HKEY_LOCAL_MACHINE
-   else
-      if (AMainKey = 'HKCR') then
-         result := HKEY_CLASSES_ROOT
-      else
-         result := 0;      //Fehlererkennung
-end;
-
-
-function TSit.GetKeyValue(AMainKey, AKeyPath, AValueName: string): string;
-var
-  reg: TRegistry;
-
-begin
-reg := TRegistry.Create(SetKeyAccessMode);     //init von reg mit setzen der Rechte
-
-  try
-    reg.RootKey := ExtendHKey(AMainKey);       //HKEY öffnen
-    reg.OpenKey(AKeyPath, true);               //SubKey öffnen
-
-    if (reg.ValueExists(AValueName)) then      //existiert Wert?
-       result := reg.ReadString(AValueName)    //...dann Wert auslesen
-    else
-       result := '';                           //sonst Fehler vermeiden
-
-  finally                                      //freigeben
-    reg.CloseKey;
-    reg.Free;
-  end; //of finally
-end;
-
-
-function TSit.GetNativeSystemInfo(var ASystemInfo: TSystemInfo): Boolean;  //not by me
-type
-  TGetNativeSystemInfo = procedure (var ASystemInfo: TSystemInfo) stdcall;
-var
-  LibraryHandle: HMODULE;
-  GetNativeSystemInfo: TGetNativeSystemInfo;
-
-begin
-result := false;
-LibraryHandle := GetModuleHandle(kernel32);
-
-if (LibraryHandle <> 0) then
-   begin
-   GetNativeSystemInfo := GetProcAddress(LibraryHandle,'GetNativeSystemInfo');
-
-   if Assigned(GetNativeSystemInfo) then
+  end  //of begin
+  else
+    begin
+    list := TStringList.Create;
+     
+    try
+      if (AIniFile.SectionExists(ASection) and AIniFile.ValueExists(ASection, AValueName)) then
       begin
-      GetNativeSystemInfo(ASystemInfo);
-      result := true;
-      end //of begin
-   else
-      GetSystemInfo(ASystemInfo);
-   end //of begin
-else
-   GetSystemInfo(ASystemInfo);
-end;
+        AIniFile.DeleteKey(ASection, AValueName);
+        AIniFile.ReadSection(ASection, list);
 
+        // Delete section if empty
+        if (list.Count = 0) then
+          AIniFile.EraseSection(ASection);
+        end;  //of begin
+   
+     result := true;
 
-function TSit.GetWinDir: string;
+    finally
+      list.Free;
+    end;  //of finally
+  end;  //of begin
+end;}
+
+{ public TSupportInformationBase.Clear
+
+  Clears the entered support information. }
+
+procedure TSupportInformationBase.Clear;
 begin
-  result := SysUtils.GetEnvironmentVariable('windir');
+  FHours := '';
+  FIcon := '';
+  FMan := '';
+  FModel := '';
+  FPhone := '';
+  FUrl := '';
 end;
 
+{ public TSupportInformationBase.LoadFromIni
 
-function TSit.IsWindows64: Boolean;                      //32 oder 64Bit Windows
-var
-  ASystemInfo: TSystemInfo;
+  Loads a TSupportInformationBase object from an *.ini file. }
 
-const
-  PROCESSOR_ARCHITECTURE_INTEL = 0;
-  PROCESSOR_ARCHITECTURE_IA64 = 6;
-  PROCESSOR_ARCHITECTURE_AMD64 = 9;
-
-begin
-  GetNativeSystemInfo(ASystemInfo);
-  result := ASystemInfo.wProcessorArchitecture in [PROCESSOR_ARCHITECTURE_IA64,PROCESSOR_ARCHITECTURE_AMD64];
-end;
-
-
-function TSit.SetIniValue(AFileName, ASection, AValueName, AValue: string): Boolean;
-var
-  ini: TIniFile;
-
-begin
-  try
-    ini := TIniFile.Create(AFileName);                 //init Ini Datei
-    ini.WriteString(ASection, AValueName, AValue);     //Name + Wert übernehmen
-    ini.Free;                                          //freigeben
-    result := true;
-
-  except
-    result := false;                                   //im Fehlerfall
-  end;  //of except
-end;
-
-
-function TSit.SetKeyAccessMode: Cardinal;        //Key-Access für Schreibzugriff
-const                                            //auf Registry
-  KEY_WOW64_64KEY = $0100;
-  KEY_WOW64_32KEY = $0200;
-
-begin
-  if IsWindows64 then                              //32 oder 64bit Windows?
-     result := KEY_ALL_ACCESS or KEY_WOW64_64KEY
-  else
-     result := KEY_ALL_ACCESS or KEY_WOW64_32KEY;
-end;
-
-
-function TSit.SetRegValue(AValueName, AValue: string): Boolean;
-var
-  reg: TRegistry;
-
-begin
-reg := TRegistry.Create(SetKeyAccessMode);      //init von reg mit setzen der Rechte
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;          //HKEY öffnen
-    reg.OpenKey(OEMINFO_KEY, true);             //SubKey öffnen
-    reg.WriteString(AValueName, AValue);        //Name + Wert übernehmen
-    reg.Free;                                   //freigeben
-    result := true;
-
-  except                                        
-    result := false;                            //im Fehlerfall
-  end;  //of except
-end;
-{ of private }
-
-{ public }
-function TSit.AccessIniData(AFileName, ASection, AValueName, AValue: string): Boolean;
-begin
-  if (AValue <> '') then
-     result := SetIniValue(AFileName, ASection, AValueName, AValue)
-  else
-     result := DelIniValue(AFileName, ASection, AValueName);
-end;
-
-
-function TSit.AccessRegData(AValueName, AValue: string): Boolean;
-begin
-  if (AValue <> '') then
-     result := SetRegValue(AValueName, AValue)
-  else
-     result := DelRegValue(AValueName);
-end;
-
-
-function TSit.CheckWindows: Boolean;           //Prüfen, ob Win Vista oder Win 7
-begin
-  if ((GetWinVersion[1] = '7') or (GetWinVersion[1] = 'V') or
-     (GetWinVersion[1] = '8')) then
-     result := true
-  else
-     result := false;
-end;
-
-
-function TSit.CreateError(AMsgTypeID, AContentID: Integer; ATitleID: Integer = 42): Integer;
-begin
-  result := Form1.MessageBox(GetString(AMsgTypeID) + GetString(48) +^J+ GetString(49)
-                            + GetString(AContentID), ATitleID, MB_ICONERROR);
-end;
-
-
-function TSit.CreateError(AMsgType: string; AContentID: Integer; ATitleID: Integer = 42): Integer;
-begin
-  result := Form1.MessageBox(AMsgType + GetString(48) +^J+ GetString(49)
-                            + GetString(AContentID), ATitleID, MB_ICONERROR);
-end;
-
-
-function TSit.DelGooseFoots(AName: string): string;
-begin
-  result := StringReplace(AName, '"', '', [rfReplaceAll]);
-end;
-
-
-class function TSit.GetBuildNumber: integer;
-var
-  VerInfoSize, VerValueSize, Dummy: DWord;
-  VerInfo: Pointer;
-  VerValue: PVSFixedFileInfo;
-
-begin
-  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
-
-  if VerInfoSize <> 0 then
-     begin
-     GetMem(VerInfo, VerInfoSize);
-
-       try
-         GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
-
-         if VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize) then
-            with VerValue^ do
-              result := dwFileVersionLS and $FFFF
-         else
-            result := 0;
-
-       finally
-         FreeMem(VerInfo, VerInfoSize);
-       end;   //of finally
-     end  //of begin
-  else
-     result := 0;
-end;
-
-
-function TSit.DataExists: Boolean;               //REG Einträge oder OEMINFO.ini
-var                                              //vorhanden
-  reg: TRegistry;
-
-begin
-
-if not CheckWindows then
-   result := FileExists(GetOemInfoDir) or FileExists(GetOemLogoDir)
-else
-   begin
-   reg := TRegistry.Create(SetKeyAccessMode);      //init reg
-
-     try
-       reg.RootKey := HKEY_LOCAL_MACHINE;
-       reg.OpenKey(OEMINFO_KEY, true);             //RegKey öffnen
-       result := (reg.ValueExists('Logo') or reg.ValueExists('Manufacturer') or
-                 reg.ValueExists('Model') or reg.ValueExists('SupportPhone') or
-                 reg.ValueExists('SupportHours') or reg.ValueExists('SupportURL'));
-       reg.CloseKey;
-
-     finally
-       reg.Free;
-     end;  //of finally
-   end;  //of if
-end;
-
-
-function TSit.GetIniValue(AFileName, ASection, AValueName: string): string;
+procedure TSupportInformationBase.LoadFromIni(const AFilename: string);
 var
   ini: TIniFile;
 
 begin
-ini := TIniFile.Create(AFileName);
+  ini := TIniFile.Create(AFileName);
 
   try
-    result := ini.ReadString(ASection, AValueName, '');
+    FIcon := ini.ReadString(INFO_ICON, INFO_ICON, '');
+    FMan := ini.ReadString(INFO_GENERAL, INFO_MAN, '');
+    FModel := ini.ReadString(INFO_GENERAL, INFO_MODEL, '');
+    FUrl := ini.ReadString(INFO_GENERAL, INFO_URL, '');
+    FPhone := ini.ReadString(SUPPORT_INFO, INFO_PHONE, '');
+    FHours := ini.ReadString(SUPPORT_INFO, INFO_HOURS, '');
+    
+  finally
+    ini.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformationBase.SaveAsIni
+
+  Saves a TSupportInformationBase object as an *.ini file. }
+
+procedure TSupportInformationBase.SaveAsIni(const AFilename: string);
+var
+  ext: string;
+  ini: TIniFile;
+  
+begin
+  if (ExtractFileExt(AFileName) = '') then
+    ext := '.ini'
+  else
+    ext := '';
+      
+  ini := TIniFile.Create(AFileName + ext);
+
+  try
+    ini.WriteString(INFO_ICON, INFO_ICON, FIcon);
+    ini.WriteString(INFO_GENERAL, INFO_MAN, FMan);
+    ini.WriteString(INFO_GENERAL, INFO_MODEL, FModel);
+    ini.WriteString(INFO_GENERAL, INFO_URL, FUrl);
+    ini.WriteString(SUPPORT_INFO, INFO_PHONE, FPhone);
+    ini.WriteString(SUPPORT_INFO, INFO_HOURS, FHours);
 
   finally
     ini.Free;
@@ -435,227 +209,348 @@ ini := TIniFile.Create(AFileName);
 end;
 
 
-function TSit.GetOemInfoDir: string;                          //OEMINFO.ini Pfad
+{ TSupportInformation }
+
+{ private TSupportInformation.AccessData
+
+  Commits changes on support information. }
+
+function TSupportInformation.AccessData(AReg: TRegistry; const AValueName,
+  AValue: string): Boolean;
 begin
-  ChangeFSRedirection(true);                 //32 auf 64Bit Zugriff emulieren
-  result := GetWinDir + INFO_DIR;
-  ChangeFSRedirection(false);                //32Bit Zugriff
+  if (AValue <> '') then
+  begin
+    AReg.WriteString(AValueName, AValue);
+    result := True;
+  end  //of begin
+  else
+    if AReg.ValueExists(AValueName) then
+      result := AReg.DeleteValue(AValueName);
+    else
+      result := True;
 end;
 
+{ public TSupportInformation.Exists
 
-function TSit.GetOemLogoDir: string;                          //OEMLOGO.bmp Pfad
-begin
-  ChangeFSRedirection(true);                 //32 auf 64Bit Zugriff emulieren
-  result := GetWinDir + LOGO_DIR;
-  ChangeFSRedirection(false);                //32Bit Zugriff
-end;
-
-
-function TSit.GetRegValue(AValueName: string): string;
-begin
-  result := GetKeyValue('HKLM', OEMINFO_KEY, AValueName);
-end;
-
-
-function TSit.GetString(const AIndex: integer) : string;   //Zugriff auf Stringtable
+  Checks if any support information exist. }
+  
+function TSupportInformation.Exists(): Boolean;
 var
-  Buffer : array[0..85] of char;
-  ls : integer;
+  reg: TRegistry;
 
 begin
-  result := '';
-  ls := LoadString(hInstance, AIndex + FLangID, Buffer, SizeOf(Buffer));  //String laden
+  reg := TRegistry.Create(SetKeyAccessMode());
 
-  if (ls <> 0) then
-     result := Buffer;
-end;
-
-
-function TSit.GetWinVersion: string;                  //Windows-Version auslesen
-begin                                                 //not by me
-result := 'unbekannt';
-
-case Win32Platform of                      // 9x-Reihe
-  1: if (Win32MajorVersion = 4) then
-        case Win32MinorVersion of
-          0: result := '95';
-         10: result := '98';
-         90: result := 'Me';
-        end; //of case
-
-  2: case Win32MajorVersion of            // NT-Reihe
-       3: if (Win32MinorVersion = 51) then
-             result := 'NT 3.51';
-
-       4: if (Win32MinorVersion = 0) then
-             result := 'NT 4';
-
-       5: case Win32MinorVersion of      //W2K Reihe
-            0: result := '2000';
-            1: result := 'XP';
-            2: result := '.NET Server';
-          end; //of case
-
-       6: case Win32MinorVersion of
-            0: result := 'Vista';
-            1: result := '7';
-            2: result := '8';
-          end; //of case
-     end; //of case
-end; //of case
-end;
-
-
-function TSit.RegDelete: Boolean;                         //REG Einträge löschen
-begin
   try
-    DelRegValue('Logo');
-    DelRegValue('Manufacturer');
-    DelRegValue('Model');
-    DelRegValue('SupportPhone');
-    DelRegValue('SupportHours');
-    DelRegValue('SupportURL');
-    result := true;
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, True);
+    result := (reg.ValueExists('Logo') or reg.ValueExists('Manufacturer') or
+              reg.ValueExists('Model') or reg.ValueExists('SupportPhone') or
+              reg.ValueExists('SupportHours') or reg.ValueExists('SupportURL'));
 
-  except
-    result := false;
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.GetOEMLogo
+
+  Returns path to support information logo. }
+
+function TSupportInformation.GetOEMLogo(): string;
+var
+  reg: TRegistry;
+
+begin
+  reg := TRegistry.Create(SetKeyAccessMode);
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, false);
+    result := reg.ReadString(INFO_ICON);
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.Load
+
+  Loads fresh support information. }
+
+procedure TSupportInformation.Load();
+var
+  reg: TRegistry;
+
+  function ReadValue(AValueName: string): string;
+  begin
+    if reg.ValueExists(AValueName) then
+      result := reg.ReadString(AValueName);
+    else
+      result := '';
+  end;
+  
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, True);
+
+    FIcon := ReadValue(INFO_ICON);
+    FHours := ReadValue(INFO_HOURS);
+    FMan := ReadValue(INFO_MAN);
+    FModel := ReadValue(INFO_MODEL);
+    FPhone := ReadValue(INFO_PHONE);
+    FUrl := ReadValue(INFO_URL);   
+    
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.LoadFromReg
+
+  Loads a TSupportInformation object from a *.reg file. }
+
+procedure TSupportInformation.LoadFromReg(const AFilename: string);
+var
+  regFile: TStringList;
+  icon: string;
+
+  function DelPathIndicator(AName: string): string;
+  begin
+    result := StringReplace(AName, '"', '', [rfReplaceAll]);
+  end;
+
+begin
+  regFile := TStringList.Create;
+
+  try
+    regFile.LoadFromFile(AFilename);
+    icon := StringReplace(regFile.Values['"'+INFO_ICON+'"'], '\\', '\', [rfReplaceAll]);
+    FIcon := DelPathIndicator(icon);
+    FMan := DelPathIndicator(regFile.Values['"'+INFO_MAN+'"']);
+    FModel := DelPathIndicator(regFile.Values['"'+INFO_MODEL+'"']);
+    FPhone := DelPathIndicator(regFile.Values['"'+INFO_PHONE+'"']);
+    FHours := DelPathIndicator(regFile.Values['"'+INFO_HOURS+'"']);
+    FUrl := DelPathIndicator(regFile.Values['"'+INFO_URL+'"']);
+
+  finally
+    regFile.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.Remove
+
+  Removes support information from the Windows Registry. }
+
+function TSupportInformation.Remove(): Boolean;
+var
+  reg: TRegistry;
+
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey('SOFTWARE\Microsoft\Windows\CurrentVersion', True);
+    result := reg.DeleteKey('OEMInformation');
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.Save
+
+  Commits changes on support information. }
+
+procedure TSupportInformation.Save();
+var
+  reg: TRegistry;
+
+  procedure WriteValue(AName, AValue: string);
+  begin
+    if (AValue <> '') then
+       reg.WriteString(AName, AValue);
+  end;
+
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, True);
+
+    WriteValue(INFO_HOURS, FHours);
+    WriteValue(INFO_ICON, FIcon);
+    WriteValue(INFO_MAN, FMan);
+    WriteValue(INFO_MODEL, FModel);
+    WriteValue(INFO_PHONE, FPhone);
+    WriteValue(INFO_URL, FUrl);
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.Show
+
+  Shows Windows system properties. }
+
+procedure TSupportInformation.Show(AHandle: HWND);
+begin
+  ShellExecute(AHandle, nil, 'control', 'system', nil, SW_SHOWNORMAL);
+end;
+
+{ public TSupportInformation.SaveAsReg
+
+  Saves a TSupportInformation object as a *.reg file. }  
+
+procedure TSupportInformation.SaveAsReg(const AFilename: string);
+var
+  regFile: TStringList;
+  path, ext: string;
+
+  procedure AppendToFile(AName, AValue: string);
+  begin
+    if (AValue <> '') then
+      regFile.Append('"'+ AName +'"="'+ AValue +'"');
+  end;
+  
+begin
+  ext := '';
+  regFile := TStringList.Create;
+  regFile.Append('Windows Registry Editor Version 5.00');
+  regFile.Append('');
+  regFile.Append('[HKEY_LOCAL_MACHINE\'+ OEMINFO_KEY +']');
+
+  try
+    path := StringReplace(FIcon, '\', '\\', [rfReplaceAll]);
+    AppendToFile('Logo', path);
+    AppendToFile('Manufacturer', FMan);
+    AppendToFile('Model', FModel);
+    AppendToFile('SupportPhone', FPhone);
+    AppendToFile('SupportHours', FHours);
+    AppendToFile('SupportURL', FUrl);
+
+    if (ExtractFileExt(AFileName) = '') then
+       ext := '.reg';
+       
+    regFile.SaveToFile(AFilename + ext);
+
+  finally
+    regFile.Free;
   end;  //of finally
 end;
 
 
-function TSit.SetCaption: string;                                  //FormCaption
-begin
-  if IsWindows64 then
-     result := 'SIT [64bit]'      //Bits in Form Label schr.
-  else
-     result := 'SIT [32bit]';
-end;
-{ of TSit }
+{ TSupportInformationXP }
 
-{##############################################################################}
-{ TSitData }
+{ private TSupportInformationXP.GetOEMInfo
 
-constructor TSitData.Create(ALogo, AMan, AModel, AUrl, APhone, AHours: string);
+  Returns path to OEMINFO.ini }
+
+function TSupportInformationXP.GetOEMInfo(): string;
 begin
-  FLogo := ALogo;
-  FMan := AMan;
-  FModel := AModel;
-  FUrl := AUrl;
-  FPhone := APhone;
-  FHours := AHours;
-  inherited Create;
+  ChangeFSRedirection(True);                
+  result := GetWinDir() + INFO_DIR;
+  ChangeFSRedirection(False);
 end;
 
+{ public TSupportInformationXP.DeleteIcon
 
-procedure TSitData.SaveAsIni(AFilename: string; ADirect: Bool);  //als INI-Datei speichern
-begin
-  try
-    if ADirect then
-       begin
-       if CheckWindows then            //ab Windows Vista
-          begin
-          AccessIniData(AFilename, 'Logo', 'Logo', GetRegValue('Logo'));
-          AccessIniData(AFilename, 'General', 'Manufacturer', GetRegValue('Manufacturer'));
-          AccessIniData(AFilename, 'General', 'Model', GetRegValue('Model'));
-          AccessIniData(AFilename, 'General', 'SupportURL', GetRegValue('SupportURL'));
-          AccessIniData(AFilename, SUPP_SEC, 'SupportPhone', GetRegValue('SupportPhone'));
-          AccessIniData(AFilename, SUPP_SEC, 'SupportHours', GetRegValue('SupportHours'));
-          end  //of begin
-       else
-          if FileExists(GetOemInfoDir) then  //ab Win2000
-             CopyFile(PChar(GetOemInfoDir), PChar(AFilename), false);  //ini kopieren
-       end  //of begin
-    else
-       begin                           //aus Editfeldern
-       if not CheckWindows then        //ab Win2000
-          if FileExists(GetOemLogoDir) then
-             AccessIniData(GetOemInfoDir, 'Logo', 'Logo', GetOemLogoDir);
+  Deletes the OEMLOGO.bmp if exists and changes OEMINFO.ini }
 
-       AccessIniData(AFilename, 'Logo', 'Logo', FLogo);
-       AccessIniData(AFilename, 'General', 'Manufacturer', FMan);
-       AccessIniData(AFilename, 'General', 'Model', FModel);
-       AccessIniData(AFilename, 'General', 'SupportURL', FUrl);
-       AccessIniData(AFilename, SUPP_SEC, 'SupportPhone', FPhone);
-       AccessIniData(AFilename, SUPP_SEC, 'SupportHours', FHours);
-       end;  //of if
-
-  except
-    CreateError(GetString(47) + ExtractFileName(AFilename), 51);
-  end;  //of except
-end;
-
-
-procedure TSitData.SaveAsReg(AFilename: string; ADirect: Bool); //als REG Datei speichern
+function TSupportInformationXP.DeleteIcon(): Boolean;
 var
-  regFile: TStringList;
-  path: string;
+  ini: TIniFile;
 
 begin
-regFile := TStringList.Create;                     //init Liste
-regFile.Append('Windows Registry Editor Version 5.00');
-regFile.Append('');
-regFile.Append('[HKEY_LOCAL_MACHINE\'+ OEMINFO_KEY +']');
+  if DeleteFile(GetOemLogo()) then
+  begin
+    // OEMINFO.ini exists?
+    if not FileExists(GetOemInfo()) then
+       result := True;
+       Exit();
+       end;  //of begin
 
-  try
-    if ADirect then
-       begin                                       //init direkt aus Registry
-       if CheckWindows then          //ab Windows Vista
-          begin
-          path := StringReplace(GetRegValue('Logo'), '\', '\\', [rfReplaceAll]);
-          regFile.Append('"Logo"="'+ path +'"');
-          regFile.Append('"Manufacturer"="'+ GetRegValue('Manufacturer') +'"');
-          regFile.Append('"Model"="'+ GetRegValue('Model') +'"');
-          regFile.Append('"SupportPhone"="'+ GetRegValue('SupportPhone') +'"');
-          regFile.Append('"SupportHours"="'+ GetRegValue('SupportHours') +'"');
-          regFile.Append('"SupportURL"="'+ GetRegValue('SupportURL') +'"');
-          end  //of begin
-       else
-          begin                      //ab Windows 2000
-          path := StringReplace(GetRegValue('Logo'), '\', '\\', [rfReplaceAll]);
-          regFile.Append('"Logo"="'+ path +'"');
-          regFile.Append('"Manufacturer"="'+ GetRegValue('Manufacturer') +'"');
-          regFile.Append('"Model"="'+ GetRegValue('Model') +'"');
-          regFile.Append('"SupportPhone"="'+ GetRegValue('SupportPhone') +'"');
-          regFile.Append('"SupportHours"="'+ GetRegValue('SupportHours') +'"');
-          regFile.Append('"SupportURL"="'+ GetRegValue('SupportURL') +'"');
-          end;  //of begin
-       end  //of begin
-    else
-       begin                         //aus Editfeldern
-       path := StringReplace(FLogo, '\', '\\', [rfReplaceAll]);
-       regFile.Append('"Logo"="'+ path +'"');
-       regFile.Append('"Manufacturer"="'+ FMan +'"');
-       regFile.Append('"Model"="'+ FModel +'"');
-       regFile.Append('"SupportPhone"="'+ FPhone +'"');
-       regFile.Append('"SupportHours"="'+ FHours +'"');
-       regFile.Append('"SupportURL"="'+ FUrl +'"');
-       end;  //of if
+    // Delete logo path from *.ini file
+    ini := TIniFile.Create(GetOemInfo());
 
-    regFile.SaveToFile(AFilename);                 //Datei speichern
-                                                   //freigeben
-  except
-    CreateError(GetString(47) + ExtractFileName(AFilename), 51);
-  end;  //of except
-
-regFile.Free;
+    try
+      result := AccessData(ini, 'Logo', 'Logo', '');
+      
+    finally
+      ini.Free;
+    end;  //of finally    
+  end;  //of begin  
 end;
 
+{ public TSupportInformationXP.Exists
 
-procedure TSitData.SetIniData;
+  Checks if any support information exist. }
+  
+function TSupportInformationXP.Exists(): Boolean;
 begin
-  SaveAsIni(GetOemInfoDir, false);
+  result := FileExists(GetOemInfo()) or FileExists(GetOemLogo());
 end;
 
+{ public TSupportInformationXP.GetOEMLogo
 
-procedure TSitData.SetRegData;
+  Returns path to support information logo. }
+
+function TSupportInformationXP.GetOEMLogo(): string;
 begin
-  AccessRegData('Logo', FLogo);
-  AccessRegData('Manufacturer', FMan);
-  AccessRegData('Model', FModel);
-  AccessRegData('SupportPhone', FPhone);
-  AccessRegData('SupportHours', FHours);
-  AccessRegData('SupportURL', FUrl);
+  ChangeFSRedirection(True);
+  result := GetWinDir() + LOGO_DIR;
+  ChangeFSRedirection(False);
 end;
-{ of TSitData }
+
+{ public TSupportInformationXP.Load
+
+  Loads fresh support information. }
+
+procedure TSupportInformationXP.Load();
+begin
+  LoadFromIni(GetOemInfoDir());
+end;
+
+{ public TSupportInformation.Remove
+
+  Removes support information. }
+
+function TSupportInformationXP.Remove(): Boolean;
+begin
+  result := DeleteFile(GetOemInfoDir());
+end;
+
+{ public TSupportInformationXP.Save
+
+  Commits changes on support information. }
+
+procedure TSupportInformationXP.Save();
+begin
+  SaveAsIni(GetOemInfoDir());
+
+  // Copy logo if exists
+  if FileExists(eLogo.Text) then
+    CopyFile(PChar(FIcon), PChar(GetOemLogoDir()), False);
+end;
+
+{ public TSupportInformationXP.Show
+
+  Shows Windows system properties. }
+
+procedure TSupportInformationXP.Show();
+begin
+  ShellExecute(AHandle, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
+end;
 
 end.

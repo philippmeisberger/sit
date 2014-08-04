@@ -1,4 +1,4 @@
-program pro_support;
+program Sit;
 
 uses
   Forms,
