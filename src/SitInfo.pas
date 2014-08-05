@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT Info Pages                                                          }
 {                                                                         }
-{ Copyright (c) 2011-2013 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,11 +11,11 @@ unit SitInfo;
 interface
 
 uses
-  Windows, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls, SitAPI,
-  ComCtrls, SysUtils;
+  Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls, WinUtils, SysUtils;
 
 type
-  TForm2 = class(TForm)
+  { TInfo }
+  TInfo = class(TForm)
     PageControl: TPageControl;
     ts_infos: TTabSheet;
     ts_history: TTabSheet;
@@ -30,41 +30,26 @@ type
     lBuild: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure bOkClick(Sender: TObject);
-    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     { Private declarations }
   public
     { Public declarations }
   end;
 
-var
-  Form2: TForm2;
 
 implementation
 
-uses SitMain;
-
 {$R *.dfm}
 
-
-procedure TForm2.FormCreate(Sender: TObject);
+procedure TInfo.FormCreate(Sender: TObject);
 begin
-  lBuild.Caption := '(Build: '+ IntToStr(TSit.GetBuildNumber) +')';
+  lBuild.Caption := '(Build: '+ IntToStr(TWinUtils.GetBuildNumber) +')';
 end;
 
 
-procedure TForm2.bOkClick(Sender: TObject);
+procedure TInfo.bOkClick(Sender: TObject);
 begin
   Close;
-end;
-
-
-procedure TForm2.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-begin
-  Hide;
-  Form1.Enabled := true;
-  Form1.BringToFront;
-  CanClose := true;
 end;
 
 end.
