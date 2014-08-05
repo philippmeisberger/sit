@@ -11,10 +11,11 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, TLHelp32, IniFiles, WinUtils;
+  Windows, Classes, SysUtils, Registry, IniFiles, WinUtils, ShellAPI;
 
 const
   OEMINFO_KEY = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
+  SUPPORT_INFO = 'Support Information';
   LOGO_DIR = '\System32\OEMLOGO.bmp';
   INFO_DIR = '\System32\OEMINFO.ini';
   URL_BASE = 'http://www.pm-codeworks.de/';
@@ -27,7 +28,7 @@ const
   INFO_HOURS = 'SupportHours';
   INFO_URL = 'SupportURL';
   INFO_GENERAL = 'General';
-  
+
 type
   { Support information base class }
   TSupportInformationBase = class(TWinUtils)
@@ -44,16 +45,18 @@ type
     function Remove(): Boolean; virtual; abstract;
     function Save(): Boolean; virtual; abstract;
     procedure SaveAsIni(const AFilename: string);
+    procedure Show(AHandle: HWND); virtual; abstract;
     { external }
-    property Logo: string read FIcon write FIcon;
+    property Hours: string read FHours write FHours;
+    property Icon: string read FIcon write FIcon;
     property Manufacturer: string read FMan write FMan;
     property Model: string read FModel write FModel;
     property Url: string read FUrl write FUrl;
     property Phone: string read FPhone write FPhone;
-    property Hours: string read FHours write FHours;
+    
   end;
 
-  { Support information class }
+  { Support information class >= Windows Vista }
   TSupportInformation = class(TSupportInformationBase)
   public
     function DeleteIcon(): Boolean; override;
@@ -64,10 +67,10 @@ type
     function Remove(): Boolean; override;
     procedure SaveAsReg(const AFilename: string);
     function Save(): Boolean; override;
-    procedure Show(); override;
+    procedure Show(AHandle: HWND); override;
   end;
 
-  { Support information class until Windows XP }
+  { Support information class >= Windows 2000 }
   TSupportInformationXP = class(TSupportInformationBase)
   private
     function GetOEMInfo(): string;
@@ -78,7 +81,7 @@ type
     procedure Load(); override;
     function Remove(): Boolean; override;
     function Save(): Boolean; override;
-    procedure Show(); override;
+    procedure Show(AHandle: HWND); override;
   end;
 
 
@@ -101,44 +104,6 @@ begin
   FPhone := APhone;
   FHours := AHours;
 end;
-
-{ protected TSupportInformationBase.AccessData
-
-  Commits changes on *.ini based support information. }
-
-{function TSupportInformationBase.AccessData(AIniFile: TIniFile; const ASection,
-  AValueName, AValue: string): Boolean;
-var
-  list: TStringList;
-  
-begin
-  if (AValue <> '') then
-  begin
-    AIniFile.WriteString(ASection, AValueName, AValue);
-    result := true;
-  end  //of begin
-  else
-    begin
-    list := TStringList.Create;
-     
-    try
-      if (AIniFile.SectionExists(ASection) and AIniFile.ValueExists(ASection, AValueName)) then
-      begin
-        AIniFile.DeleteKey(ASection, AValueName);
-        AIniFile.ReadSection(ASection, list);
-
-        // Delete section if empty
-        if (list.Count = 0) then
-          AIniFile.EraseSection(ASection);
-        end;  //of begin
-   
-     result := true;
-
-    finally
-      list.Free;
-    end;  //of finally
-  end;  //of begin
-end;}
 
 { public TSupportInformationBase.Clear
 
@@ -166,13 +131,16 @@ begin
   ini := TIniFile.Create(AFileName);
 
   try
-    FIcon := ini.ReadString(INFO_ICON, INFO_ICON, '');
-    FMan := ini.ReadString(INFO_GENERAL, INFO_MAN, '');
-    FModel := ini.ReadString(INFO_GENERAL, INFO_MODEL, '');
-    FUrl := ini.ReadString(INFO_GENERAL, INFO_URL, '');
-    FPhone := ini.ReadString(SUPPORT_INFO, INFO_PHONE, '');
-    FHours := ini.ReadString(SUPPORT_INFO, INFO_HOURS, '');
-    
+    with ini do
+    begin
+      FIcon := ReadString(INFO_ICON, INFO_ICON, '');
+      FMan := ReadString(INFO_GENERAL, INFO_MAN, '');
+      FModel := ReadString(INFO_GENERAL, INFO_MODEL, '');
+      FUrl := ReadString(INFO_GENERAL, INFO_URL, '');
+      FPhone := ReadString(SUPPORT_INFO, INFO_PHONE, '');
+      FHours := ReadString(SUPPORT_INFO, INFO_HOURS, '');
+    end;  //of with
+
   finally
     ini.Free;
   end;  //of finally
@@ -196,12 +164,15 @@ begin
   ini := TIniFile.Create(AFileName + ext);
 
   try
-    ini.WriteString(INFO_ICON, INFO_ICON, FIcon);
-    ini.WriteString(INFO_GENERAL, INFO_MAN, FMan);
-    ini.WriteString(INFO_GENERAL, INFO_MODEL, FModel);
-    ini.WriteString(INFO_GENERAL, INFO_URL, FUrl);
-    ini.WriteString(SUPPORT_INFO, INFO_PHONE, FPhone);
-    ini.WriteString(SUPPORT_INFO, INFO_HOURS, FHours);
+    with ini do
+    begin
+      WriteString(INFO_ICON, INFO_ICON, FIcon);
+      WriteString(INFO_GENERAL, INFO_MAN, FMan);
+      WriteString(INFO_GENERAL, INFO_MODEL, FModel);
+      WriteString(INFO_GENERAL, INFO_URL, FUrl);
+      WriteString(SUPPORT_INFO, INFO_PHONE, FPhone);
+      WriteString(SUPPORT_INFO, INFO_HOURS, FHours);
+    end;  //of with
 
   finally
     ini.Free;
@@ -211,23 +182,13 @@ end;
 
 { TSupportInformation }
 
-{ private TSupportInformation.AccessData
+{ public TSupportInformation.DeleteIcon
 
-  Commits changes on support information. }
+  Deletes the support information icon if exists. }
 
-function TSupportInformation.AccessData(AReg: TRegistry; const AValueName,
-  AValue: string): Boolean;
+function TSupportInformation.DeleteIcon(): Boolean;
 begin
-  if (AValue <> '') then
-  begin
-    AReg.WriteString(AValueName, AValue);
-    result := True;
-  end  //of begin
-  else
-    if AReg.ValueExists(AValueName) then
-      result := AReg.DeleteValue(AValueName);
-    else
-      result := True;
+  result := DeleteFile(GetOEMLogo());
 end;
 
 { public TSupportInformation.Exists
@@ -244,9 +205,9 @@ begin
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
     reg.OpenKey(OEMINFO_KEY, True);
-    result := (reg.ValueExists('Logo') or reg.ValueExists('Manufacturer') or
-              reg.ValueExists('Model') or reg.ValueExists('SupportPhone') or
-              reg.ValueExists('SupportHours') or reg.ValueExists('SupportURL'));
+    result := (reg.ValueExists(INFO_ICON) or reg.ValueExists(INFO_MAN) or
+               reg.ValueExists(INFO_MODEL) or reg.ValueExists(INFO_PHONE) or
+               reg.ValueExists(INFO_HOURS) or reg.ValueExists(INFO_URL));
 
   finally
     reg.CloseKey();
@@ -263,12 +224,16 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(SetKeyAccessMode);
+  reg := TRegistry.Create(SetKeyAccessMode());
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, false);
-    result := reg.ReadString(INFO_ICON);
+    reg.OpenKey(OEMINFO_KEY, False);
+
+    if reg.ValueExists(INFO_ICON) then
+      result := reg.ReadString(INFO_ICON)
+    else
+      result := '';
 
   finally
     reg.CloseKey();
@@ -374,10 +339,13 @@ procedure TSupportInformation.Save();
 var
   reg: TRegistry;
 
-  procedure WriteValue(AName, AValue: string);
+  procedure WriteValue(AValueName, AValue: string);
   begin
     if (AValue <> '') then
-       reg.WriteString(AName, AValue);
+      reg.WriteString(AValueName, AValue)
+    else
+      if reg.ValueExists(AValueName) then
+        reg.DeleteValue(AValueName);
   end;
 
 begin
@@ -425,7 +393,6 @@ var
   end;
   
 begin
-  ext := '';
   regFile := TStringList.Create;
   regFile.Append('Windows Registry Editor Version 5.00');
   regFile.Append('');
@@ -433,15 +400,17 @@ begin
 
   try
     path := StringReplace(FIcon, '\', '\\', [rfReplaceAll]);
-    AppendToFile('Logo', path);
-    AppendToFile('Manufacturer', FMan);
-    AppendToFile('Model', FModel);
-    AppendToFile('SupportPhone', FPhone);
-    AppendToFile('SupportHours', FHours);
-    AppendToFile('SupportURL', FUrl);
+    AppendToFile(INFO_ICON, path);
+    AppendToFile(INFO_MAN, FMan);
+    AppendToFile(INFO_MODEL, FModel);
+    AppendToFile(INFO_PHONE, FPhone);
+    AppendToFile(INFO_HOURS, FHours);
+    AppendToFile(INFO_URL, FUrl);
 
     if (ExtractFileExt(AFileName) = '') then
-       ext := '.reg';
+      ext := '.reg'
+    else
+      ext := '';
        
     regFile.SaveToFile(AFilename + ext);
 
@@ -519,7 +488,7 @@ end;
 
 procedure TSupportInformationXP.Load();
 begin
-  LoadFromIni(GetOemInfoDir());
+  LoadFromIni(GetOEMInfo());
 end;
 
 { public TSupportInformation.Remove
@@ -528,7 +497,7 @@ end;
 
 function TSupportInformationXP.Remove(): Boolean;
 begin
-  result := DeleteFile(GetOemInfoDir());
+  result := DeleteFile(GetOEMInfo());
 end;
 
 { public TSupportInformationXP.Save
