@@ -1,12 +1,12 @@
-object Form1: TForm1
-  Left = 531
-  Top = 271
+object Main: TMain
+  Left = 500
+  Top = 223
   HorzScrollBar.Visible = False
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'SIT'
-  ClientHeight = 170
-  ClientWidth = 362
+  ClientHeight = 278
+  ClientWidth = 403
   Color = clBtnFace
   Constraints.MinHeight = 170
   Constraints.MinWidth = 362
@@ -517,15 +517,15 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   DesignSize = (
-    362
-    170)
+    403
+    278)
   PixelsPerInch = 96
   TextHeight = 14
   object iBack: TImage
     Left = 0
     Top = 0
-    Width = 363
-    Height = 171
+    Width = 404
+    Height = 279
     Anchors = [akLeft, akTop, akRight, akBottom]
     Picture.Data = {
       07544269746D6170C6130700424DC6130700000000003600000028000000C601
@@ -15025,8 +15025,8 @@ object Form1: TForm1
       FD1B6EFD1B6EFD1B6EFD1B6EFD1B6EFD1B1B}
   end
   object lCopy: TLabel
-    Left = 126
-    Top = 147
+    Left = 145
+    Top = 255
     Width = 112
     Height = 14
     Anchors = [akBottom]
@@ -15043,12 +15043,12 @@ object Form1: TForm1
     OnMouseLeave = lCopyMouseLeave
   end
   object lVersion: TLabel
-    Left = 326
+    Left = 375
     Top = 8
-    Width = 30
+    Width = 21
     Height = 14
     Anchors = [akTop, akRight]
-    Caption = 'v2.0.1'
+    Caption = 'v2.1'
     Font.Charset = ANSI_CHARSET
     Font.Color = clBlack
     Font.Height = -11
@@ -15058,132 +15058,157 @@ object Form1: TForm1
     Transparent = True
   end
   object Image: TImage
-    Left = 120
-    Top = 16
+    Left = 144
+    Top = 64
     Width = 120
     Height = 120
     AutoSize = True
     Visible = False
   end
-  object eLogo: TLabeledEdit
-    Left = 8
-    Top = 24
-    Width = 313
-    Height = 22
-    HelpType = htKeyword
-    HelpKeyword = 'Logopfad'
-    Anchors = [akLeft, akTop, akRight]
-    EditLabel.Width = 52
-    EditLabel.Height = 14
-    EditLabel.Caption = 'Logo Pfad:'
-    EditLabel.Transparent = True
-    TabOrder = 0
-    OnDblClick = eLogoDblClick
-  end
-  object eMan: TLabeledEdit
-    Left = 8
-    Top = 64
-    Width = 113
-    Height = 22
-    Anchors = [akLeft, akTop, akRight]
-    EditLabel.Width = 49
-    EditLabel.Height = 14
-    EditLabel.Caption = 'Hersteller:'
-    EditLabel.Transparent = True
-    TabOrder = 2
-    OnDblClick = eManDblClick
-  end
-  object eUrl: TLabeledEdit
-    Left = 136
-    Top = 104
-    Width = 217
-    Height = 22
-    Anchors = [akLeft, akTop, akRight]
-    EditLabel.Width = 79
-    EditLabel.Height = 14
-    EditLabel.Caption = 'Internetadresse:'
-    EditLabel.Transparent = True
-    TabOrder = 6
-    OnDblClick = eUrlDblClick
-  end
-  object eModel: TLabeledEdit
-    Left = 10
-    Top = 104
-    Width = 111
-    Height = 22
-    Anchors = [akLeft, akTop, akRight]
-    EditLabel.Width = 33
-    EditLabel.Height = 14
-    EditLabel.Caption = 'Modell:'
-    EditLabel.Transparent = True
-    TabOrder = 5
-    OnDblClick = eModelDblClick
-  end
-  object ePhone: TLabeledEdit
-    Left = 136
-    Top = 64
-    Width = 129
-    Height = 22
-    Anchors = [akLeft, akTop, akRight]
-    EditLabel.Width = 76
-    EditLabel.Height = 14
-    EditLabel.Caption = 'Telefonnummer:'
-    EditLabel.Transparent = True
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clBlack
-    Font.Height = -11
-    Font.Name = 'Arial'
-    Font.Style = []
-    ParentFont = False
-    TabOrder = 3
-    OnDblClick = ePhoneDblClick
-  end
   object bAccept: TButton
     Left = 8
-    Top = 134
-    Width = 97
-    Height = 30
+    Top = 240
+    Width = 105
+    Height = 32
     Anchors = [akLeft, akBottom]
     Caption = #220'bernehmen'
     Default = True
-    TabOrder = 7
+    TabOrder = 0
     OnClick = bAcceptClick
   end
-  object bClose: TButton
-    Left = 256
-    Top = 134
-    Width = 99
-    Height = 30
+  object bShowSupport: TButton
+    Left = 289
+    Top = 240
+    Width = 105
+    Height = 32
     Anchors = [akRight, akBottom]
-    Caption = 'Beenden'
-    TabOrder = 8
-    OnClick = bCloseClick
+    Caption = 'Anzeigen'
+    TabOrder = 3
+    OnClick = bShowSupportClick
   end
-  object eHours: TLabeledEdit
-    Left = 280
-    Top = 64
-    Width = 73
-    Height = 22
+  object gbInfo: TGroupBox
+    Left = 8
+    Top = 110
+    Width = 385
+    Height = 121
     Anchors = [akLeft, akTop, akRight]
-    EditLabel.Width = 37
-    EditLabel.Height = 14
-    EditLabel.Caption = 'Uhrzeit:'
-    EditLabel.Transparent = True
-    TabOrder = 4
-    OnDblClick = eHoursDblClick
+    Caption = 'Informationen'
+    TabOrder = 2
+    object eHours: TLabeledEdit
+      Left = 293
+      Top = 35
+      Width = 76
+      Height = 22
+      EditLabel.Width = 37
+      EditLabel.Height = 14
+      EditLabel.Caption = 'Uhrzeit:'
+      EditLabel.Transparent = True
+      TabOrder = 3
+      OnDblClick = eHoursDblClick
+    end
+    object eModel: TLabeledEdit
+      Left = 18
+      Top = 83
+      Width = 119
+      Height = 22
+      EditLabel.Width = 33
+      EditLabel.Height = 14
+      EditLabel.Caption = 'Modell:'
+      EditLabel.Transparent = True
+      TabOrder = 1
+      OnDblClick = eModelDblClick
+    end
+    object ePhone: TLabeledEdit
+      Left = 152
+      Top = 35
+      Width = 129
+      Height = 22
+      EditLabel.Width = 76
+      EditLabel.Height = 14
+      EditLabel.Caption = 'Telefonnummer:'
+      EditLabel.Transparent = True
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clBlack
+      Font.Height = -11
+      Font.Name = 'Arial'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 2
+      OnDblClick = ePhoneDblClick
+    end
+    object eMan: TLabeledEdit
+      Left = 18
+      Top = 35
+      Width = 119
+      Height = 22
+      EditLabel.Width = 49
+      EditLabel.Height = 14
+      EditLabel.Caption = 'Hersteller:'
+      EditLabel.Transparent = True
+      TabOrder = 0
+      OnDblClick = eManDblClick
+    end
+    object eUrl: TLabeledEdit
+      Left = 152
+      Top = 83
+      Width = 217
+      Height = 22
+      EditLabel.Width = 79
+      EditLabel.Height = 14
+      EditLabel.Caption = 'Internetadresse:'
+      EditLabel.Transparent = True
+      TabOrder = 4
+      OnDblClick = eUrlDblClick
+    end
   end
-  object bAdd: TButton
-    Left = 331
-    Top = 24
-    Width = 22
-    Height = 22
+  object gbIcon: TGroupBox
+    Left = 8
+    Top = 18
+    Width = 385
+    Height = 85
     Anchors = [akLeft, akTop, akRight]
-    Caption = '...'
+    Caption = 'Logo'
     TabOrder = 1
-    OnClick = bAddClick
+    DesignSize = (
+      385
+      85)
+    object bAdd: TButton
+      Left = 343
+      Top = 36
+      Width = 28
+      Height = 23
+      Anchors = [akTop, akRight]
+      Caption = '...'
+      TabOrder = 1
+      OnClick = bAddClick
+    end
+    object cbCopyIcon: TCheckBox
+      Left = 18
+      Top = 60
+      Width = 97
+      Height = 17
+      Caption = 'Logo kopieren'
+      Enabled = False
+      TabOrder = 2
+    end
+    object eLogo: TLabeledEdit
+      Left = 18
+      Top = 36
+      Width = 316
+      Height = 22
+      HelpType = htKeyword
+      HelpKeyword = 'Logopfad'
+      Anchors = [akLeft, akTop, akRight]
+      EditLabel.Width = 52
+      EditLabel.Height = 14
+      EditLabel.Caption = 'Logo Pfad:'
+      EditLabel.Transparent = True
+      TabOrder = 0
+      OnDblClick = eLogoDblClick
+    end
   end
   object MainMenu: TMainMenu
-    Left = 288
+    Left = 336
     object mmFile: TMenuItem
       Caption = 'Datei'
       object mmImport: TMenuItem
@@ -15225,8 +15250,18 @@ object Form1: TForm1
         ShortCut = 118
         OnClick = mmDelEditClick
       end
+      object N5: TMenuItem
+        Caption = '-'
+      end
+      object mmCopyIcon: TMenuItem
+        Caption = 'Logo kopieren'
+        ShortCut = 119
+        OnClick = mmCopyIconClick
+      end
       object mmDelLogo: TMenuItem
         Caption = 'Logo l'#246'schen'
+        Enabled = False
+        ShortCut = 120
         Visible = False
         OnClick = mmDelLogoClick
       end
@@ -15256,15 +15291,15 @@ object Form1: TForm1
     object mmHelp: TMenuItem
       Caption = 'Hilfe'
       object mmUpdate: TMenuItem
-        Caption = 'nach Update suchen'
+        Caption = 'Nach Update suchen'
         OnClick = mmUpdateClick
       end
       object N3: TMenuItem
         Caption = '-'
       end
-      object mmDwnldCert: TMenuItem
+      object mmDownloadCert: TMenuItem
         Caption = 'Zertifikat herunterladen'
-        OnClick = mmDwnldCertClick
+        OnClick = mmDownloadCertClick
       end
       object mmReport: TMenuItem
         Caption = 'Fehler melden'
@@ -15278,15 +15313,5 @@ object Form1: TForm1
         OnClick = mmInfoClick
       end
     end
-  end
-  object SaveDialog: TSaveDialog
-    Left = 224
-  end
-  object OpenDialog: TOpenDialog
-    Left = 256
-  end
-  object OpenLogoDialog: TOpenPictureDialog
-    Filter = 'Bitmaps (*.bmp)|*.bmp'
-    Left = 192
   end
 end

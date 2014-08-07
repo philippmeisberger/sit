@@ -37,13 +37,13 @@ type
   public
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
     procedure Clear();
-    function DeleteIcon(): Boolean; override;
+    function DeleteIcon(): Boolean; virtual; abstract;
     function Exists(): Boolean; virtual; abstract;
     function GetOEMLogo(): string; virtual; abstract;
     procedure Load(); virtual; abstract;
     procedure LoadFromIni(const AFilename: string);
     function Remove(): Boolean; virtual; abstract;
-    function Save(): Boolean; virtual; abstract;
+    procedure Save(); virtual; abstract;
     procedure SaveAsIni(const AFilename: string);
     procedure Show(AHandle: HWND); virtual; abstract;
     { external }
@@ -52,8 +52,7 @@ type
     property Manufacturer: string read FMan write FMan;
     property Model: string read FModel write FModel;
     property Url: string read FUrl write FUrl;
-    property Phone: string read FPhone write FPhone;
-    
+    property Phone: string read FPhone write FPhone;    
   end;
 
   { Support information class >= Windows Vista }
@@ -66,7 +65,7 @@ type
     procedure LoadFromReg(const AFilename: string);
     function Remove(): Boolean; override;
     procedure SaveAsReg(const AFilename: string);
-    function Save(): Boolean; override;
+    procedure Save(); override;
     procedure Show(AHandle: HWND); override;
   end;
 
@@ -80,7 +79,7 @@ type
     function GetOEMLogo(): string; override;
     procedure Load(); override;
     function Remove(): Boolean; override;
-    function Save(): Boolean; override;
+    procedure Save(); override;
     procedure Show(AHandle: HWND); override;
   end;
 
@@ -109,7 +108,7 @@ end;
 
   Clears the entered support information. }
 
-procedure TSupportInformationBase.Clear;
+procedure TSupportInformationBase.Clear();
 begin
   FHours := '';
   FIcon := '';
@@ -252,7 +251,7 @@ var
   function ReadValue(AValueName: string): string;
   begin
     if reg.ValueExists(AValueName) then
-      result := reg.ReadString(AValueName);
+      result := reg.ReadString(AValueName)
     else
       result := '';
   end;
@@ -446,15 +445,16 @@ begin
   begin
     // OEMINFO.ini exists?
     if not FileExists(GetOemInfo()) then
-       result := True;
-       Exit();
-       end;  //of begin
+    begin
+      result := True;
+      Exit;
+    end;  //of begin
 
     // Delete logo path from *.ini file
     ini := TIniFile.Create(GetOemInfo());
 
     try
-      result := AccessData(ini, 'Logo', 'Logo', '');
+      ini.DeleteKey('Logo', 'Logo');
       
     finally
       ini.Free;
@@ -506,18 +506,18 @@ end;
 
 procedure TSupportInformationXP.Save();
 begin
-  SaveAsIni(GetOemInfoDir());
+  SaveAsIni(GetOemInfo());
 
   // Copy logo if exists
-  if FileExists(eLogo.Text) then
-    CopyFile(PChar(FIcon), PChar(GetOemLogoDir()), False);
+  if FileExists(FIcon) then
+    CopyFile(PChar(FIcon), PChar(GetOemLogo()), False);
 end;
 
 { public TSupportInformationXP.Show
 
   Shows Windows system properties. }
 
-procedure TSupportInformationXP.Show();
+procedure TSupportInformationXP.Show(AHandle: HWND);
 begin
   ShellExecute(AHandle, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
 end;

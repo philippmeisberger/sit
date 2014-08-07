@@ -12,7 +12,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, ShellAPI, FileCtrl, LanguageFile;
+  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, ShellAPI, FileCtrl, LanguageFile,
+  SitUpdate, SitInfo;
 
 type
   { TMain }
@@ -37,7 +38,7 @@ type
     N2: TMenuItem;
     mmDelEdit: TMenuItem;
     mmDelLogo: TMenuItem;
-    mmDwnldCert: TMenuItem;
+    mmDownloadCert: TMenuItem;
     mmUpdate: TMenuItem;
     N3: TMenuItem;
     N4: TMenuItem;
@@ -63,6 +64,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure bAcceptClick(Sender: TObject);
+    procedure bShowSupportClick(Sender: TObject);
     procedure bAddClick(Sender: TObject);
     procedure mmImportClick(Sender: TObject);
     procedure mmCopyIconClick(Sender: TObject);
@@ -76,7 +78,7 @@ type
     procedure mmEngClick(Sender: TObject);
     procedure mmFraClick(Sender: TObject);
     procedure mmUpdateClick(Sender: TObject);
-    procedure mmDwnldCertClick(Sender: TObject);
+    procedure mmDownloadCertClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
     procedure mmInfoClick(Sender: TObject);
     procedure eHoursDblClick(Sender: TObject);
@@ -88,14 +90,11 @@ type
     procedure lCopyClick(Sender: TObject);
     procedure lCopyMouseEnter(Sender: TObject);
     procedure lCopyMouseLeave(Sender: TObject);
-    procedure bShowSupportClick(Sender: TObject);
-    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);   
   private
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
-    function GetLangID: Word;
     function OpenLogo(): Boolean;
     procedure Refresh;
     procedure SetLanguage(ALangID: Word);
@@ -108,8 +107,6 @@ var
 
 implementation
 
-uses SitInfo, SitUpdate;
-
 {$R *.dfm}
 {$R manifest.res}
 
@@ -119,7 +116,7 @@ uses SitInfo, SitUpdate;
   
 procedure TMain.DoExport(ADirect: Boolean);
 var
-  data: TSupportInformationBase;
+  SupportInfo: TSupportInformationBase;
   saveDialog : TSaveDialog;
 
 begin
@@ -133,9 +130,9 @@ begin
   end;  //of with
 
   if ADirect then
-     data := FSupportInfo
+     SupportInfo := FSupportInfo
   else
-     data := TSupportInformationBase.Create(eHours.Text, eLogo.Text, eMan.Text,
+     SupportInfo := TSupportInformation.Create(eHours.Text, eLogo.Text, eMan.Text,
              eModel.Text, ePhone.Text, eUrl.Text);
   try
     if TSupportInformationBase.CheckWindows() then
@@ -148,12 +145,12 @@ begin
 
     if saveDialog.Execute then
       case saveDialog.FilterIndex of
-        1: FSupportInfo.SaveAsIni(data, saveDialog.FileName);
-        2: FSupportInfo.SaveAsReg(data, saveDialog.FileName);
+        1: SupportInfo.SaveAsIni(saveDialog.FileName);
+        2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
       end; //of case
 
   finally
-    data := nil;
+    SupportInfo := nil;
     saveDialog.Free;
   end;  //of finally
 end;
@@ -193,7 +190,7 @@ begin
       // Check resolution > 400 x 500
       if ((Image.Height > 400) or (Image.Width > 500)) then
       begin
-        MessageBox(FLang.GetString(31)+ IntToStr(Image.Height) +'x'+
+        FLang.MessageBox(FLang.GetString(31)+ IntToStr(Image.Height) +'x'+
                    IntToStr(Image.Width) +')!' +^J+ FLang.GetString(32), mtWarning);
         result := False;
       end  //of begin
@@ -216,7 +213,7 @@ begin
   with FSupportInfo do
   begin
     eLogo.Text := Icon;
-    eMan.Text := Man;
+    eMan.Text := Manufacturer;
     eModel.Text := Model;
     eUrl.Text := Url;
     ePhone.Text := Phone;
@@ -233,7 +230,7 @@ end;
 
 procedure TMain.SetLanguage(ALangID: Word);
 begin
-  FLang.LangID := ALangID;
+  FLang.Lang := ALangID;
 
   with FLang do
     begin
@@ -255,7 +252,7 @@ begin
 
     mmHelp.Caption := GetString(66);
     mmUpdate.Caption := GetString(11);
-    mmDwnldCert.Caption := GetString(12);
+    mmDownloadCert.Caption := GetString(12);
     mmReport.Caption := GetString(70);
     mmInfo.Caption := GetString(13);
 
@@ -275,8 +272,8 @@ begin
     bAccept.Caption := GetString(20);
     bShowSupport.Caption := GetString(21);
 
-    Form3.bFinished.Caption := GetString(62);
-    Form2.Caption := GetString(67);
+    //Form3.bFinished.Caption := GetString(62);
+    //Form2.Caption := GetString(67);
     end;  //of with
 end;
 
@@ -325,7 +322,7 @@ begin
   // Check for incompatibility
   if not (newWindows or (windows[1] in ['X','2'])) then
      begin
-     MessageBox(FLang.GetString(64) + windows + FLang.GetString(65), mtError);
+     Flang.MessageBox(FLang.GetString(64) + windows + FLang.GetString(65), mtError);
      bAccept.Enabled := false;
      mmFile.Enabled := false;
      mmEdit.Enabled := false;
@@ -336,7 +333,7 @@ begin
      eModel.Enabled := false;
      eUrl.Enabled := false;
      bShowSupport.Enabled := false;
-     Exit();
+     Exit;
      end;  //of begin
 
   // Show support information
@@ -352,7 +349,7 @@ end;
 
 procedure TMain.bAcceptClick(Sender: TObject);
 begin
-  if (MessageBox(33, mtQuestion) = IDYES) then
+  if (Flang.MessageBox(33, mtQuestion) = IDYES) then
   try
     if cbCopyIcon.Checked then
       mmCopyIcon.Click;
@@ -364,9 +361,9 @@ begin
         Icon := eLogo.Text
       else
       begin
-        MessageBox(72, mtWarning);
+        Flang.MessageBox(72, mtWarning);
         eLogo.SetFocus;
-        Exit();
+        Exit;
       end;  //of if
 
       if (eMan.Text <> '') then
@@ -380,18 +377,23 @@ begin
       end  //of begin
       else
       begin
-        MessageBox(53, mtWarning);
+        Flang.MessageBox(53, mtWarning);
         eMan.SetFocus;
         Exit;
       end;  //of if
     end;  //of with
 
-    MessageBox(38);
+    Flang.MessageBox(38);
     mmShowValues.Click;
 
   except
     FLang.MessageBox(71, mtError);
   end;  //of except
+end;
+
+procedure TMain.bShowSupportClick(Sender: TObject);
+begin
+  FSupportInfo.Show(Application.Handle);
 end;
 
 { TMain.bAddClick
@@ -420,7 +422,7 @@ begin
     Title := FLang.GetString(22);
     Options := Options + [ofFileMustExist];
 
-    if TSit.CheckWindows then
+    if TSupportInformationBase.CheckWindows() then
        begin
        Filter := FLang.GetString(26);
        FilterIndex := 2;
@@ -432,11 +434,11 @@ begin
   try
     if openDialog.Execute then
        begin
-       Caption := Application.Title + TSit.GetArchitecture +' - '+ ExtractFileName(openDialog.FileName);
+       Caption := Application.Title + TSupportInformationBase.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
 
        case openDialog.FilterIndex of
          1: FSupportInfo.LoadFromIni(openDialog.FileName);
-         2: FSupportInfo.LoadFromReg(openDialog.FileName);
+         //2: FSupportInfo.LoadFromReg(openDialog.FileName);
        end;  //of case
 
        Refresh();
@@ -480,7 +482,7 @@ begin
   try
     FSupportInfo.Load();
     Refresh();
-    mmDelValues.Enabled := FSupportInfo.DataExists();
+    mmDelValues.Enabled := FSupportInfo.Exists();
     mmExport.Enabled := mmDelValues.Enabled;
 
   except
@@ -501,7 +503,7 @@ begin
      if (FLang.MessageBox(35, mtQuestion) = IDYES) then
         DoExport(true);
 
-     if FSupportInfo.Delete then
+     if FSupportInfo.Remove() then
         begin
         mmDelValues.Enabled := false;
         FLang.MessageBox(37);
@@ -517,7 +519,7 @@ end;
 
 procedure TMain.mmDelEditClick(Sender: TObject);
 begin
-  Caption := Application.Title + TSit.GetArchitecture();
+  Caption := Application.Title + TSupportInformationBase.GetArchitecture();
   mmDelLogo.Enabled := false;
   mmDelLogo.Visible := mmDelLogo.Enabled;
   //FSupportInfo.Clear;
@@ -597,16 +599,6 @@ begin
   ChangeLanguage(mmFra, 300);
 end;
 
-
-{ TMain.mmLangClick
-
-  MainMenu entry that allows to change the current language. }
-{
-procedure TMain.mmLangClick(Sender: TObject);
-begin
-  SetLanguage((Sender as TMenuItem).Caption);
-end;}
-
 { TMain.mmDwnldCertClick
 
   MainMenu entry that allows to download the PM Code Works certificate. }
@@ -614,8 +606,8 @@ end;}
 procedure TMain.mmDownloadCertClick(Sender: TObject);
 begin
   // Certificate already installed?
-  if (TGameWake.PMCertExists() and (FLang.MessageBox(FLang.GetString(67) +^J
-     + FLang.GetString(68), mtQuestion) = IDYES)) then
+  if (TSupportInformationBase.PMCertExists() and (FLang.MessageBox(FLang.GetString(71) +^J
+     + FLang.GetString(72), mtQuestion) = IDYES)) then
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(8)) do
        Download(dtCert);
@@ -722,20 +714,6 @@ begin
     Font.Color := clBlack;
     Cursor := crDefault;
     end;  //of with
-end;
-
-
-procedure TMain.bCloseClick(Sender: TObject);
-begin
-  Close;
-end;
-
-
-procedure TMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-begin
-  if Assigned(Form2) then
-     Form2.Close;
-  Form3.Close;
 end;
 
 end.

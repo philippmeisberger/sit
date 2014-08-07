@@ -1,4 +1,4 @@
-object Form3: TForm3
+object pdate: Update
   Left = 525
   Top = 308
   BorderIcons = []

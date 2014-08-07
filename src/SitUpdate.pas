@@ -66,7 +66,7 @@ type
 
 implementation
 
-uses GameWakeMain;
+uses SitMain;
 
 {$R *.dfm}
 
