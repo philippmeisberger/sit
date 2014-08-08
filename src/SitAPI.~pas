@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT API Interface Unit v3.0                                             }
 {                                                                         }
-{ Copyright (c) 2011-2013 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
 { *********************************************************************** }
 
@@ -19,7 +19,6 @@ const
   LOGO_DIR = '\System32\OEMLOGO.bmp';
   INFO_DIR = '\System32\OEMINFO.ini';
   URL_BASE = 'http://www.pm-codeworks.de/';
-  URL_DIR = URL_BASE +'media/';
   URL_CONTACT = URL_BASE +'kontakt.html';
 
   INFO_ICON = 'Logo';
@@ -31,158 +30,85 @@ const
   INFO_GENERAL = 'General';
 
 type
-  { Exception class }
-  ESitError = class(Exception);
-
-  { Base class }
-  TBaseSupportInfo = class(TWinWOW64)
+  { Support information base class }
+  TSupportInformationBase = class(TWinUtils)
   private
-    FMan, FModel, FPhone, FHours, FUrl, FIcon: string;
-    procedure SetHours(AHours: string);
-    procedure SetIcon(AIcon: string);
-    procedure SetMan(AMan: string);
-    procedure SetModel(AModel: string);
-    procedure SetPhone(APhone: string);
-    procedure SetURL(AUrl: string);
-  protected
-    function DelPathIndicator(AName: string): string;
+    FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
   public
-    constructor Create(ALoad: Boolean = false); overload;
-    constructor Create(AHours, AIcon, AMan, AModel, APhone, AUrl: string); overload;
-    procedure Clear;
-    function DataExists: Boolean; virtual; abstract;
-    function Delete: Boolean; virtual; abstract;
-    function DeleteIcon: Boolean; virtual; abstract;
-    function GetOEMLogo: string; virtual; abstract;
-    procedure LoadFromIni(const AFileName: string);
-    procedure LoadFromReg(const AFileName: string);
-    procedure Load; virtual; abstract;
-    procedure Save; virtual; abstract;
-    procedure SaveAsIni(AObject: TBaseSupportInfo; const AFilename: string);
-    procedure SaveAsReg(AObject: TBaseSupportInfo; const AFilename: string);
+    constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
+    procedure Clear();
+    function DeleteIcon(): Boolean; virtual; abstract;
+    function Exists(): Boolean; virtual; abstract;
+    function GetOEMLogo(): string; virtual; abstract;
+    procedure Load(); virtual; abstract;
+    procedure LoadFromIni(const AFilename: string);
+    function Remove(): Boolean; virtual; abstract;
+    procedure Save(); virtual; abstract;
+    procedure SaveAsIni(const AFilename: string);
     procedure Show(AHandle: HWND); virtual; abstract;
     { external }
-    property Hours: string read FHours write SetHours;
-    property Icon: string read FIcon write SetIcon;
-    property Man: string read FMan write SetMan;
-    property Model: string read FModel write SetModel;
-    property Phone: string read FPhone write SetPhone;
-    property Url: string read FUrl write SetURL;
+    property Hours: string read FHours write FHours;
+    property Icon: string read FIcon write FIcon;
+    property Manufacturer: string read FMan write FMan;
+    property Model: string read FModel write FModel;
+    property Url: string read FUrl write FUrl;
+    property Phone: string read FPhone write FPhone;    
   end;
 
-  { class for Windows >= 2000 }
-  TSupportReg = class(TBaseSupportInfo)
+  { Support information class >= Windows Vista }
+  TSupportInformation = class(TSupportInformationBase)
   public
-    function DataExists: Boolean; override;
-    function Delete: Boolean; override;
-    function DeleteIcon: Boolean; override;
-    function GetOEMLogo: string; override;
-    procedure Load; override;
-    procedure Save; overload; override;
+    function DeleteIcon(): Boolean; override;
+    function Exists(): Boolean; override;
+    function GetOEMLogo(): string; override;
+    procedure Load(); override;
+    procedure LoadFromReg(const AFilename: string);
+    function Remove(): Boolean; override;
+    procedure SaveAsReg(const AFilename: string);
+    procedure Save(); override;
     procedure Show(AHandle: HWND); override;
   end;
 
-  { class for Windows < Vista }
-  TSupportIni = class(TBaseSupportInfo)
+  { Support information class >= Windows 2000 }
+  TSupportInformationXP = class(TSupportInformationBase)
   private
-    function GetOEMInfo: string;
+    function GetOEMInfo(): string;
   public
-    function DataExists: Boolean; override;
-    function Delete: Boolean; override;
-    function DeleteIcon: Boolean; override;
-    function GetOEMLogo: string; override;
-    procedure Load; override;
-    procedure Save; overload; override;
+    function DeleteIcon(): Boolean; override;
+    function Exists(): Boolean; override;
+    function GetOEMLogo(): string; override;
+    procedure Load(); override;
+    function Remove(): Boolean; override;
+    procedure Save(); override;
     procedure Show(AHandle: HWND); override;
-  end;
-
-  { App class }
-  TSit = class(TWinUtils)
-  private
-    FLangID: Word;
-  public
-    constructor Create(ALangID: Word = 100);
-    class procedure CreateError(AMsgTypeID, AContentID: Word); overload;
-    class procedure CreateError(AMsgType: string; AContentID: Word); overload;
-    class function GetBuildNumber: Integer;                     //not by me
-    class function GetString(const AIndex: Word): string;
-    { external }
-    property LangID: Word read FLangID write FLangID;
   end;
 
 
 implementation
 
-uses SITMain;
+{ TSupportInformationBase }
 
-{ TBaseSupportInfo }
+{ public TSupportInformationBase.Create
 
-constructor TBaseSupportInfo.Create(ALoad: Boolean = false);
+  General constructor for creating a TSupportInformationBase instance. }
+  
+constructor TSupportInformationBase.Create(AIcon, AMan, AModel, AUrl, APhone,
+  AHours: string);
 begin
   inherited Create;
-
-  if not ALoad then
-     Clear
-  else
-     Load;
-end;
-
-
-constructor TBaseSupportInfo.Create(AHours, AIcon, AMan, AModel, APhone, AUrl: string);
-begin
-  inherited Create;
-  FHours := AHours;
   FIcon := AIcon;
   FMan := AMan;
   FModel := AModel;
-  FPhone := APhone;
   FUrl := AUrl;
-end;
-
-{ private }
-procedure TBaseSupportInfo.SetHours(AHours: string);
-begin
+  FPhone := APhone;
   FHours := AHours;
 end;
 
+{ public TSupportInformationBase.Clear
 
-procedure TBaseSupportInfo.SetIcon(AIcon: string);
-begin
-  FIcon := AIcon;
-end;
+  Clears the entered support information. }
 
-
-procedure TBaseSupportInfo.SetMan(AMan: string);
-begin
-  FMan := AMan;
-end;
-
-
-procedure TBaseSupportInfo.SetModel(AModel: string);
-begin
-  FModel := AModel;
-end;
-
-
-procedure TBaseSupportInfo.SetPhone(APhone: string);
-begin
-  FPhone := APhone;
-end;
-
-
-procedure TBaseSupportInfo.SetURL(AUrl: string);
-begin
-  FUrl := AUrl;
-end;
-
-{ protected }
-function TBaseSupportInfo.DelPathIndicator(AName: string): string;
-begin
-  result := StringReplace(AName, '"', '', [rfReplaceAll]);
-end;
-
-{ public }
-procedure TBaseSupportInfo.Clear;
+procedure TSupportInformationBase.Clear;
 begin
   FHours := '';
   FIcon := '';
@@ -192,17 +118,20 @@ begin
   FUrl := '';
 end;
 
+{ public TSupportInformationBase.LoadFromIni
 
-procedure TBaseSupportInfo.LoadFromIni(const AFileName: string);
+  Loads a TSupportInformationBase object from an *.ini file. }
+
+procedure TSupportInformationBase.LoadFromIni(const AFilename: string);
 var
   ini: TIniFile;
 
 begin
-  ini := TIniFile.Create(AFileName);                 //init Ini Datei
+  ini := TIniFile.Create(AFileName);
 
   try
     with ini do
-    begin                                            //aus ini lesen
+    begin
       FIcon := ReadString(INFO_ICON, INFO_ICON, '');
       FMan := ReadString(INFO_GENERAL, INFO_MAN, '');
       FModel := ReadString(INFO_GENERAL, INFO_MODEL, '');
@@ -212,21 +141,160 @@ begin
     end;  //of with
 
   finally
-    ini.Free;                                        //freigeben
+    ini.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformationBase.SaveAsIni
+
+  Saves a TSupportInformationBase object as an *.ini file. }
+
+procedure TSupportInformationBase.SaveAsIni(const AFilename: string);
+var
+  ext: string;
+  ini: TIniFile;
+  
+begin
+  if (ExtractFileExt(AFileName) = '') then
+    ext := '.ini'
+  else
+    ext := '';
+      
+  ini := TIniFile.Create(AFileName + ext);
+
+  try
+    with ini do
+    begin
+      WriteString(INFO_ICON, INFO_ICON, FIcon);
+      WriteString(INFO_GENERAL, INFO_MAN, FMan);
+      WriteString(INFO_GENERAL, INFO_MODEL, FModel);
+      WriteString(INFO_GENERAL, INFO_URL, FUrl);
+      WriteString(SUPPORT_INFO, INFO_PHONE, FPhone);
+      WriteString(SUPPORT_INFO, INFO_HOURS, FHours);
+    end;  //of with
+
+  finally
+    ini.Free;
   end;  //of finally
 end;
 
 
-procedure TBaseSupportInfo.LoadFromReg(const AFileName: string);  //als *.reg speichern
+{ TSupportInformation }
+
+{ public TSupportInformation.DeleteIcon
+
+  Deletes the support information icon if exists. }
+
+function TSupportInformation.DeleteIcon(): Boolean;
+begin
+  result := DeleteFile(GetOEMLogo());
+end;
+
+{ public TSupportInformation.Exists
+
+  Checks if any support information exist. }
+  
+function TSupportInformation.Exists(): Boolean;
+var
+  reg: TRegistry;
+
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, True);
+    result := (reg.ValueExists(INFO_ICON) or reg.ValueExists(INFO_MAN) or
+               reg.ValueExists(INFO_MODEL) or reg.ValueExists(INFO_PHONE) or
+               reg.ValueExists(INFO_HOURS) or reg.ValueExists(INFO_URL));
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.GetOEMLogo
+
+  Returns path to support information logo. }
+
+function TSupportInformation.GetOEMLogo(): string;
+var
+  reg: TRegistry;
+
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, False);
+
+    if reg.ValueExists(INFO_ICON) then
+      result := reg.ReadString(INFO_ICON)
+    else
+      result := '';
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.Load
+
+  Loads fresh support information. }
+
+procedure TSupportInformation.Load();
+var
+  reg: TRegistry;
+
+  function ReadValue(AValueName: string): string;
+  begin
+    if reg.ValueExists(AValueName) then
+      result := reg.ReadString(AValueName)
+    else
+      result := '';
+  end;
+  
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, True);
+
+    FIcon := ReadValue(INFO_ICON);
+    FHours := ReadValue(INFO_HOURS);
+    FMan := ReadValue(INFO_MAN);
+    FModel := ReadValue(INFO_MODEL);
+    FPhone := ReadValue(INFO_PHONE);
+    FUrl := ReadValue(INFO_URL);   
+    
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.LoadFromReg
+
+  Loads a TSupportInformation object from a *.reg file. }
+
+procedure TSupportInformation.LoadFromReg(const AFilename: string);
 var
   regFile: TStringList;
   icon: string;
 
+  function DelPathIndicator(AName: string): string;
+  begin
+    result := StringReplace(AName, '"', '', [rfReplaceAll]);
+  end;
+
 begin
-  regFile := TStringList.Create;                   //init regFile
+  regFile := TStringList.Create;
 
   try
-    regFile.LoadFromFile(AFileName);               //Dateiimport
+    regFile.LoadFromFile(AFilename);
     icon := StringReplace(regFile.Values['"'+INFO_ICON+'"'], '\\', '\', [rfReplaceAll]);
     FIcon := DelPathIndicator(icon);
     FMan := DelPathIndicator(regFile.Values['"'+INFO_MAN+'"']);
@@ -236,42 +304,83 @@ begin
     FUrl := DelPathIndicator(regFile.Values['"'+INFO_URL+'"']);
 
   finally
-    regFile.Free;                                  //freigeben
-  end; //of finally
+    regFile.Free;
+  end;  //of finally
 end;
 
+{ public TSupportInformation.Remove
 
-procedure TBaseSupportInfo.SaveAsIni(AObject: TBaseSupportInfo; const AFilename: string);  //als *.ini speichern
+  Removes support information from the Windows Registry. }
+
+function TSupportInformation.Remove(): Boolean;
 var
-  ini: TIniFile;
-  ext: string;
+  reg: TRegistry;
 
 begin
-  if (ExtractFileExt(AFileName) = '') then
-     ext := '.ini'
-  else
-     ext := '';
+  reg := TRegistry.Create(SetKeyAccessMode());
 
-  ini := TIniFile.Create(AFileName + ext);           //init Ini Datei
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey('SOFTWARE\Microsoft\Windows\CurrentVersion', True);
+    result := reg.DeleteKey('OEMInformation');
 
-  with ini do
-  try                                                //Name + Wert speichern
-    WriteString(INFO_ICON, INFO_ICON, AObject.Icon);
-    WriteString(INFO_GENERAL, INFO_MAN, AObject.Man);
-    WriteString(INFO_GENERAL, INFO_MODEL, AObject.Model);
-    WriteString(INFO_GENERAL, INFO_URL, AObject.Url);
-    WriteString(SUPPORT_INFO, INFO_PHONE, AObject.Phone);
-    WriteString(SUPPORT_INFO, INFO_HOURS, AObject.Hours);
-
-  except
-    TSit.CreateError(TSit.GetString(47) + ExtractFileName(AFilename), 51);
-  end;  //of except
-
-  ini.Free;
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
 end;
 
+{ public TSupportInformation.Save
 
-procedure TBaseSupportInfo.SaveAsReg(AObject: TBaseSupportInfo; const AFilename: string); //als REG Datei speichern
+  Commits changes on support information. }
+
+procedure TSupportInformation.Save();
+var
+  reg: TRegistry;
+
+  procedure WriteValue(AValueName, AValue: string);
+  begin
+    if (AValue <> '') then
+      reg.WriteString(AValueName, AValue)
+    else
+      if reg.ValueExists(AValueName) then
+        reg.DeleteValue(AValueName);
+  end;
+
+begin
+  reg := TRegistry.Create(SetKeyAccessMode());
+
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg.OpenKey(OEMINFO_KEY, True);
+
+    WriteValue(INFO_HOURS, FHours);
+    WriteValue(INFO_ICON, FIcon);
+    WriteValue(INFO_MAN, FMan);
+    WriteValue(INFO_MODEL, FModel);
+    WriteValue(INFO_PHONE, FPhone);
+    WriteValue(INFO_URL, FUrl);
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of finally
+end;
+
+{ public TSupportInformation.Show
+
+  Shows Windows system properties. }
+
+procedure TSupportInformation.Show(AHandle: HWND);
+begin
+  ShellExecute(AHandle, nil, 'control', 'system', nil, SW_SHOWNORMAL);
+end;
+
+{ public TSupportInformation.SaveAsReg
+
+  Saves a TSupportInformation object as a *.reg file. }  
+
+procedure TSupportInformation.SaveAsReg(const AFilename: string);
 var
   regFile: TStringList;
   path, ext: string;
@@ -279,355 +388,138 @@ var
   procedure AppendToFile(AName, AValue: string);
   begin
     if (AValue <> '') then
-       regFile.Append('"'+ AName +'"="'+ AValue +'"');
+      regFile.Append('"'+ AName +'"="'+ AValue +'"');
   end;
-
+  
 begin
-  ext := '';
-  regFile := TStringList.Create;                     //init Liste
+  regFile := TStringList.Create;
+  regFile.Append('Windows Registry Editor Version 5.00');
+  regFile.Append('');
+  regFile.Append('[HKEY_LOCAL_MACHINE\'+ OEMINFO_KEY +']');
 
   try
-    regFile.Append('Windows Registry Editor Version 5.00');
-    regFile.Append('');
-    regFile.Append('[HKEY_LOCAL_MACHINE\'+ OEMINFO_KEY +']');
-                                                     //Daten auslesen
-    path := StringReplace(AObject.Icon, '\', '\\', [rfReplaceAll]);
+    path := StringReplace(FIcon, '\', '\\', [rfReplaceAll]);
     AppendToFile(INFO_ICON, path);
-    AppendToFile(INFO_MAN, AObject.Man);
-    AppendToFile(INFO_MODEL, AObject.Model);
-    AppendToFile(INFO_PHONE, AObject.Phone);
-    AppendToFile(INFO_HOURS, AObject.Hours);
-    AppendToFile(INFO_URL, AObject.Url);
+    AppendToFile(INFO_MAN, FMan);
+    AppendToFile(INFO_MODEL, FModel);
+    AppendToFile(INFO_PHONE, FPhone);
+    AppendToFile(INFO_HOURS, FHours);
+    AppendToFile(INFO_URL, FUrl);
 
     if (ExtractFileExt(AFileName) = '') then
-       ext := '.reg';
-
-    regFile.SaveToFile(AFilename + ext);             //Datei speichern
-
-  except
-    TSit.CreateError(TSit.GetString(47) + ExtractFileName(AFilename), 51);
-  end;  //of except
-
-  regFile.Free;
-end;
-{ of TBaseSupportInfo }
-
-{##############################################################################}
-{ TSupportReg }
-
-function TSupportReg.DataExists: Boolean;
-var
-  reg: TRegistry;
-
-begin
-  reg := TRegistry.Create(SetKeyAccessMode);      //init reg
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, true);              //RegKey öffnen
-    result := (reg.ValueExists(INFO_ICON) or reg.ValueExists(INFO_MAN) or
-               reg.ValueExists(INFO_MODEL) or reg.ValueExists(INFO_PHONE) or
-               reg.ValueExists(INFO_HOURS) or reg.ValueExists(INFO_URL));
-    reg.CloseKey;
-
-  finally
-    reg.Free;
-  end;  //of finally
-end;
-
-
-function TSupportReg.Delete: Boolean;                     //REG Einträge löschen
-var
-  reg: TRegistry;
-
-begin
-  reg := TRegistry.Create(SetKeyAccessMode);      //init von reg mit setzen der Rechte
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;            //HKEY öffnen
-    reg.OpenKey(OEMINFO_KEY, false);              //SubKey öffnen
-
-    reg.DeleteValue(INFO_Hours);                  //Werte löschen
-    reg.DeleteValue(INFO_ICON);
-    reg.DeleteValue(INFO_MAN);
-    reg.DeleteValue(INFO_MODEL);
-    reg.DeleteValue(INFO_PHONE);
-    reg.DeleteValue(INFO_URL);
-    result := true;
-
-  except                                          //freigeben
-    result := false;
-  end; //of except
-
-  reg.Free;
-end;
-
-
-function TSupportReg.DeleteIcon: Boolean;                         //Logo löschen
-var
-  reg: TRegistry;
-
-begin
-  reg := TRegistry.Create(SetKeyAccessMode);      //init von reg mit setzen der Rechte
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;            //HKEY öffnen
-    reg.OpenKey(OEMINFO_KEY, false);              //SubKey öffnen
-    result := DeleteFile(reg.ReadString(INFO_ICON));  //Logo löschen
-                                                                        
-  finally                                         //freigeben
-    reg.Free;
-  end; //of finally
-end;
-
-
-function TSupportReg.GetOEMLogo: string;      //Absoluter Pfad zum Logo auslesen
-var
-  reg: TRegistry;
-
-begin
-  reg := TRegistry.Create(SetKeyAccessMode);      //init reg
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, false);              //RegKey öffnen
-    result := reg.ReadString(INFO_ICON);          //Logo-Pfad auslesen
-
-  finally
-    reg.Free;
-  end;  //of finally
-end;
-
-
-procedure TSupportReg.Load;                                        //Daten laden
-var
-  reg: TRegistry;
-
-begin
-  Clear;                                          //Daten löschen
-  reg := TRegistry.Create(SetKeyAccessMode);      //init von reg mit setzen der Rechte
-
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;            //HKEY öffnen
-    reg.OpenKey(OEMINFO_KEY, false);              //SubKey öffnen
-
-    FHours := reg.ReadString(INFO_HOURS);         //Daten lesen
-    FMan := reg.ReadString(INFO_MAN);
-    FModel := reg.ReadString(INFO_MODEL);
-    FPhone := reg.ReadString(INFO_PHONE);
-    FUrl := reg.ReadString(INFO_URL);
-    FIcon := reg.ReadString(INFO_ICON);
-
-    {if FileExists(icon) then
-       FIcon := icon
+      ext := '.reg'
     else
-       FIcon := '';   }
+      ext := '';
+       
+    regFile.SaveToFile(AFilename + ext);
 
-  finally                                         //freigeben
-    reg.Free;
-  end; //of finally
+  finally
+    regFile.Free;
+  end;  //of finally
 end;
 
 
-procedure TSupportReg.Save;                                    //Daten speichern
-var
-  reg: TRegistry;
+{ TSupportInformationXP }
 
-  procedure Write(AName, AValue: string);
+{ private TSupportInformationXP.GetOEMInfo
+
+  Returns path to OEMINFO.ini }
+
+function TSupportInformationXP.GetOEMInfo(): string;
+begin
+  ChangeFSRedirection(True);                
+  result := GetWinDir() + INFO_DIR;
+  ChangeFSRedirection(False);
+end;
+
+{ public TSupportInformationXP.DeleteIcon
+
+  Deletes the OEMLOGO.bmp if exists and changes OEMINFO.ini }
+
+function TSupportInformationXP.DeleteIcon(): Boolean;
+var
+  ini: TIniFile;
+
+begin
+  if DeleteFile(GetOemLogo()) then
   begin
-    if (AValue <> '') then
-       reg.WriteString(AName, AValue);
-  end;
+    // OEMINFO.ini exists?
+    if not FileExists(GetOemInfo()) then
+    begin
+      result := True;
+      Exit;
+    end;  //of begin
 
-begin
-  reg := TRegistry.Create(SetKeyAccessMode);      //init von reg mit setzen der Rechte
+    // Delete logo path from *.ini file
+    ini := TIniFile.Create(GetOemInfo());
 
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;            //HKEY öffnen
-    reg.OpenKey(OEMINFO_KEY, true);               //SubKey öffnen
-
-    Write(INFO_HOURS, FHours);                    //Daten speichern
-    Write(INFO_ICON, FIcon);
-    Write(INFO_MAN, FMan);
-    Write(INFO_MODEL, FModel);
-    Write(INFO_PHONE, FPhone);
-    Write(INFO_URL, FUrl);
-
-  finally                                         //freigeben
-    reg.Free;
-  end; //of finally
+    try
+      ini.DeleteKey('Logo', 'Logo');
+      
+    finally
+      ini.Free;
+    end;  //of finally    
+  end;  //of begin  
 end;
 
+{ public TSupportInformationXP.Exists
 
-procedure TSupportReg.Show(AHandle: HWND);        //Systemeigenschaften anzeigen
+  Checks if any support information exist. }
+  
+function TSupportInformationXP.Exists(): Boolean;
 begin
-  ShellExecute(AHandle, nil, 'control', 'system', nil, SW_SHOWNORMAL);
-end;
-{ of TSupportReg }
-
-{##############################################################################}
-{ TSupportIni }
-
-function TSupportIni.GetOEMInfo: string;        //Absoluter Pfad zur OEMINFO.ini
-begin
-  result := TWinUtils.GetWinDir + INFO_DIR;
+  result := FileExists(GetOemInfo()) or FileExists(GetOemLogo());
 end;
 
-{ public }
-function TSupportIni.DataExists: Boolean;
+{ public TSupportInformationXP.GetOEMLogo
+
+  Returns path to support information logo. }
+
+function TSupportInformationXP.GetOEMLogo(): string;
 begin
-  result := FileExists(GetOEMInfo);
+  ChangeFSRedirection(True);
+  result := GetWinDir() + LOGO_DIR;
+  ChangeFSRedirection(False);
 end;
 
+{ public TSupportInformationXP.Load
 
-function TSupportIni.Delete: Boolean;                      //OEMINFO.ini löschen
+  Loads fresh support information. }
+
+procedure TSupportInformationXP.Load();
 begin
-  result := DeleteFile(GetOEMInfo);
+  LoadFromIni(GetOEMInfo());
 end;
 
+{ public TSupportInformation.Remove
 
-function TSupportIni.DeleteIcon: Boolean;                  //OEMLOGO.bmp löschen
+  Removes support information. }
+
+function TSupportInformationXP.Remove(): Boolean;
 begin
-  result := DeleteFile(GetOEMLogo);
+  result := DeleteFile(GetOEMInfo());
 end;
 
+{ public TSupportInformationXP.Save
 
-function TSupportIni.GetOEMLogo: string;        //Absoluter Pfad zum OEMLOGO.bmp
+  Commits changes on support information. }
+
+procedure TSupportInformationXP.Save();
 begin
-  result := TWinUtils.GetWinDir + LOGO_DIR;
+  SaveAsIni(GetOemInfo());
+
+  // Copy logo if exists
+  if FileExists(FIcon) then
+    CopyFile(PChar(FIcon), PChar(GetOemLogo()), False);
 end;
 
+{ public TSupportInformationXP.Show
 
-procedure TSupportIni.Load;                                        //Daten laden
-var
-  ini: TIniFile;
+  Shows Windows system properties. }
 
-begin
-  if not DataExists then                             //nur laden, wenn OEMINFO.ini existiert
-     Exit;
-
-  Clear;                                             //Daten löschen
-  ini := TIniFile.Create(GetOEMInfo);                //init Ini Datei
-
-  with ini do
-  try                                                //Daten lesen
-    if FileExists(GetOEMLogo) then                   //existiert Logo?
-       FIcon := GetOEMLogo;
-
-    FPhone := ReadString(SUPPORT_INFO, 'Line3', ''); //Daten lesen
-    FHours := ReadString(SUPPORT_INFO, 'Line4', '');
-    FMan := ReadString(INFO_GENERAL, INFO_MAN, '');
-    FModel := ReadString(INFO_GENERAL, INFO_MODEL, '');
-    FUrl := ReadString(INFO_GENERAL, INFO_URL, '');
-
-  finally                                            //freigeben
-    ini.Free;
-  end; //of finally
-end;
-
-
-procedure TSupportIni.Save;                                    //Daten speichern
-var
-  ini: TIniFile;
-
-begin
-  ini := TIniFile.Create(GetOEMInfo);                //init Ini Datei
-
-  with ini do
-  try                                                //Name + Wert speichern
-    if FileExists(FIcon) then
-       CopyFile(PChar(FIcon), PChar(GetOEMLogo), false);
-
-    WriteString(INFO_GENERAL, INFO_MAN, FMan);
-    WriteString(INFO_GENERAL, INFO_MODEL, FModel);
-    WriteString(INFO_GENERAL, INFO_URL, FUrl);
-    WriteString(SUPPORT_INFO, 'Line1', FMan);
-    WriteString(SUPPORT_INFO, 'Line2', FModel);
-    WriteString(SUPPORT_INFO, 'Line3', FPhone);
-    WriteString(SUPPORT_INFO, 'Line4', FHours);
-    WriteString(SUPPORT_INFO, 'Line5', FUrl);
-
-  except
-    TSit.CreateError(TSit.GetString(47) + GetOEMLogo, 51);
-  end;  //of except
-
-  ini.Free;
-end;
-
-
-procedure TSupportIni.Show(AHandle: HWND);        //Systemeigenschaften anzeigen
+procedure TSupportInformationXP.Show(AHandle: HWND);
 begin
   ShellExecute(AHandle, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
 end;
-
-{ of TSupportIni }
-
-{##############################################################################}
-
-constructor TSit.Create(ALangID: Word = 100);
-begin
-  inherited Create;
-  FLangID := ALangID;
-end;
-
-{ public }
-class procedure TSit.CreateError(AMsgTypeID, AContentID: Word);
-begin
-  raise ESitError.Create(GetString(AMsgTypeID) + GetString(48) +^J+ GetString(49)
-                        + GetString(AContentID));
-end;
-
-
-class procedure TSit.CreateError(AMsgType: string; AContentID: Word);
-begin
-  raise ESitError.Create(AMsgType + GetString(48) +^J+ GetString(49)
-                        + GetString(AContentID));
-end;
-
-
-class function TSit.GetBuildNumber: Integer;
-var
-  VerInfoSize, VerValueSize, Dummy: DWord;
-  VerInfo: Pointer;
-  VerValue: PVSFixedFileInfo;
-
-begin
-  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
-
-  if VerInfoSize <> 0 then
-     begin
-     GetMem(VerInfo, VerInfoSize);
-
-       try
-         GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
-
-         if VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize) then
-            with VerValue^ do
-              result := dwFileVersionLS and $FFFF
-         else
-            result := 0;
-
-       finally
-         FreeMem(VerInfo, VerInfoSize);
-       end;   //of finally
-     end  //of begin
-  else
-     result := 0;
-end;
-
-
-class function TSit.GetString(const AIndex: Word): string;   //Zugriff auf Stringtable
-var
-  Buffer : array[0..75] of char;
-  ls : integer;
-
-begin
-  result := '';
-  ls := LoadString(hInstance, AIndex + Form1.LangID, Buffer, SizeOf(buffer));  //String laden
-
-  if (ls <> 0) then
-     result := Buffer;
-end;
-{ of TSit }
 
 end.

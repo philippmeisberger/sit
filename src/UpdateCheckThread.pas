@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Update Check Thread v2.0                                  }
+{ PM Code Works Update Check Thread v2.1                                  }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -32,7 +32,7 @@ type
     FOnNoUpdate: TOnNoUpdateAvailableEvent;
     FOnError: TOnErrorEvent;
     FCurBuild, FNewBuild: Cardinal;
-    FProjectFolderName: string;
+    FRemoteDirName: string;
     { Synchronized events }
     procedure DoNotifyOnError;
     procedure DoNotifyOnNoUpdate;
@@ -40,7 +40,7 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(ACurrentBuild: Cardinal; AProjectFolderName: string;
+    constructor Create(ACurrentBuild: Cardinal; ARemoteDirName: string;
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
     { Externalized events }
@@ -58,7 +58,7 @@ implementation
   Constructor for creating a TUpdateCheckThread instance. }
 
 constructor TUpdateCheckThread.Create(ACurrentBuild: Cardinal;
-  AProjectFolderName: string; ACreateSuspended: Boolean = True);
+  ARemoteDirName: string; ACreateSuspended: Boolean = True);
 begin
   inherited Create(ACreateSuspended);
   
@@ -66,7 +66,7 @@ begin
   FreeOnTerminate := True;
 
   FCurBuild := ACurrentBuild;
-  FProjectFolderName := AProjectFolderName;
+  FRemoteDirName := ARemoteDirName;
   
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
@@ -93,23 +93,23 @@ var
 begin
   try
     // Download version file for application
-    VersionUrl := URL_DIR + FProjectFolderName +'/version.txt';
+    VersionUrl := URL_DIR + FRemoteDirName +'/version.txt';
     FNewBuild := StrToInt(FHttp.Get(VersionUrl));
 
     // Check if downloaded version is newer than current version
     if (FNewBuild > FCurBuild) then
     // Notify "update available"
     {$IFDEF MSWINDOWS}
-       Synchronize(DoNotifyOnUpdate)
+      Synchronize(DoNotifyOnUpdate)
     {$ELSE}
-       Synchronize(@DoNotifyOnUpdate)
+      Synchronize(@DoNotifyOnUpdate)
     {$ENDIF}
     else
     // Notify "no update available"
     {$IFDEF MSWINDOWS}
-       Synchronize(DoNotifyOnNoUpdate);
+      Synchronize(DoNotifyOnNoUpdate);
     {$ELSE}
-       Synchronize(@DoNotifyOnNoUpdate);
+      Synchronize(@DoNotifyOnNoUpdate);
     {$ENDIF}
 
   except
@@ -129,7 +129,7 @@ end;
 procedure TUpdateCheckThread.DoNotifyOnError;
 begin
   if Assigned(OnError) then
-     OnError(Self);
+    OnError(Self);
 end;
 
 { private TDownloadThread.DoNotifyOnNoUpdate
@@ -139,7 +139,7 @@ end;
 procedure TUpdateCheckThread.DoNotifyOnNoUpdate;
 begin
   if Assigned(OnNoUpdate) then
-     OnNoUpdate(Self);
+    OnNoUpdate(Self);
 end;
 
 { private TDownloadThread.DoNotifyOnNoUpdate
@@ -150,7 +150,7 @@ end;
 procedure TUpdateCheckThread.DoNotifyOnUpdate;
 begin
   if Assigned(OnUpdate) then
-     OnUpdate(Self, FNewBuild);
+    OnUpdate(Self, FNewBuild);
 end;
 
 end.

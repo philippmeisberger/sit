@@ -95,6 +95,8 @@ type
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
+    procedure OnDownloadFinished(Sender: TObject; AFileName: string);
+    procedure OnUpdate(Sender: TObject; AGranted: Boolean);
     function OpenLogo(): Boolean;
     procedure Refresh;
     procedure SetLanguage(ALangID: Word);
@@ -153,6 +155,34 @@ begin
     SupportInfo := nil;
     saveDialog.Free;
   end;  //of finally
+end;
+
+{ private TMain.OnDownloadFinished
+
+  Event method that is called by TUpdate when download is finished. }
+
+procedure TMain.OnDownloadFinished(Sender: TObject; AFileName: string);
+begin
+  if (ExtractFileExt(AFileName) <> '.reg') then
+  begin
+    // Caption "Search for update"
+    mmUpdate.Caption := FLang.GetString(11);
+    mmUpdate.Enabled := False;
+  end  //of begin
+  else
+    mmDownloadCert.Enabled := False;
+end;
+
+{ private TMain.OnUpdate
+
+  Event that is called by TUpdateCheck when an update is available and user is
+  asked for downloading. Answer of user is in AGranted. }
+
+procedure TMain.OnUpdate(Sender: TObject; AGranted: Boolean);
+begin
+  if AGranted then
+    with TUpdate.Create(Self, FLang, FLang.GetString(61)) do
+      Download('sit.exe', 'SIT.exe');
 end;
 
 { private TMain.OpenLogo
@@ -285,7 +315,8 @@ begin
   FLang := TLanguageFile.Create(100, Application);
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create(Self, FLang);
+  FUpdateCheck := TUpdateCheck.Create('Sit', FLang);
+  FUpdateCheck.OnUpdate := OnUpdate;
 
   // Init support information instance
   if TSupportInformationBase.CheckWindows() then
@@ -610,7 +641,10 @@ begin
      + FLang.GetString(72), mtQuestion) = IDYES)) then
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(8)) do
-       Download(dtCert);
+     begin
+       DownloadCertificate();
+       OnUpdateFinish := OnDownloadFinished;
+     end;  //of with
 end;
 
 { TMain.mmUpdateClick

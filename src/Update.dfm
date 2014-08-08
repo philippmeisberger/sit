@@ -1,7 +1,7 @@
-object TUpdate: Update
+object Update: TUpdate
   Left = 525
   Top = 308
-  BorderIcons = []
+  BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
   Caption = 'Update'
   ClientHeight = 110
@@ -14,8 +14,7 @@ object TUpdate: Update
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
-  OnActivate = FormActivate
-  OnCreate = FormCreate
+  OnCloseQuery = FormCloseQuery
   PixelsPerInch = 96
   TextHeight = 14
   object iBack: TImage

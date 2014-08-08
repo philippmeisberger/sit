@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Update Thread v2.0 (for Indy 9)                           }
+{ PM Code Works Cross Plattform Update Thread v2.1                        }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -11,12 +11,14 @@ unit DownloadThread;
 interface
 
 uses
-  Classes, IdException, IdComponent, IdHTTP, SysUtils;
+  Classes, SysUtils, IdException, IdComponent, IdHTTP;
 
 type
   { Thread events }
-  TOnDownloadStartEvent = procedure(Sender: TThread; const AFileSize: Integer) of object;
-  TOnDownloadingEvent = procedure(Sender: TThread; const ADownloadSize: Integer) of object;
+  TOnDownloadStartEvent = procedure(Sender: TThread;
+    const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
+  TOnDownloadingEvent = procedure(Sender: TThread;
+    const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
   TOnDownloadFinishEvent = procedure(Sender: TThread) of object;
   TOnDownloadCancelEvent = procedure(Sender: TThread) of object;
   TOnDownloadErrorEvent = procedure(Sender: TThread; AResponseCode: Integer) of object;
@@ -30,7 +32,8 @@ type
     FOnFinish: TOnDownloadFinishEvent;
     FOnError: TOnDownloadErrorEvent;
     FOnCancel: TOnDownloadCancelEvent;
-    FFileSize, FDownloadSize, FResponseCode: Integer;
+    FFileSize, FDownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF};
+    FResponseCode: Integer;
     FFileName, FUrl: string;
     { Synchronized events }
     procedure DoNotifyOnCancel;
@@ -45,9 +48,9 @@ type
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
     procedure Downloading(Sender: TObject; AWorkMode: TWorkMode;
-      const ADownloadSize: Integer);
+      const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
     procedure DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
-      const AFileSize: Integer);
+      const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
     function GetUniqueFileName(const AFileName: string): string;
     procedure OnUserCancel(Sender: TObject);
     { Externalized events }
@@ -87,8 +90,13 @@ begin
   // Link HTTP events
   with FHttp do
   begin
+  {$IFDEF MSWINDOWS}
     OnWorkBegin := DownloadStart;
     OnWork := Downloading;
+  {$ELSE}
+    OnWorkBegin := @DownloadStart;
+    OnWork := @Downloading;
+  {$ENDIF}
   end;  //of begin
 end;
 
@@ -126,19 +134,33 @@ begin
 
     // Check if download was successful?
     if (FResponseCode = 200) then
-       Synchronize(DoNotifyOnFinish);
+    {$IFDEF MSWINDOWS}
+      Synchronize(DoNotifyOnFinish);
+    {$ELSE}
+      Synchronize(@DoNotifyOnFinish);
+    {$ENDIF}       
 
   except
     on E: EAbort do
     begin
       DeleteFile(FFileName);
+
+    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnCancel);
+    {$ELSE}
+      Synchronize(@DoNotifyOnCancel);
+    {$ENDIF}
     end;  //of begin
 
     on E: Exception do
     begin
       DeleteFile(FFileName);
+
+    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnError);
+    {$ELSE}
+      Synchronize(@DoNotifyOnError);
+    {$ENDIF}
     end;  //of begin
   end;  //of try
 end;
@@ -146,36 +168,46 @@ end;
 { public TDownloadThread.DownloadStart
 
   Event that is called by TIdHttp when download starts. }
-  
+
 procedure TDownloadThread.DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
-  const AFileSize: Integer);
+  const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
 begin
   // Convert Byte into Kilobyte (KB = Byte/1024)
   FFileSize := AFileSize div 1024;
-  Synchronize(DoNotifyOnStart);
+
+  {$IFDEF MSWINDOWS}
+    Synchronize(DoNotifyOnStart);
+  {$ELSE}
+    Synchronize(@DoNotifyOnStart);
+  {$ENDIF}
 end;
 
 { public TDownloadThread.Downloading
 
   Event that is called by TIdHttp while download is in progress. }
-  
+
 procedure TDownloadThread.Downloading(Sender: TObject; AWorkMode: TWorkMode;
-  const ADownloadSize: Integer);
+  const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
 begin
   if (not Self.Terminated) then
-     begin
-     // Convert Byte into Kilobyte (KB = Byte/1024)
-     FDownloadSize := ADownloadSize div 1024;
-     Synchronize(DoNotifyOnDownloading);
-     end  //of begin
+  begin
+    // Convert Byte into Kilobyte (KB = Byte/1024)
+    FDownloadSize := ADownloadSize div 1024;
+
+  {$IFDEF MSWINDOWS}
+    Synchronize(DoNotifyOnDownloading);
+  {$ELSE}
+    Synchronize(@DoNotifyOnDownloading);
+  {$ENDIF}
+  end  //of begin
   else
-     Abort;
+    Abort;
 end;
 
 { public TDownloadThread.GetUniqueFileName
 
   Returns an unique file name to be sure downloading to an non-existing file. }
-     
+
 function TDownloadThread.GetUniqueFileName(const AFileName: string): string;
 var
   i: Word;
@@ -201,7 +233,7 @@ end;
 { public TDownloadThread.OnUserCancel
 
   Cancels downloading file if user clicks "cancel". }
-  
+
 procedure TDownloadThread.OnUserCancel(Sender: TObject);
 begin
   Terminate;

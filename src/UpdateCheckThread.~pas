@@ -1,38 +1,49 @@
 { *********************************************************************** }
 {                                                                         }
-{ Sit Update Check Thread v1.3                                            }
+{ PM Code Works Update Check Thread v2.1                                  }
 {                                                                         }
-{ Copyright (c) 2011-2012 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
 unit UpdateCheckThread;
 
+{$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
+
 interface
 
 uses
-  Classes, SysUtils, IdHTTP, SitAPI;
+  Classes, SysUtils, IdHTTP;
 
+const
+  URL_DIR = 'http://www.pm-codeworks.de/media/';
+  
 type
-  TOnUpdateAvailableEvent = procedure(Sender: TThread; const ANewBuild: integer) of object;
+  { Thread events }
+  TOnUpdateAvailableEvent = procedure(Sender: TThread; const ANewBuild: Cardinal) of object;
   TOnNoUpdateAvailableEvent = procedure(Sender: TThread) of object;
   TOnErrorEvent = procedure(Sender: TThread) of object;
 
+  { TUpdateCheckThread }
   TUpdateCheckThread = class(TThread)
   private
-    HTTP: TIdHTTP;
+    FHttp: TIdHTTP;
     FOnUpdate: TOnUpdateAvailableEvent;
     FOnNoUpdate: TOnNoUpdateAvailableEvent;
     FOnError: TOnErrorEvent;
-    FCurBuild, FNewBuild: integer;
+    FCurBuild, FNewBuild: Cardinal;
+    FRemoteDirName: string;
+    { Synchronized events }
     procedure DoNotifyOnError;
     procedure DoNotifyOnNoUpdate;
     procedure DoNotifyOnUpdate;
   protected
     procedure Execute; override;
   public
-    constructor Create(ACurrentBuild: integer);
+    constructor Create(ACurrentBuild: Cardinal; ARemoteDirName: string;
+      ACreateSuspended: Boolean = True);
     destructor Destroy; override;
+    { Externalized events }
     property OnError: TOnErrorEvent read FOnError write FOnError;
     property OnNoUpdate: TOnNoUpdateAvailableEvent read FOnNoUpdate write FOnNoUpdate;
     property OnUpdate: TOnUpdateAvailableEvent read FOnUpdate write FOnUpdate;
@@ -40,58 +51,106 @@ type
 
 implementation
 
+{ TUpdateCheckThread }
 
-constructor TUpdateCheckThread.Create(ACurrentBuild: integer);     //Konstruktor
+{ public TUpdateCheckThread.Create
+
+  Constructor for creating a TUpdateCheckThread instance. }
+
+constructor TUpdateCheckThread.Create(ACurrentBuild: Cardinal;
+  ARemoteDirName: string; ACreateSuspended: Boolean = True);
 begin
-  inherited Create(true);                      //Super Konstruktor Aufruf
-  FreeOnTerminate := true;                     //Thread beendet sich selbst
-  HTTP := TIdHTTP.Create(nil);                 //HTTP-Komponente erstellen
+  inherited Create(ACreateSuspended);
+  
+  // Thread deallocates his memory
+  FreeOnTerminate := True;
+
   FCurBuild := ACurrentBuild;
+  FRemoteDirName := ARemoteDirName;
+  
+  // Init IdHTTP component dynamically
+  FHttp := TIdHTTP.Create(nil);
 end;
 
+{ public TUpdateCheckThread.Destroy
 
-destructor TUpdateCheckThread.Destroy;                               //freigeben
+  Destructor for destroying a TUpdateCheckThread instance. }
+
+destructor TUpdateCheckThread.Destroy;
 begin
-  HTTP.Free;
+  FHttp.Free;
   inherited Destroy;
 end;
 
+{ protected TDownloadThread.Execute
 
-procedure TUpdateCheckThread.Execute;                  //auf Server nach neuer Version suchen
+  Thread main method that checks for update on an HTTP source. }
+  
+procedure TUpdateCheckThread.Execute;
+var
+  VersionUrl: string;
+  
 begin
   try
-    FNewBuild := StrToInt(HTTP.Get(URL_DIR +'SIT\version.txt'));  //Build ermitteln
+    // Download version file for application
+    VersionUrl := URL_DIR + FProjectFolderName +'/version.txt';
+    FNewBuild := StrToInt(FHttp.Get(VersionUrl));
 
-    if (FNewBuild > FCurBuild) then                    //falls neuere Build verfügbar
-       Synchronize(DoNotifyOnUpdate)                   //Update Melden
+    // Check if downloaded version is newer than current version
+    if (FNewBuild > FCurBuild) then
+    // Notify "update available"
+    {$IFDEF MSWINDOWS}
+       Synchronize(DoNotifyOnUpdate)
+    {$ELSE}
+       Synchronize(@DoNotifyOnUpdate)
+    {$ENDIF}
     else
-       Synchronize(DoNotifyOnNoUpdate);                //kein Update
+    // Notify "no update available"
+    {$IFDEF MSWINDOWS}
+       Synchronize(DoNotifyOnNoUpdate);
+    {$ELSE}
+       Synchronize(@DoNotifyOnNoUpdate);
+    {$ENDIF}
 
   except
-    Synchronize(DoNotifyOnError);                      //im Fehlerfall: kein Update
+  {$IFDEF MSWINDOWS}
+    Synchronize(DoNotifyOnError);
+  {$ELSE}
+    Synchronize(@DoNotifyOnError);
+  {$ENDIF}
   end;  //of except
 end;
 
-{ Sync Events }
-procedure TUpdateCheckThread.DoNotifyOnError;               //Sync OnError-Event
+{ private TDownloadThread.DoNotifyOnError
+
+  Synchronizable event method that is called when error occurs while searching
+  for update. }
+
+procedure TUpdateCheckThread.DoNotifyOnError;
 begin
   if Assigned(OnError) then
-     OnError(Self);
+    OnError(Self);
 end;
 
+{ private TDownloadThread.DoNotifyOnNoUpdate
 
-procedure TUpdateCheckThread.DoNotifyOnNoUpdate;         //Sync OnNoUpdate-Event
+  Synchronizable event method that is called when search returns no update. }
+  
+procedure TUpdateCheckThread.DoNotifyOnNoUpdate;
 begin
   if Assigned(OnNoUpdate) then
-     OnNoUpdate(Self);
+    OnNoUpdate(Self);
 end;
 
+{ private TDownloadThread.DoNotifyOnNoUpdate
 
-procedure TUpdateCheckThread.DoNotifyOnUpdate;             //Sync OnUpdate-Event
+  Synchronizable event method that is called when search search returns an
+  update. }
+
+procedure TUpdateCheckThread.DoNotifyOnUpdate;
 begin
   if Assigned(OnUpdate) then
-     OnUpdate(Self, FNewBuild);
+    OnUpdate(Self, FNewBuild);
 end;
 
 end.
- 

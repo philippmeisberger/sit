@@ -1,41 +1,53 @@
 { *********************************************************************** }
 {                                                                         }
-{ SIT Update Unit v2.0                                                    }
+{ PM Code Works Cross Plattform Updater v2.1                              }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
-unit SitUpdate;
+unit Updater;
+
+{$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
 
 interface
 
 uses
-  SysUtils, Classes, UpdateCheckThread, LanguageFile, Windows, FileCtrl, Forms,
-  StdCtrls, ComCtrls, Controls, WinUtils, DownloadThread;
+  SysUtils, Classes, UpdateCheckThread, LanguageFile,
+
+{$IFDEF MSWINDOWS}
+  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, WinUtils,
+  DownloadThread;
+{$ELSE}
+  LCLType;
+{$ENDIF}
 
 type
+  { Events }
+  TOnUpdateEvent = procedure(Sender: TObject; ANewBuild: Cardinal) of object;
+
   { TUpdateCheck }
   TUpdateCheck = class(TObject)
   private
-    FOwner: TComponent;
     FLang: TLanguageFile;
     FUserUpdate: Boolean;
+    FRemoteDirName: string;
     FNewBuild: Cardinal;
+    FOnUpdate: TOnUpdateEvent;
     { TUpdateCheckThread events }
     procedure OnCheckError(Sender: TThread);
     procedure OnNoUpdateAvailable(Sender: TThread);
     procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
   public
-    constructor Create(AOwner: TComponent; ALang: TLanguageFile);
+    constructor Create(ARemoteDirName: string; ALang: TLanguageFile);
     procedure CheckForUpdate(AUserUpdate: Boolean);
+    { external }
+    property OnUpdate: TOnUpdateEvent read FOnUpdate write FOnUpdate;
   end;
 
-  { User cancel download event }
+  { Events }
   TOnUserCancelEvent = procedure(Sender: TObject) of object;
-
-  { Download type }
-  TDownloadType = (dtUpdate, dtCert);
+  TOnUpdateFinishEvent = procedure(Sender: TObject; AFileName: string) of object;
 
   { TUpdate }
   TUpdate = class(TForm)
@@ -47,28 +59,35 @@ type
   private
     FOnUserCancel: TOnUserCancelEvent;
     FThreadRuns: Boolean;
-    FFileName: string;
+    FRemoteFileName, FLocalFileName, FFileName: string;
     FLang: TLanguageFile;
-    FDownloadType: TDownloadType;
+    FOnFinish: TOnUpdateFinishEvent;
     procedure Reset();
     { TDownloadThread events }
     procedure OnDownloadCancel(Sender: TThread);
     procedure OnDownloadError(Sender: TThread; AResponseCode: Integer);
     procedure OnDownloadFinished(Sender: TThread);
-    procedure OnDownloading(Sender: TThread; const ADownloadSize: Integer);
-    procedure OnDownloadStart(Sender: TThread; const AFileSize: Integer);
+    procedure OnDownloading(Sender: TThread;
+      const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+    procedure OnDownloadStart(Sender: TThread;
+      const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
   public
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      AFormCaption: string = '');
-    procedure Download(ADownloadType: TDownloadType);
+      AFormCaption: string = ''); overload;
+    constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
+      ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); overload;
+    procedure Download(); overload;
+    procedure Download(ARemoteFileName, ALocalFileName: string); overload;
+    procedure DownloadCertificate();
+    { external }
+    property OnUpdateFinish: TOnUpdateFinishEvent read FOnFinish write FOnFinish;
   end;
-
 
 implementation
 
-uses SitMain;
-
+{$IFDEF MSWINDOWS}
 {$R *.dfm}
+{$ENDIF}
 
 { TUpdateCheck }
 
@@ -76,11 +95,11 @@ uses SitMain;
 
   Constructor for creating an TUpdateCheck instance. }
 
-constructor TUpdateCheck.Create(AOwner: TComponent; ALang: TLanguageFile);
+constructor TUpdateCheck.Create(ARemoteDirName: string; ALang: TLanguageFile);
 begin
   inherited Create;
   FLang := ALang;
-  FOwner := AOwner;
+  FRemoteDirName := ARemoteDirName;
 end;
 
 { private TUpdateCheck.OnCheckError
@@ -111,28 +130,31 @@ end;
 
 procedure TUpdateCheck.OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
 begin
+  if (FNewBuild <> ANewBuild) then
+    // Store newest build
+    FNewBuild := ANewBuild;
+
+  // Notify user
+  FOnUpdate(Self, FNewBuild);
+
+  {
   // Update already available?
   if (FNewBuild = ANewBuild) then
-     begin
-     // Create and show TUpdate form directly
-     with TUpdate.Create(FOwner, FLang, FLang.GetString(61)) do
-       Download(dtUpdate);
+    FOnUpdate(Self)
+  else
+  begin
+    // Store newest build
+    FNewBuild := ANewBuild;
 
-     Abort;
-     end;  //of begin
-
-  // Store newest build
-  FNewBuild := ANewBuild;
-
-  // Show dialog: Ask for permitting download
-  with FLang do
-    if (MessageBox(Format(GetString(55) +^J+ GetString(56), [ANewBuild]),
-       mtQuestion, True) = IDYES) then
-       // Create and show TUpdate form
-       with TUpdate.Create(FOwner, FLang, FLang.GetString(61)) do
-         Download(dtUpdate)
-    else
-       (FOwner as TMain).mmUpdate.Caption := GetString(61);
+    // Show dialog: Ask for permitting download
+    with FLang do
+      if (MessageBox(Format(GetString(55) +^J+ GetString(56), [ANewBuild]),
+        mtQuestion, True) = IDYES) then
+        FOnUpdate(Self, True)
+      else
+        FOnUpdate(Self, False);
+  end;  //of if
+  }
 end;
 
 { public TUpdateCheck.CheckForUpdate
@@ -145,18 +167,25 @@ begin
 
   // Update already available?
   if (FNewBuild > 0) then
-     begin
-     OnUpdateAvailable(nil, FNewBuild);
-     Abort;
-     end;  //of begin
+  begin
+    OnUpdateAvailable(nil, FNewBuild);
+    Abort;
+  end;  //of begin
 
   // Search for update
-  with TUpdateCheckThread.Create(TWinUtils.GetBuildNumber(), 'Sit') do
+  with TUpdateCheckThread.Create(TWinUtils.GetBuildNumber(), FRemoteDirName) do
   begin
+  {$IFDEF MSWINDOWS}
     OnUpdate := OnUpdateAvailable;
     OnNoUpdate := OnNoUpdateAvailable;
     OnError := OnCheckError;
     Resume;
+  {$ELSE}
+    OnUpdate := @OnUpdateAvailable;
+    OnNoUpdate := @OnNoUpdateAvailable;
+    OnError := @OnCheckError;
+    Start;
+  {$ENDIF}
   end;  //of with
 end;
 
@@ -175,7 +204,19 @@ begin
   FThreadRuns := False;
 
   if (AFormCaption <> '') then
-     Self.Caption := AFormCaption;
+    Self.Caption := AFormCaption;
+end;
+
+{ public TUpdate.Create
+
+  Constructor for creating an TUpdate instance. }
+
+constructor TUpdate.Create(AOwner: TComponent; ALangFile: TLanguageFile;
+  ARemoteFileName, ALocalFileName: string; AFormCaption: string = '');
+begin
+  Create(AOwner, ALangFile, AFormCaption);
+  FRemoteFileName := ARemoteFileName;
+  FLocalFileName := ALocalFileName;
 end;
 
 { private TUpdate.Reset
@@ -198,7 +239,7 @@ end;
   
 procedure TUpdate.OnDownloadCancel(Sender: TThread);
 begin
-  Reset;
+  Reset();
   FLang.MessageBox(63, mtInfo);
 end;
 
@@ -212,7 +253,7 @@ begin
   with FLang do
     MessageBox(Caption + GetString(48) +^J+^J+ GetString(49) + GetString(50), mtError, True);
 
-  Reset;
+  Reset();
 end;
 
 { private TUpdate.OnDownloadFinished
@@ -226,27 +267,21 @@ begin
   bFinished.SetFocus;
   FThreadRuns := False;
 
-  case FDownloadType of
-    dtUpdate:
-      begin
-        // Caption "Search for update"
-        (Owner as TMain).mmUpdate.Caption := FLang.GetString(11);
-        (Owner as TMain).mmUpdate.Enabled := False;
-      end;  //of begin
+  // Show dialog to add certificate
+  if (ExtractFileExt(FFileName) = '.reg') then
+    if TWinUtils.ShowAddRegistryDialog(FFileName) then
+      DeleteFile(PChar(FFileName));
 
-    dtCert:
-      begin
-      (Owner as TMain).mmDownloadCert.Enabled := False;
-      TWinUtils.ShowAddRegistryDialog(FFileName);
-      end;  //of begin
-  end;  //of case
+  // Notify main form
+  FOnFinish(Self, FFileName);
 end;
 
 { private TUpdate.OnDownloading
 
   Event method that is called by TDownloadThread when download is in progress. }
 
-procedure TUpdate.OnDownloading(Sender: TThread; const ADownloadSize: Integer);
+procedure TUpdate.OnDownloading(Sender: TThread;
+  const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
 begin
   pbProgress.Position := ADownloadSize;
   lSize.Caption := IntToStr(ADownloadSize) +'/'+ IntToStr(pbProgress.Max) +'KB';
@@ -256,7 +291,8 @@ end;
 
   Event method that is called by TDownloadThread when download starts. }
 
-procedure TUpdate.OnDownloadStart(Sender: TThread; const AFileSize: Integer);
+procedure TUpdate.OnDownloadStart(Sender: TThread;
+  const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
 begin
   pbProgress.Max := AFileSize;
 end;
@@ -265,60 +301,70 @@ end;
 
   Starts downloading a file. }
 
-procedure TUpdate.Download(ADownloadType: TDownloadType);
+procedure TUpdate.Download();
+begin
+  if ((FRemoteFileName = '') or (FLocalFileName = '')) then
+    raise Exception.Create('Missing argument: "RemoteFileName" or "LocalFileName"!');
+
+  Download(FRemoteFileName, FLocalFileName);
+end;
+
+{ public TUpdate.Download
+
+  Starts downloading a file. }
+
+procedure TUpdate.Download(ARemoteFileName, ALocalFileName: string);
 var
   Dir, Url: string;
 
 begin
-  FDownloadType := ADownloadType;
+  FRemoteFileName := ARemoteFileName;
+  FLocalFileName := ALocalFileName;
 
   // Show "Choose folder" dialog
   if SelectDirectory(FLang.GetString(59), '', Dir) then
-     begin
-     // Which download?
-     case ADownloadType of
-       dtUpdate:
-         begin
-         FFileName := Dir +'\SIT.exe';
-         Url := URL_DIR +'downloader.php?file=sit.exe';
-         end;  //of begin
+  begin
+    Url := URL_DIR +'downloader.php?file='+ FRemoteFileName;
+    FFileName := Dir +'\'+ FLocalFileName;
 
-       dtCert:
-         begin
-         FFileName := Dir + '\Install_PMCW_Cert.reg';
-         Url := URL_DIR +'downloader.php?file=cert.reg';
-         end;  //of begin
-     end;  //of case
+    // Try to init thread
+    try
+      with TDownloadThread.Create(Url, FFileName) do
+      begin
+        // Link download events
+        FOnUserCancel := OnUserCancel;
 
-     // Try to init thread
-     try
-       with TDownloadThread.Create(Url, FFileName) do
-       begin
-         // Link download events
-         FOnUserCancel := OnUserCancel;
+        // Link TProgressBar events
+        OnDownloading := Self.OnDownloading;
+        OnCancel := OnDownloadCancel;
+        OnStart := OnDownloadStart;
+        OnFinish := OnDownloadFinished;
+        OnError := OnDownloadError;
 
-         // Link TProgressBar events
-         OnDownloading := Self.OnDownloading;
-         OnCancel := OnDownloadCancel;
-         OnStart := OnDownloadStart;
-         OnFinish := OnDownloadFinished;
-         OnError := OnDownloadError;
+        // Start download thread
+        Resume;
+      end;  //of with
 
-         // Start download thread
-         Resume;
-       end;  //of with
+      // Caption "cancel"
+      bFinished.Caption := FLang.GetString(61);
+      FThreadRuns := True;
 
-       // Caption "cancel"
-       bFinished.Caption := FLang.GetString(61);
-       FThreadRuns := True;
-
-     except
-       OnDownloadError(nil, 0);
-     end  //of try
-     end  //of begin
+    except
+      OnDownloadError(nil, 0);
+    end;  //of try
+  end  //of begin
   else
-     // Cancel clicked
-     Reset;
+    // Cancel clicked
+    Reset;
+end;
+
+{ TUpdate.DownloadCertificate
+
+  Starts downloading the PMCW certificate. }
+
+procedure TUpdate.DownloadCertificate();
+begin
+  Download('cert.reg', 'Install_PMCW_Cert.reg');
 end;
 
 { TUpdate.bFinishedClick
@@ -338,14 +384,14 @@ procedure TUpdate.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   // Download still in progress?
   if FThreadRuns then
-     begin
-     // Cancel download
-     FOnUserCancel(Self);
-     CanClose := False;
-     end  //of begin
+  begin
+    // Cancel download
+    FOnUserCancel(Self);
+    CanClose := False;
+  end  //of begin
   else
-     // Close form
-     CanClose := True;
+    // Close form
+    CanClose := True;
 end;
 
 end.
