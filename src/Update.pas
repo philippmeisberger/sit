@@ -1,23 +1,22 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Updater v2.1                              }
+{ PM Code Works Cross Plattform Update VCL v2.1                           }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
-unit Updater;
+unit Update;
 
 {$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
 
 interface
 
 uses
-  SysUtils, Classes, UpdateCheckThread, LanguageFile,
+  SysUtils, Classes, UpdateCheckThread, DownloadThread, LanguageFile, OSUtils,
 
 {$IFDEF MSWINDOWS}
-  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, WinUtils,
-  DownloadThread;
+  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls;
 {$ELSE}
   LCLType;
 {$ENDIF}
@@ -110,8 +109,8 @@ end;
 procedure TUpdateCheck.OnCheckError(Sender: TThread);
 begin
   if FUserUpdate then
-     with FLang do
-       MessageBox(GetString(68) +^J+ GetString(69), mtError, True);
+    with FLang do
+      MessageBox(GetString(12) +^J+ GetString(13), mtError, True);
 end;
 
 { private TUpdateCheck.OnNoUpdateAvailable
@@ -121,7 +120,7 @@ end;
 procedure TUpdateCheck.OnNoUpdateAvailable(Sender: TThread);
 begin
   if FUserUpdate then
-     FLang.MessageBox(54, mtInfo, True);
+    FLang.MessageBox(23, mtInfo, True);
 end;
 
 { private TUpdateCheck.OnUpdateAvailable
@@ -136,25 +135,6 @@ begin
 
   // Notify user
   FOnUpdate(Self, FNewBuild);
-
-  {
-  // Update already available?
-  if (FNewBuild = ANewBuild) then
-    FOnUpdate(Self)
-  else
-  begin
-    // Store newest build
-    FNewBuild := ANewBuild;
-
-    // Show dialog: Ask for permitting download
-    with FLang do
-      if (MessageBox(Format(GetString(55) +^J+ GetString(56), [ANewBuild]),
-        mtQuestion, True) = IDYES) then
-        FOnUpdate(Self, True)
-      else
-        FOnUpdate(Self, False);
-  end;  //of if
-  }
 end;
 
 { public TUpdateCheck.CheckForUpdate
@@ -173,7 +153,7 @@ begin
   end;  //of begin
 
   // Search for update
-  with TUpdateCheckThread.Create(TWinUtils.GetBuildNumber(), FRemoteDirName) do
+  with TUpdateCheckThread.Create(TOSUtils.GetBuildNumber(), FRemoteDirName) do
   begin
   {$IFDEF MSWINDOWS}
     OnUpdate := OnUpdateAvailable;
@@ -228,8 +208,8 @@ begin
   // Reset ProgressBar
   pbProgress.Position := 0;
 
-  lSize.Caption := FLang.GetString(61);
-  bFinished.Caption := FLang.GetString(62);
+  lSize.Caption := FLang.GetString(7);
+  bFinished.Caption := FLang.GetString(8);
   FThreadRuns := False;
 end;
 
@@ -240,7 +220,7 @@ end;
 procedure TUpdate.OnDownloadCancel(Sender: TThread);
 begin
   Reset();
-  FLang.MessageBox(63, mtInfo);
+  FLang.MessageBox(30, mtInfo);
 end;
 
 { private TUpdate.OnDownloadError
@@ -251,7 +231,7 @@ end;
 procedure TUpdate.OnDownloadError(Sender: TThread; AResponseCode: Integer);
 begin
   with FLang do
-    MessageBox(Caption + GetString(48) +^J+^J+ GetString(49) + GetString(50), mtError, True);
+    MessageBox(Caption + GetString(18) +^J+^J+ GetString(19) + GetString(20), mtError, True);
 
   Reset();
 end;
@@ -263,14 +243,16 @@ end;
 procedure TUpdate.OnDownloadFinished(Sender: TThread);
 begin
   // Caption "finished"
-  bFinished.Caption := FLang.GetString(62);
+  bFinished.Caption := FLang.GetString(8);
   bFinished.SetFocus;
   FThreadRuns := False;
 
+{$IFDEF MSWINDOWS}
   // Show dialog to add certificate
   if (ExtractFileExt(FFileName) = '.reg') then
-    if TWinUtils.ShowAddRegistryDialog(FFileName) then
+    if TOSUtils.ShowAddRegistryDialog(FFileName) then
       DeleteFile(PChar(FFileName));
+{$ENDIF}
 
   // Notify main form
   FOnFinish(Self, FFileName);
@@ -322,10 +304,10 @@ begin
   FLocalFileName := ALocalFileName;
 
   // Show "Choose folder" dialog
-  if SelectDirectory(FLang.GetString(59), '', Dir) then
+  if SelectDirectory(FLang.GetString(9), '', Dir) then
   begin
     Url := URL_DIR +'downloader.php?file='+ FRemoteFileName;
-    FFileName := Dir +'\'+ FLocalFileName;
+    FFileName := IncludeTrailingPathDelimiter(Dir) + FLocalFileName;
 
     // Try to init thread
     try
@@ -334,19 +316,26 @@ begin
         // Link download events
         FOnUserCancel := OnUserCancel;
 
-        // Link TProgressBar events
+        // Link TProgressBar events and start download thread
+      {$IFDEF MSWINDOWS}
         OnDownloading := Self.OnDownloading;
         OnCancel := OnDownloadCancel;
         OnStart := OnDownloadStart;
         OnFinish := OnDownloadFinished;
         OnError := OnDownloadError;
-
-        // Start download thread
         Resume;
+      {$ELSE}
+        OnDownloading := @Self.OnDownloading;
+        OnCancel := @OnDownloadCancel;
+        OnStart := @OnDownloadStart;
+        OnFinish := @OnDownloadFinished;
+        OnError := @OnDownloadError;
+        Start;
+      {$ENDIF}        
       end;  //of with
 
       // Caption "cancel"
-      bFinished.Caption := FLang.GetString(61);
+      bFinished.Caption := FLang.GetString(6);
       FThreadRuns := True;
 
     except

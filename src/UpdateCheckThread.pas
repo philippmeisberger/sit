@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Update Check Thread v2.1                                  }
+{ PM Code Works Cross Plattform Update Check Thread v2.1                  }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -33,7 +33,7 @@ type
     FOnError: TOnErrorEvent;
     FCurBuild, FNewBuild: Cardinal;
     FRemoteDirName: string;
-    { Synchronized events }
+    { Synchronizable events }
     procedure DoNotifyOnError;
     procedure DoNotifyOnNoUpdate;
     procedure DoNotifyOnUpdate;

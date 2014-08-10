@@ -13,7 +13,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, ShellAPI, FileCtrl, LanguageFile,
-  SitUpdate, SitInfo;
+  Update, SitInfo;
 
 type
   { TMain }
@@ -96,7 +96,7 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
     procedure OnDownloadFinished(Sender: TObject; AFileName: string);
-    procedure OnUpdate(Sender: TObject; AGranted: Boolean);
+    procedure OnUpdate(Sender: TObject; ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
     procedure Refresh;
     procedure SetLanguage(ALangID: Word);
@@ -175,14 +175,16 @@ end;
 
 { private TMain.OnUpdate
 
-  Event that is called by TUpdateCheck when an update is available and user is
-  asked for downloading. Answer of user is in AGranted. }
+  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
 
-procedure TMain.OnUpdate(Sender: TObject; AGranted: Boolean);
+procedure TMain.OnUpdate(Sender: TObject; ANewBuild: Cardinal);
 begin
-  if AGranted then
-    with TUpdate.Create(Self, FLang, FLang.GetString(61)) do
-      Download('sit.exe', 'SIT.exe');
+  // Show dialog: Ask for permitting download
+  with FLang do
+    if (MessageBox(Format(GetString(55) +^J+ GetString(56), [ANewBuild]),
+      mtQuestion, True) = IDYES) then
+      with TUpdate.Create(Self, FLang, FLang.GetString(61)) do
+        Download('sit.exe', 'SIT.exe');
 end;
 
 { private TMain.OpenLogo
@@ -204,12 +206,12 @@ begin
     Title := FLang.GetString(24);
 
     if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
-       begin
-       InitialDir := ExtractFilePath(eLogo.Text);
-       FileName := ExtractFileName(eLogo.Text);
-       end  //of begin
+    begin
+      InitialDir := ExtractFilePath(eLogo.Text);
+      FileName := ExtractFileName(eLogo.Text);
+    end  //of begin
     else
-       InitialDir := GetCurrentDir;
+      InitialDir := GetCurrentDir;
   end;  //of with
 
   try
