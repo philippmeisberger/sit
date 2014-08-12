@@ -90,8 +90,8 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=
-UnitOutputDir=
+OutputDir=C:\Users\Phil\sit-35fff790edbe\bin
+UnitOutputDir=C:\Users\Phil\sit-35fff790edbe\src
 PackageDLLOutputDir=
 PackageDCPOutputDir=
 SearchPath=
@@ -137,3 +137,9 @@ Comments=
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+[HistoryLists\hlUnitOutputDirectory]
+Count=1
+Item0=C:\Users\Phil\sit-35fff790edbe\src
+[HistoryLists\hlOutputDirectorry]
+Count=1
+Item0=C:\Users\Phil\sit-35fff790edbe\bin

@@ -54,7 +54,7 @@ type
     class function OpenUrl(const AUrl: string): Boolean;
     class function PlaySound(AFileName: string; ASynchronized: Boolean = False): Boolean;
     class function PMCertExists(): Boolean;
-    class function ShowAddRegistryDialog(const ARegFilePath: string): Boolean;
+    class function ShowAddRegistryDialog(const FRegFilePath: string): Boolean;
     class function Shutdown(): Boolean;
    	class function StrToHKey(AMainKey: string): HKEY;
   end;

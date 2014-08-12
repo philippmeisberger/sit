@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, ShellAPI, FileCtrl, LanguageFile,
-  SitUpdate, SitInfo;
+  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils,
+  UpdateForm, SitInfo;
 
 type
   { TMain }
@@ -96,7 +96,7 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
     procedure OnDownloadFinished(Sender: TObject; AFileName: string);
-    procedure OnUpdate(Sender: TObject; AGranted: Boolean);
+    procedure OnUpdate(Sender: TObject; ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
     procedure Refresh;
     procedure SetLanguage(ALangID: Word);
@@ -105,7 +105,7 @@ type
   end;
 
 var
-  Form1: TMain;
+  Main: TMain;
 
 implementation
 
@@ -137,7 +137,7 @@ begin
      SupportInfo := TSupportInformation.Create(eHours.Text, eLogo.Text, eMan.Text,
              eModel.Text, ePhone.Text, eUrl.Text);
   try
-    if TSupportInformationBase.CheckWindows() then
+    if TOSUtils.CheckWindows() then
     begin
       saveDialog.Filter := FLang.GetString(26);
       saveDialog.FilterIndex := 2;
@@ -175,14 +175,16 @@ end;
 
 { private TMain.OnUpdate
 
-  Event that is called when an update is available and user is asked for
-  downloading. }
+  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
 
-procedure TMain.OnUpdate(Sender: TObject; AGranted: Boolean);
+procedure TMain.OnUpdate(Sender: TObject; ANewBuild: Cardinal);
 begin
-  if AGranted then
-    with TUpdate.Create(Self, FLang, FLang.GetString(61)) do
-      Download('sit.exe', 'SIT.exe');
+  // Show dialog: Ask for permitting download
+  with FLang do
+    if (MessageBox(Format(GetString(55) +^J+ GetString(56), [ANewBuild]),
+      mtQuestion, True) = IDYES) then
+      with TUpdate.Create(Self, FLang, FLang.GetString(61)) do
+        Download('sit.exe', 'SIT.exe');
 end;
 
 { private TMain.OpenLogo
@@ -204,12 +206,12 @@ begin
     Title := FLang.GetString(24);
 
     if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
-       begin
-       InitialDir := ExtractFilePath(eLogo.Text);
-       FileName := ExtractFileName(eLogo.Text);
-       end  //of begin
+    begin
+      InitialDir := ExtractFilePath(eLogo.Text);
+      FileName := ExtractFileName(eLogo.Text);
+    end  //of begin
     else
-       InitialDir := GetCurrentDir;
+      InitialDir := GetCurrentDir;
   end;  //of with
 
   try
@@ -307,6 +309,16 @@ begin
     end;  //of with
 end;
 
+{ public TMain.ChangeLanguage
+
+  Event that is called when user changes the language. }
+
+procedure TMain.ChangeLanguage(AMenuItem: TMenuItem; ALangID: Word);
+begin
+  SetLanguage(ALangID);
+  AMenuItem.Checked := True;
+end;
+
 { TMain.FormCreate }
 
 procedure TMain.FormCreate(Sender: TObject);
@@ -319,7 +331,7 @@ begin
   FUpdateCheck.OnUpdate := OnUpdate;
 
   // Init support information instance
-  if TSupportInformationBase.CheckWindows() then
+  if TOSUtils.CheckWindows() then
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
@@ -346,8 +358,8 @@ var
   newWindows: Boolean;
 
 begin
-  windows := TSupportInformationBase.GetWinVersion();
-  newWindows := TSupportInformationBase.CheckWindows();
+  windows := TOSUtils.GetWinVersion();
+  newWindows := TOSUtils.CheckWindows();
   cbCopyIcon.Enabled := newWindows;
   
   // Check for incompatibility
@@ -453,7 +465,7 @@ begin
     Title := FLang.GetString(22);
     Options := Options + [ofFileMustExist];
 
-    if TSupportInformationBase.CheckWindows() then
+    if TOSUtils.CheckWindows() then
        begin
        Filter := FLang.GetString(26);
        FilterIndex := 2;
@@ -465,7 +477,7 @@ begin
   try
     if openDialog.Execute then
        begin
-       Caption := Application.Title + TSupportInformationBase.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
+       Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
 
        case openDialog.FilterIndex of
          1: FSupportInfo.LoadFromIni(openDialog.FileName);
@@ -637,7 +649,7 @@ end;
 procedure TMain.mmDownloadCertClick(Sender: TObject);
 begin
   // Certificate already installed?
-  if (TSupportInformationBase.PMCertExists() and (FLang.MessageBox(FLang.GetString(71) +^J
+  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(71) +^J
      + FLang.GetString(72), mtQuestion) = IDYES)) then
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(8)) do
@@ -663,7 +675,7 @@ end;
 
 procedure TMain.mmReportClick(Sender: TObject);
 begin
-  TSupportInformationBase.OpenUrl(URL_CONTACT);
+  TOSUtils.OpenUrl(URL_CONTACT);
 end;
 
 { TMain.mmInfoClick
@@ -719,7 +731,7 @@ end;
 
 procedure TMain.lCopyClick(Sender: TObject);
 begin
-  TSupportInformationBase.OpenUrl(URL_BASE);
+  TOSUtils.OpenUrl(URL_BASE);
 end;
 
 { TMain.lCopyMouseEnter

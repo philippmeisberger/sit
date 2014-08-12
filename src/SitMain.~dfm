@@ -15029,7 +15029,7 @@ object Main: TMain
     Width = 112
     Height = 14
     Anchors = [akBottom]
-    Caption = #169' P.Meisberger 2013'
+    Caption = #169' P.Meisberger 2014'
     Font.Charset = ANSI_CHARSET
     Font.Color = clBlack
     Font.Height = -11
@@ -15043,11 +15043,11 @@ object Main: TMain
   end
   object lVersion: TLabel
     Left = 375
-    Top = 8
+    Top = 6
     Width = 21
     Height = 14
     Anchors = [akTop, akRight]
-    Caption = 'v2.1'
+    Caption = 'v3.0'
     Font.Charset = ANSI_CHARSET
     Font.Color = clBlack
     Font.Height = -11

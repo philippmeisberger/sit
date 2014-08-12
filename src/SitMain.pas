@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, ShellAPI, FileCtrl, LanguageFile,
-  Update, SitInfo;
+  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils,
+  UpdateForm, SitInfo;
 
 type
   { TMain }
@@ -105,7 +105,7 @@ type
   end;
 
 var
-  Form1: TMain;
+  Main: TMain;
 
 implementation
 
@@ -137,7 +137,7 @@ begin
      SupportInfo := TSupportInformation.Create(eHours.Text, eLogo.Text, eMan.Text,
              eModel.Text, ePhone.Text, eUrl.Text);
   try
-    if TSupportInformationBase.CheckWindows() then
+    if TOSUtils.CheckWindows() then
     begin
       saveDialog.Filter := FLang.GetString(26);
       saveDialog.FilterIndex := 2;
@@ -303,10 +303,17 @@ begin
     // Set captions for buttons
     bAccept.Caption := GetString(20);
     bShowSupport.Caption := GetString(21);
-
-    //Form3.bFinished.Caption := GetString(62);
-    //Form2.Caption := GetString(67);
     end;  //of with
+end;
+
+{ public TMain.ChangeLanguage
+
+  Event that is called when user changes the language. }
+
+procedure TMain.ChangeLanguage(AMenuItem: TMenuItem; ALangID: Word);
+begin
+  SetLanguage(ALangID);
+  AMenuItem.Checked := True;
 end;
 
 { TMain.FormCreate }
@@ -321,7 +328,7 @@ begin
   FUpdateCheck.OnUpdate := OnUpdate;
 
   // Init support information instance
-  if TSupportInformationBase.CheckWindows() then
+  if TOSUtils.CheckWindows() then
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
@@ -348,8 +355,8 @@ var
   newWindows: Boolean;
 
 begin
-  windows := TSupportInformationBase.GetWinVersion();
-  newWindows := TSupportInformationBase.CheckWindows();
+  windows := TOSUtils.GetWinVersion();
+  newWindows := TOSUtils.CheckWindows();
   cbCopyIcon.Enabled := newWindows;
   
   // Check for incompatibility
@@ -455,7 +462,7 @@ begin
     Title := FLang.GetString(22);
     Options := Options + [ofFileMustExist];
 
-    if TSupportInformationBase.CheckWindows() then
+    if TOSUtils.CheckWindows() then
        begin
        Filter := FLang.GetString(26);
        FilterIndex := 2;
@@ -467,7 +474,7 @@ begin
   try
     if openDialog.Execute then
        begin
-       Caption := Application.Title + TSupportInformationBase.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
+       Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
 
        case openDialog.FilterIndex of
          1: FSupportInfo.LoadFromIni(openDialog.FileName);
@@ -639,7 +646,7 @@ end;
 procedure TMain.mmDownloadCertClick(Sender: TObject);
 begin
   // Certificate already installed?
-  if (TSupportInformationBase.PMCertExists() and (FLang.MessageBox(FLang.GetString(71) +^J
+  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(71) +^J
      + FLang.GetString(72), mtQuestion) = IDYES)) then
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(8)) do
@@ -665,7 +672,7 @@ end;
 
 procedure TMain.mmReportClick(Sender: TObject);
 begin
-  TSupportInformationBase.OpenUrl(URL_CONTACT);
+  TOSUtils.OpenUrl(URL_CONTACT);
 end;
 
 { TMain.mmInfoClick
@@ -721,7 +728,7 @@ end;
 
 procedure TMain.lCopyClick(Sender: TObject);
 begin
-  TSupportInformationBase.OpenUrl(URL_BASE);
+  TOSUtils.OpenUrl(URL_BASE);
 end;
 
 { TMain.lCopyMouseEnter

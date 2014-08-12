@@ -11,7 +11,7 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, IniFiles, WinUtils, ShellAPI;
+  Windows, Classes, SysUtils, Registry, IniFiles, OSUtils, ShellAPI;
 
 const
   OEMINFO_KEY = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
@@ -31,7 +31,7 @@ const
 
 type
   { Support information base class }
-  TSupportInformationBase = class(TWinUtils)
+  TSupportInformationBase = class(TWinWOW64)
   private
     FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
   public
@@ -428,7 +428,7 @@ end;
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
   ChangeFSRedirection(True);                
-  result := GetWinDir() + INFO_DIR;
+  result := TOSUtils.GetWinDir() + INFO_DIR;
   ChangeFSRedirection(False);
 end;
 
@@ -478,7 +478,7 @@ end;
 function TSupportInformationXP.GetOEMLogo(): string;
 begin
   ChangeFSRedirection(True);
-  result := GetWinDir() + LOGO_DIR;
+  result := TOSUtils.GetWinDir() + LOGO_DIR;
   ChangeFSRedirection(False);
 end;
 

@@ -1,4 +1,4 @@
-object Form2: TForm2
+object Info: TInfo
   Left = 537
   Top = 280
   BorderIcons = [biSystemMenu]
@@ -531,11 +531,11 @@ object Form2: TForm2
           00000000}
       end
       object lVersion: TLabel
-        Left = 44
+        Left = 48
         Top = 96
-        Width = 30
+        Width = 21
         Height = 14
-        Caption = 'v2.0.1'
+        Caption = 'v2.1'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -550,7 +550,7 @@ object Form2: TForm2
         Width = 112
         Height = 14
         Anchors = [akBottom]
-        Caption = #169' P.Meisberger 2013'
+        Caption = #169' P.Meisberger 2014'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -585,7 +585,7 @@ object Form2: TForm2
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '04/2013')
+          '08/2014')
         ReadOnly = True
         TabOrder = 0
       end
@@ -619,7 +619,7 @@ object Form2: TForm2
         Width = 112
         Height = 14
         Anchors = [akBottom]
-        Caption = #169' P.Meisberger 2013'
+        Caption = #169' P.Meisberger 2014'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -642,18 +642,33 @@ object Form2: TForm2
           '--------'
           ''
           ''
-          'Version 2.0.1'
+          'Version 2.1 [26.07.13]'
+          ''
+          '- API Version 3'
+          '- '#196'nderungen im GUI'
+          '  - '#220'bersichtlichkeit verbessert'
+          '  - neuer Button "Anzeigen":'
+          '    - zeigt die Herstellerinformationen'
+          '- neue Funktion: "Logo kopieren"'
+          '  - kopiert gew'#228'hltes Logo an gew'#252'nschten Ort'
+          '- kleinere Bug fixes'
+          ''
+          '----------------------------------------'
+          ''
+          'Version 2.0.1 [25.04.13]'
           ''
           '- Sprachunterst'#252'tzung f'#252'r Englisch und Franz'#246'sisch hinzugef'#252'gt'
           '- Support f'#252'r Windows 8'
           '- Update-Funktion verbessert'
+          '- '#196'nderungen im Fenstermanagement'
           ''
           '----------------------------------------'
           ''
-          'Version 2.0 (NT)'
+          'Version 2.0 (NT) [19.10.12]'
           ''
           '- SIT NT: Source Code gr'#246#223'tenteils neugeschrieben'
           '  - weiterhin Lite Version '
+          '  - API Version 2'
           '- Men'#252' um einige Funktionen erweitert'
           '  - "Datei": '
           '    - Eingaben und Eintr'#228'ge k'#246'nnen getrennt exportiert werden'
@@ -670,7 +685,7 @@ object Form2: TForm2
           ''
           '----------------------------------------'
           ''
-          'Version 1.3.42 Lite'
+          'Version 1.3.42 Lite [09.09.11]'
           ''
           
             '- vollst'#228'ndige Optimierung f'#252'r tragbare Laufwerke (Sticks, etc.)' +
@@ -680,13 +695,13 @@ object Form2: TForm2
           ''
           '----------------------------------------'
           ''
-          'Version 1.3.4'
+          'Version 1.3.4 [10.08.11]'
           ''
           '- mehrere Bugfixes'
           ''
           '----------------------------------------'
           ''
-          'Version 1.3.3'
+          'Version 1.3.3 [08.07.11]'
           ''
           '- SIT gibts jetzt in Farbe (orange)'
           
@@ -700,34 +715,29 @@ object Form2: TForm2
           ''
           '----------------------------------------'
           ''
-          'Version 1.3.2 beta'
+          'Version 1.3.2 [19.04.11]'
           ''
+          '- volle Kompatibilit'#228't f'#252'r Windows XP, 2000 und ME'
           '- Shortcuts hinzugef'#252'gt'
           '- weniger Resourcen ben'#246'tigt'
           '- kleinere Bugfixes'
           ''
           '----------------------------------------'
           ''
-          'Version 1.3.2'
-          ''
-          '- volle Kompatibilit'#228't f'#252'r Windows XP, 2000 und ME'
-          ''
-          '----------------------------------------'
-          ''
-          'Version 1.3.1'
+          'Version 1.3.1 [14.04.11]'
           ''
           '- volle Kompatibilit'#228't f'#252'r Windows Vista und Windows 7'
           '- kleinere Bugfixes'
           ''
           '----------------------------------------'
           ''
-          'Version 1.3'
+          'Version 1.3 [11.04.11]'
           ''
           '- Im-/Export von *.REG-Dateien m'#246'glich'
           ''
           '----------------------------------------'
           ''
-          'Version 1.2.1'
+          'Version 1.2.1 [10.04.11]'
           ''
           
             '- Bug beim Hinzuf'#252'gen eines Logos aus verstecktem Systemordner b' +
@@ -737,21 +747,21 @@ object Form2: TForm2
           ''
           '----------------------------------------'
           ''
-          'Version 1.2'
+          'Version 1.2 [31.03.11]'
           ''
           '- Mutex hinzugef'#252'gt'
           '- mehrere Bugfixes'
           ''
           '----------------------------------------'
           ''
-          'Version 1.1'
+          'Version 1.1 [10.02.11]'
           ''
           '- Auslesen der Bitanzahl des Betriebssystems'
           '- Bugs beim Im-/Export von *.ini-Dateien behoben'
           ''
           '----------------------------------------'
           ''
-          'Version 1.0'
+          'Version 1.0 [01.02.11]'
           ''
           'Erste funktionierende Version von SIT (alias "Supportinfo-Tool")'
           ''
@@ -760,11 +770,9 @@ object Form2: TForm2
             '-------'
           'SIT ist Freeware. Das hei'#223't, dass das Kopieren und die'
           
-            'Weitergabe von Clearas erlaubt ist. Weiterhin ist die Ver'#246'ffent-' +
-            ' '
-          
-            'lichung auf WWW-Servern und Datentr'#228'gern erlaubt. Allerdings mus' +
-            's das'
+            'Weitergabe von Clearas erlaubt ist. Weiterhin ist die Ver'#246'ffentl' +
+            'ichung '
+          'auf WWW-Servern und Datentr'#228'gern erlaubt. Allerdings muss das'
           
             'Programm vollst'#228'ndig und in der Original-Form kopiert werden. Da' +
             's'
@@ -776,10 +784,10 @@ object Form2: TForm2
             'den, w'#228're es nett, mir eine Ausgabe dieser CD-ROM (mit Magazin) ' +
             'zu'
           
-            'schicken. Meine Adresse erfahren Sie unter p.meisberger91@web.de' +
-            ' .'
+            'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
+            '.'
           ''
-          '04/2013')
+          '08/2014')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0
