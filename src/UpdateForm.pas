@@ -34,8 +34,8 @@ type
     FNewBuild: Cardinal;
     FOnUpdate: TOnUpdateEvent;
     { TUpdateCheckThread events }
-    procedure OnCheckError(Sender: TThread);
-    procedure OnNoUpdateAvailable(Sender: TThread);
+    procedure OnCheckError(Sender: TObject);
+    procedure OnNoUpdateAvailable(Sender: TObject);
     procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
   public
     constructor Create(ARemoteDirName: string; ALang: TLanguageFile);
@@ -63,9 +63,9 @@ type
     FOnFinish: TOnUpdateFinishEvent;
     procedure Reset();
     { TDownloadThread events }
-    procedure OnDownloadCancel(Sender: TThread);
+    procedure OnDownloadCancel(Sender: TObject);
     procedure OnDownloadError(Sender: TThread; AResponseCode: Integer);
-    procedure OnDownloadFinished(Sender: TThread);
+    procedure OnDownloadFinished(Sender: TObject);
     procedure OnDownloading(Sender: TThread;
       const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
     procedure OnDownloadStart(Sender: TThread;
@@ -106,7 +106,7 @@ end;
   Event method that is called TUpdateCheckThread when error occurs while
   searching for update. }
 
-procedure TUpdateCheck.OnCheckError(Sender: TThread);
+procedure TUpdateCheck.OnCheckError(Sender: TObject);
 begin
   if FUserUpdate then
     with FLang do
@@ -117,7 +117,7 @@ end;
 
   Event method that is called when TUpdateCheckThread search returns no update. }
 
-procedure TUpdateCheck.OnNoUpdateAvailable(Sender: TThread);
+procedure TUpdateCheck.OnNoUpdateAvailable(Sender: TObject);
 begin
   if FUserUpdate then
     FLang.MessageBox(23, mtInfo, True);
@@ -217,7 +217,7 @@ end;
 
   Event method that is called by TDownloadThread when user canceled downlad. }
   
-procedure TUpdate.OnDownloadCancel(Sender: TThread);
+procedure TUpdate.OnDownloadCancel(Sender: TObject);
 begin
   Reset();
   FLang.MessageBox(30, mtInfo);
@@ -240,7 +240,7 @@ end;
 
   Event method that is called by TDownloadThread when download is finished. }
 
-procedure TUpdate.OnDownloadFinished(Sender: TThread);
+procedure TUpdate.OnDownloadFinished(Sender: TObject);
 begin
   // Caption "finished"
   bFinished.Caption := FLang.GetString(8);

@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Update Check Thread v2.1                                  }
+{ PM Code Works Cross Plattform Update Check Thread v2.1                  }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -33,7 +33,7 @@ type
     FOnError: TOnErrorEvent;
     FCurBuild, FNewBuild: Cardinal;
     FRemoteDirName: string;
-    { Synchronized events }
+    { Synchronizable events }
     procedure DoNotifyOnError;
     procedure DoNotifyOnNoUpdate;
     procedure DoNotifyOnUpdate;
@@ -93,23 +93,23 @@ var
 begin
   try
     // Download version file for application
-    VersionUrl := URL_DIR + FProjectFolderName +'/version.txt';
+    VersionUrl := URL_DIR + FRemoteDirName +'/version.txt';
     FNewBuild := StrToInt(FHttp.Get(VersionUrl));
 
     // Check if downloaded version is newer than current version
     if (FNewBuild > FCurBuild) then
     // Notify "update available"
     {$IFDEF MSWINDOWS}
-       Synchronize(DoNotifyOnUpdate)
+      Synchronize(DoNotifyOnUpdate)
     {$ELSE}
-       Synchronize(@DoNotifyOnUpdate)
+      Synchronize(@DoNotifyOnUpdate)
     {$ENDIF}
     else
     // Notify "no update available"
     {$IFDEF MSWINDOWS}
-       Synchronize(DoNotifyOnNoUpdate);
+      Synchronize(DoNotifyOnNoUpdate);
     {$ELSE}
-       Synchronize(@DoNotifyOnNoUpdate);
+      Synchronize(@DoNotifyOnNoUpdate);
     {$ENDIF}
 
   except

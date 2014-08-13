@@ -19,18 +19,15 @@ const
   URL_DIR = 'http://www.pm-codeworks.de/media/';
   
 type
-  { Thread events }
+  { Thread event }
   TOnUpdateAvailableEvent = procedure(Sender: TThread; const ANewBuild: Cardinal) of object;
-  TOnNoUpdateAvailableEvent = procedure(Sender: TThread) of object;
-  TOnErrorEvent = procedure(Sender: TThread) of object;
 
   { TUpdateCheckThread }
   TUpdateCheckThread = class(TThread)
   private
     FHttp: TIdHTTP;
     FOnUpdate: TOnUpdateAvailableEvent;
-    FOnNoUpdate: TOnNoUpdateAvailableEvent;
-    FOnError: TOnErrorEvent;
+    FOnNoUpdate, FOnError: TNotifyEvent;
     FCurBuild, FNewBuild: Cardinal;
     FRemoteDirName: string;
     { Synchronizable events }
@@ -44,8 +41,8 @@ type
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
     { Externalized events }
-    property OnError: TOnErrorEvent read FOnError write FOnError;
-    property OnNoUpdate: TOnNoUpdateAvailableEvent read FOnNoUpdate write FOnNoUpdate;
+    property OnError: TNotifyEvent read FOnError write FOnError;
+    property OnNoUpdate: TNotifyEvent read FOnNoUpdate write FOnNoUpdate;
     property OnUpdate: TOnUpdateAvailableEvent read FOnUpdate write FOnUpdate;
   end;
 

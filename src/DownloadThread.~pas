@@ -19,6 +19,8 @@ type
     const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
   TOnDownloadingEvent = procedure(Sender: TThread;
     const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
+  TOnDownloadFinishEvent = procedure(Sender: TThread) of object;
+  TOnDownloadCancelEvent = procedure(Sender: TThread) of object;
   TOnDownloadErrorEvent = procedure(Sender: TThread; AResponseCode: Integer) of object;
 
   { TDownloadThread }
@@ -27,8 +29,9 @@ type
     FHttp: TIdHTTP;
     FOnStart: TOnDownloadStartEvent;
     FOnDownloading: TOnDownloadingEvent;
-    FOnFinish, FOnCancel: TNotifyEvent;
+    FOnFinish: TOnDownloadFinishEvent;
     FOnError: TOnDownloadErrorEvent;
+    FOnCancel: TOnDownloadCancelEvent;
     FFileSize, FDownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF};
     FResponseCode: Integer;
     FFileName, FUrl: string;
@@ -51,10 +54,10 @@ type
     function GetUniqueFileName(const AFileName: string): string;
     procedure OnUserCancel(Sender: TObject);
     { Externalized events }
-    property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
+    property OnCancel: TOnDownloadCancelEvent read FOnCancel write FOnCancel;
     property OnDownloading: TOnDownloadingEvent read FOnDownloading write FOnDownloading;
     property OnError: TOnDownloadErrorEvent read FOnError write FOnError;
-    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
+    property OnFinish: TOnDownloadFinishEvent read FOnFinish write FOnFinish;
     property OnStart: TOnDownloadStartEvent read FOnStart write FOnStart;
   end;
 
