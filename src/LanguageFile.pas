@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Language Handler Unit v1.1                }
+{ PM Code Works Cross Plattform Language Handler Unit v1.2                }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -22,18 +22,11 @@ uses
   IniFiles, LCLType;
 {$ENDIF}
 
-const
 {$IFDEF LINUX}
+const
   { Interval for next language }
   LANGUAGE_INTERVAL = 100;
 {$ENDIF}
-
-  { Application depending IDs for Title in MessageBox }
-  TITLE_INFO = 43;
-  TITLE_ERROR = 45;
-  TITLE_QUESTION = 47;
-  TITLE_WARNING = 44;
-  TITLE_UPDATE = 61;
 
 type
   { Exception class }
@@ -93,10 +86,10 @@ constructor TLanguageFile.Create(ALanguage: string; AConfig: string = '';
   AApplication: TApplication = nil);
 begin
   if (AConfig = '') then
-     AConfig := ExtractFilePath(ParamStr(0)) +'lang';
+    AConfig := ExtractFilePath(ParamStr(0)) +'lang';
 
   if not FileExists(AConfig) then
-     raise ELanguageException.Create('"'+ AConfig +'" not found!');
+    raise ELanguageException.Create('"'+ AConfig +'" not found!');
 
   FLang := ALanguage;
   FIni := TIniFile.Create(AConfig);
@@ -162,7 +155,7 @@ begin
   ls := LoadString(hInstance, AIndex + FLang, Buffer, SizeOf(buffer));
 
   if (ls <> 0) then
-     result := Buffer;
+    result := Buffer;
 end;
 {$ENDIF}
 
@@ -182,43 +175,43 @@ begin
   case AType of
     mtInfo:
       begin
-      Title := GetString(TITLE_INFO);
-      Flags := MB_ICONINFORMATION;
+        Title := GetString(0);
+        Flags := MB_ICONINFORMATION;
       end;
 
     mtWarning:
       begin
-      Title := GetString(TITLE_WARNING);
-      Flags := MB_ICONWARNING;
+        Title := GetString(1);
+        Flags := MB_ICONWARNING;
       end;
 
     mtQuestion:
       begin
-      Title := GetString(TITLE_QUESTION);
-      Flags := MB_ICONQUESTION or MB_YESNO or MB_DEFBUTTON1;
-    {$IFDEF MSWINDOWS}
-      MessageBeep(MB_ICONWARNING);
-    {$ENDIF}
+        Title := GetString(3);
+        Flags := MB_ICONQUESTION or MB_YESNO or MB_DEFBUTTON1;
+      {$IFDEF MSWINDOWS}
+        MessageBeep(MB_ICONWARNING);
+      {$ENDIF}
       end;
 
     mtConfirm:
       begin
-      Title := GetString(TITLE_QUESTION);
-      Flags := MB_ICONWARNING or MB_YESNO or MB_DEFBUTTON2;
-    {$IFDEF MSWINDOWS}
-      MessageBeep(MB_ICONWARNING);
-    {$ENDIF}
+        Title := GetString(4);
+        Flags := MB_ICONWARNING or MB_YESNO or MB_DEFBUTTON2;
+      {$IFDEF MSWINDOWS}
+        MessageBeep(MB_ICONWARNING);
+      {$ENDIF}
       end;
 
     mtError:
       begin
-      Title := GetString(TITLE_ERROR);
-      Flags := MB_ICONERROR;
+        Title := GetString(2);
+        Flags := MB_ICONERROR;
       end;
   end;  //of case
 
   if AUpdate then
-     Title := GetString(TITLE_UPDATE);
+    Title := GetString(5);
 
   result := FApplication.MessageBox(PChar(AText), PChar(Title), Flags);
 end;

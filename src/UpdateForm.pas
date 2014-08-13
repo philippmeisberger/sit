@@ -16,8 +16,7 @@ uses
   SysUtils, Classes, UpdateCheckThread, DownloadThread, LanguageFile, OSUtils,
 
 {$IFDEF MSWINDOWS}
-  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, Graphics,
-  ExtCtrls;
+  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, ExtCtrls;
 {$ELSE}
   LCLType;
 {$ENDIF}
@@ -256,7 +255,8 @@ begin
 {$ENDIF}
 
   // Notify main form
-  FOnFinish(Self, FFileName);
+  if Assigned(FOnFinish) then
+    FOnFinish(Self, FFileName);
 end;
 
 { private TUpdate.OnDownloading

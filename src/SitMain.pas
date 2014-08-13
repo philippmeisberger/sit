@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT Main Unit                                                           }
 {                                                                         }
-{ Copyright (c) 2011-2013 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,9 +11,9 @@ unit SitMain;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils,
-  UpdateForm, SitInfo;
+  Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
+  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, UpdateForm,
+  SitInfo;
 
 type
   { TMain }
@@ -126,8 +126,8 @@ begin
 
   with saveDialog do
   begin
-    Title := FLang.GetString(23);
-    FileName := FLang.GetString(25);
+    Title := FLang.GetString(52);
+    FileName := FLang.GetString(54);
     Options := Options + [ofOverwritePrompt];
   end;  //of with
 
@@ -139,11 +139,11 @@ begin
   try
     if TOSUtils.CheckWindows() then
     begin
-      saveDialog.Filter := FLang.GetString(26);
+      saveDialog.Filter := FLang.GetString(55);
       saveDialog.FilterIndex := 2;
     end  //of begin
     else
-      saveDialog.Filter := FLang.GetString(27);
+      saveDialog.Filter := FLang.GetString(56);
 
     if saveDialog.Execute then
       case saveDialog.FilterIndex of
@@ -166,7 +166,7 @@ begin
   if (ExtractFileExt(AFileName) <> '.reg') then
   begin
     // Caption "Search for update"
-    mmUpdate.Caption := FLang.GetString(11);
+    mmUpdate.Caption := FLang.GetString(15);
     mmUpdate.Enabled := False;
   end  //of begin
   else
@@ -181,10 +181,12 @@ procedure TMain.OnUpdate(Sender: TObject; ANewBuild: Cardinal);
 begin
   // Show dialog: Ask for permitting download
   with FLang do
-    if (MessageBox(Format(GetString(55) +^J+ GetString(56), [ANewBuild]),
+    if (MessageBox(Format(GetString(21) +^J+ GetString(22), [ANewBuild]),
       mtQuestion, True) = IDYES) then
-      with TUpdate.Create(Self, FLang, FLang.GetString(61)) do
-        Download('sit.exe', 'SIT.exe');
+      with TUpdate.Create(Self, FLang, FLang.GetString(24)) do
+        Download('sit.exe', 'SIT.exe')
+    else
+      mmUpdate.Caption := FLang.GetString(24);
 end;
 
 { private TMain.OpenLogo
@@ -202,8 +204,8 @@ begin
   with OpenLogoDialog do
   begin
     Options := Options + [ofFileMustExist];
-    Filter := FLang.GetString(28);
-    Title := FLang.GetString(24);
+    Filter := FLang.GetString(57);
+    Title := FLang.GetString(53);
 
     if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
     begin
@@ -222,8 +224,8 @@ begin
       // Check resolution > 400 x 500
       if ((Image.Height > 400) or (Image.Width > 500)) then
       begin
-        FLang.MessageBox(FLang.GetString(31)+ IntToStr(Image.Height) +'x'+
-                   IntToStr(Image.Width) +')!' +^J+ FLang.GetString(32), mtWarning);
+        FLang.MessageBox(FLang.GetString(58)+ IntToStr(Image.Height) +'x'+
+                   IntToStr(Image.Width) +')!' +^J+ FLang.GetString(59), mtWarning);
         result := False;
       end  //of begin
       else
@@ -267,42 +269,42 @@ begin
   with FLang do
     begin
     // Set captions for TMenuItems
-    mmFile.Caption := GetString(0);
-    mmImport.Caption := GetString(1);
-    mmExport.Caption := GetString(2);
-    mmExportEdit.Caption := GetString(3);
+    mmFile.Caption := GetString(31);
+    mmImport.Caption := GetString(32);
+    mmExport.Caption := GetString(33);
+    mmExportEdit.Caption := GetString(34);
 
-    mmEdit.Caption := GetString(4);
-    mmShowValues.Caption := GetString(5);
-    mmDelValues.Caption := GetString(6);
-    mmDelEdit.Caption := GetString(7);
-    mmCopyIcon.Caption := GetString(75);
-    mmDelLogo.Caption := GetString(8);
+    mmEdit.Caption := GetString(35);
+    mmShowValues.Caption := GetString(36);
+    mmDelValues.Caption := GetString(37);
+    mmDelEdit.Caption := GetString(38);
+    mmCopyIcon.Caption := GetString(40);
+    mmDelLogo.Caption := GetString(39);
 
-    mmView.Caption := GetString(9);
-    mmLang.Caption := GetString(10);
+    mmView.Caption := GetString(42);
+    mmLang.Caption := GetString(25);
 
-    mmHelp.Caption := GetString(66);
-    mmUpdate.Caption := GetString(11);
-    mmDownloadCert.Caption := GetString(12);
-    mmReport.Caption := GetString(70);
-    mmInfo.Caption := GetString(13);
+    mmHelp.Caption := GetString(14);
+    mmUpdate.Caption := GetString(15);
+    mmDownloadCert.Caption := GetString(16);
+    mmReport.Caption := GetString(26);
+    mmInfo.Caption := GetString(17);
 
     // Set captions for labels
-    gbIcon.Caption := GetString(76);
-    eLogo.EditLabel.Caption := GetString(14);
+    gbIcon.Caption := GetString(41);
+    eLogo.EditLabel.Caption := GetString(43);
     cbCopyIcon.Caption := mmCopyIcon.Caption;
 
-    gbInfo.Caption := GetString(39);
-    eMan.EditLabel.Caption := GetString(15);
-    ePhone.EditLabel.Caption := GetString(16);
-    eHours.EditLabel.Caption := GetString(17);
-    eModel.EditLabel.Caption := GetString(18);
-    eUrl.EditLabel.Caption := GetString(19);
+    gbInfo.Caption := GetString(0);
+    eMan.EditLabel.Caption := GetString(44);
+    ePhone.EditLabel.Caption := GetString(45);
+    eHours.EditLabel.Caption := GetString(46);
+    eModel.EditLabel.Caption := GetString(47);
+    eUrl.EditLabel.Caption := GetString(48);
 
     // Set captions for buttons
-    bAccept.Caption := GetString(20);
-    bShowSupport.Caption := GetString(21);
+    bAccept.Caption := GetString(49);
+    bShowSupport.Caption := GetString(50);
     end;  //of with
 end;
 
@@ -324,8 +326,11 @@ begin
   FLang := TLanguageFile.Create(100, Application);
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create('Sit', FLang);
+  FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
   FUpdateCheck.OnUpdate := OnUpdate;
+
+  // Check for update on startup
+  FUpdateCheck.CheckForUpdate(False);
 
   // Init support information instance
   if TOSUtils.CheckWindows() then
@@ -362,7 +367,7 @@ begin
   // Check for incompatibility
   if not (newWindows or (windows[1] in ['X','2'])) then
      begin
-     Flang.MessageBox(FLang.GetString(64) + windows + FLang.GetString(65), mtError);
+     Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
      bAccept.Enabled := false;
      mmFile.Enabled := false;
      mmEdit.Enabled := false;
@@ -389,7 +394,7 @@ end;
 
 procedure TMain.bAcceptClick(Sender: TObject);
 begin
-  if (Flang.MessageBox(33, mtQuestion) = IDYES) then
+  if (Flang.MessageBox(60, mtQuestion) = IDYES) then
   try
     if cbCopyIcon.Checked then
       mmCopyIcon.Click;
@@ -401,7 +406,7 @@ begin
         Icon := eLogo.Text
       else
       begin
-        Flang.MessageBox(72, mtWarning);
+        Flang.MessageBox(77, mtWarning);
         eLogo.SetFocus;
         Exit;
       end;  //of if
@@ -417,13 +422,13 @@ begin
       end  //of begin
       else
       begin
-        Flang.MessageBox(53, mtWarning);
+        Flang.MessageBox(73, mtWarning);
         eMan.SetFocus;
         Exit;
       end;  //of if
     end;  //of with
 
-    Flang.MessageBox(38);
+    Flang.MessageBox(65);
     mmShowValues.Click;
 
   except
@@ -459,16 +464,16 @@ begin
 
   with openDialog do
   begin
-    Title := FLang.GetString(22);
+    Title := FLang.GetString(51);
     Options := Options + [ofFileMustExist];
 
     if TOSUtils.CheckWindows() then
        begin
-       Filter := FLang.GetString(26);
+       Filter := FLang.GetString(55);
        FilterIndex := 2;
        end  //of begin
     else
-       Filter := FLang.GetString(27);
+       Filter := FLang.GetString(56);
   end;  //of with  
 
   try
@@ -506,7 +511,7 @@ procedure TMain.mmExportEditClick(Sender: TObject);
 begin
   if ((eLogo.Text = '') and (eMan.Text = '') and (eModel.Text = '') and
      (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
-     FLang.MessageBox(53, mtWarning)
+     FLang.MessageBox(73, mtWarning)
   else
      DoExport(False);
 end;
@@ -526,7 +531,7 @@ begin
     mmExport.Enabled := mmDelValues.Enabled;
 
   except
-    FLang.MessageBox(46, mtError);
+    FLang.MessageBox(68, mtError);
   end; //of except
 end;
 
@@ -536,20 +541,20 @@ end;
 
 procedure TMain.mmDelValuesClick(Sender: TObject);
 begin
-  if (FLang.MessageBox(34, mtQuestion) = IDYES) then
+  if (FLang.MessageBox(61, mtQuestion) = IDYES) then
      begin
      mmDelLogo.Click;
 
-     if (FLang.MessageBox(35, mtQuestion) = IDYES) then
+     if (FLang.MessageBox(62, mtQuestion) = IDYES) then
         DoExport(true);
 
      if FSupportInfo.Remove() then
         begin
         mmDelValues.Enabled := false;
-        FLang.MessageBox(37);
+        FLang.MessageBox(64);
         end  //of begin
      else
-        FLang.MessageBox(44, mtError);
+        FLang.MessageBox(FLang.GetString(66) + FLang.GetString(70), mtError);
      end;  //of begin
 end;
 
@@ -559,7 +564,7 @@ end;
 
 procedure TMain.mmDelEditClick(Sender: TObject);
 begin
-  Caption := Application.Title + TSupportInformationBase.GetArchitecture();
+  Caption := Application.Title + TOSUtils.GetArchitecture();
   mmDelLogo.Enabled := false;
   mmDelLogo.Visible := mmDelLogo.Enabled;
   //FSupportInfo.Clear;
@@ -586,21 +591,21 @@ begin
         FLang.MessageBox(77, mtWarning)
      else
         begin
-		    if SelectDirectory(FLang.GetString(59), '', dir) then  //"Ordner wählen"
+		    if SelectDirectory(FLang.GetString(9), '', dir) then  //"Ordner wählen"
            begin
            dir := dir +'\'+ ExtractFileName(eLogo.Text);
 
            if CopyFile(PChar(eLogo.Text), PChar(dir), true) then  //Logo kopieren
               begin
-              FLang.MessageBox(FLang.GetString(73) + dir + FLang.GetString(74));
+              FLang.MessageBox(FLang.GetString(78) + dir + FLang.GetString(79));
               eLogo.Text := dir;                          //neuer Logo-Pfad
               end  //of begin
            else
-              FLang.MessageBox(71, mtError);
+              FLang.MessageBox(76, mtError);
            end;  //of begin
 		end  //of begin
   else
-    FLang.MessageBox(72, mtWarning);
+    FLang.MessageBox(80, mtWarning);
 end;
 
 { TMain.mmDelLogoClick
@@ -610,7 +615,7 @@ end;
 procedure TMain.mmDelLogoClick(Sender: TObject);
 begin
   if FileExists(FSupportInfo.GetOEMLogo()) then
-    if (FLang.MessageBox(36, mtQuestion) = IDYES) then
+    if (FLang.MessageBox(63, mtQuestion) = IDYES) then
       if FSupportInfo.DeleteIcon() then
       begin
         mmDelLogo.Visible := false;
@@ -618,7 +623,7 @@ begin
         eLogo.Clear;
       end  //of begin
       else
-        FLang.MessageBox(45, mtError);
+        FLang.MessageBox(67, mtError);
 end;
 
 
@@ -646,13 +651,13 @@ end;
 procedure TMain.mmDownloadCertClick(Sender: TObject);
 begin
   // Certificate already installed?
-  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(71) +^J
-     + FLang.GetString(72), mtQuestion) = IDYES)) then
+  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(27) +^J
+     + FLang.GetString(28), mtQuestion) = IDYES)) then
      // Download certificate
-     with TUpdate.Create(Self, FLang, FLang.GetString(8)) do
+     with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
      begin
-       DownloadCertificate();
        OnUpdateFinish := OnDownloadFinished;
+       DownloadCertificate();
      end;  //of with
 end;
 

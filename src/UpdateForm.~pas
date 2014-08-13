@@ -16,7 +16,7 @@ uses
   SysUtils, Classes, UpdateCheckThread, DownloadThread, LanguageFile, OSUtils,
 
 {$IFDEF MSWINDOWS}
-  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls;
+  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, ExtCtrls;
 {$ELSE}
   LCLType;
 {$ENDIF}
@@ -61,6 +61,7 @@ type
     FRemoteFileName, FLocalFileName, FFileName: string;
     FLang: TLanguageFile;
     FOnFinish: TOnUpdateFinishEvent;
+    procedure DoNotifyOnFinish();
     procedure Reset();
     { TDownloadThread events }
     procedure OnDownloadCancel(Sender: TThread);
@@ -199,6 +200,16 @@ begin
   FLocalFileName := ALocalFileName;
 end;
 
+{ private TUpdate.DoNotifyOnFinish
+
+  Synchronizable event method that is called when download has finished. }
+
+procedure TUpdate.DoNotifyOnFinish();
+begin
+  if Assigned(FOnFinish) then
+    FOnFinish(Self, FFileName);
+end;
+
 { private TUpdate.Reset
 
   Resets Update GUI. }
@@ -255,7 +266,7 @@ begin
 {$ENDIF}
 
   // Notify main form
-  FOnFinish(Self, FFileName);
+  Synchronize(DoNotifyOnFinish);
 end;
 
 { private TUpdate.OnDownloading
