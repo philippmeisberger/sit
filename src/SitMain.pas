@@ -12,7 +12,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, UpdateForm,
+  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater,
   SitInfo;
 
 type
@@ -96,7 +96,7 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
     procedure OnDownloadFinished(Sender: TObject; AFileName: string);
-    procedure OnUpdate(Sender: TObject; ANewBuild: Cardinal);
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
     procedure Refresh;
     procedure SetLanguage(ALangID: Word);
@@ -177,7 +177,7 @@ end;
 
   Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
 
-procedure TMain.OnUpdate(Sender: TObject; ANewBuild: Cardinal);
+procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
 begin
   // Show dialog: Ask for permitting download
   with FLang do

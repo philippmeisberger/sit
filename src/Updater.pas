@@ -6,7 +6,7 @@
 {                                                                         }
 { *********************************************************************** }
 
-unit UpdateForm;
+unit Updater;
 
 {$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
 
@@ -16,14 +16,14 @@ uses
   SysUtils, Classes, UpdateCheckThread, DownloadThread, LanguageFile, OSUtils,
 
 {$IFDEF MSWINDOWS}
-  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, ExtCtrls;
+  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, XPMan;
 {$ELSE}
   LCLType;
 {$ENDIF}
 
 type
   { Events }
-  TOnUpdateEvent = procedure(Sender: TObject; ANewBuild: Cardinal) of object;
+  TOnUpdateEvent = procedure(Sender: TObject; const ANewBuild: Cardinal) of object;
 
   { TUpdateCheck }
   TUpdateCheck = class(TObject)
@@ -39,13 +39,12 @@ type
     procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
   public
     constructor Create(ARemoteDirName: string; ALang: TLanguageFile);
-    procedure CheckForUpdate(AUserUpdate: Boolean);
+    procedure CheckForUpdate(AUserUpdate: Boolean; ACurrentBuild: Cardinal = 0);
     { external }
     property OnUpdate: TOnUpdateEvent read FOnUpdate write FOnUpdate;
   end;
 
   { Events }
-  TOnUserCancelEvent = procedure(Sender: TObject) of object;
   TOnUpdateFinishEvent = procedure(Sender: TObject; AFileName: string) of object;
 
   { TUpdate }
@@ -56,7 +55,7 @@ type
     procedure bFinishedClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
-    FOnUserCancel: TOnUserCancelEvent;
+    FOnUserCancel: TNotifyEvent;
     FThreadRuns: Boolean;
     FRemoteFileName, FLocalFileName, FFileName: string;
     FLang: TLanguageFile;
@@ -66,10 +65,13 @@ type
     procedure OnDownloadCancel(Sender: TObject);
     procedure OnDownloadError(Sender: TThread; AResponseCode: Integer);
     procedure OnDownloadFinished(Sender: TObject);
-    procedure OnDownloading(Sender: TThread;
-      const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
-    procedure OnDownloadStart(Sender: TThread;
-      const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+  {$IFDEF MSWINDOWS}
+    procedure OnDownloading(Sender: TThread; const ADownloadSize: Integer);
+    procedure OnDownloadStart(Sender: TThread; const AFileSize: Integer);
+  {$ELSE}
+    procedure OnDownloading(Sender: TThread; const ADownloadSize: Int64);
+    procedure OnDownloadStart(Sender: TThread; const AFileSize: Int64);
+  {$ENDIF}
   public
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
       AFormCaption: string = ''); overload;
@@ -81,6 +83,9 @@ type
     { external }
     property OnUpdateFinish: TOnUpdateFinishEvent read FOnFinish write FOnFinish;
   end;
+
+var
+  Update: TUpdate;
 
 implementation
 
@@ -141,7 +146,7 @@ end;
 
   Searches for update on HTTP server. }
 
-procedure TUpdateCheck.CheckForUpdate(AUserUpdate: Boolean);
+procedure TUpdateCheck.CheckForUpdate(AUserUpdate: Boolean; ACurrentBuild: Cardinal = 0);
 begin
   FUserUpdate := AUserUpdate;
 
@@ -152,8 +157,11 @@ begin
     Abort;
   end;  //of begin
 
+  if (ACurrentBuild = 0) then
+    ACurrentBuild := TOSUtils.GetBuildNumber();
+
   // Search for update
-  with TUpdateCheckThread.Create(TOSUtils.GetBuildNumber(), FRemoteDirName) do
+  with TUpdateCheckThread.Create(ACurrentBuild, FRemoteDirName) do
   begin
   {$IFDEF MSWINDOWS}
     OnUpdate := OnUpdateAvailable;
@@ -255,8 +263,7 @@ begin
 {$ENDIF}
 
   // Notify main form
-  if Assigned(FOnFinish) then
-    FOnFinish(Self, FFileName);
+  FOnFinish(Self, FFileName);
 end;
 
 { private TUpdate.OnDownloading

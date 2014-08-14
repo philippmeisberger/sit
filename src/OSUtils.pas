@@ -46,7 +46,7 @@ type
     class function ExecuteFile(const AFilePath: string): Boolean;
     class function ExitWindows(AAction: Word): Boolean;
     class function ExplorerReboot(): Boolean;
-    class function GetBuildNumber(): Word;
+    class function GetBuildNumber(): Cardinal;
     class function GetTempDir(): string;
     class function GetWinDir(): string;
     class function GetWinVersion(AShowServicePack: Boolean = False): string;  //not by me
@@ -312,7 +312,7 @@ end;
 
   Returns build number of current running *.exe. }
 
-class function TOSUtils.GetBuildNumber(): Word;
+class function TOSUtils.GetBuildNumber(): Cardinal;
 var
   VerInfoSize, VerValueSize, Dummy: DWord;
   VerInfo: Pointer;

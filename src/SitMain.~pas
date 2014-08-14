@@ -12,7 +12,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, UpdateForm,
+  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater,
   SitInfo;
 
 type
@@ -564,7 +564,7 @@ end;
 
 procedure TMain.mmDelEditClick(Sender: TObject);
 begin
-  Caption := Application.Title + TSupportInformationBase.GetArchitecture();
+  Caption := Application.Title + TOSUtils.GetArchitecture();
   mmDelLogo.Enabled := false;
   mmDelLogo.Visible := mmDelLogo.Enabled;
   //FSupportInfo.Clear;
