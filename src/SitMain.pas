@@ -132,7 +132,7 @@ begin
   end;  //of with
 
   if ADirect then
-     SupportInfo := FSupportInfo
+    SupportInfo := TSupportInformation.Create(FSupportInfo)
   else
      SupportInfo := TSupportInformation.Create(eHours.Text, eLogo.Text, eMan.Text,
              eModel.Text, ePhone.Text, eUrl.Text);
@@ -152,7 +152,7 @@ begin
       end; //of case
 
   finally
-    SupportInfo := nil;
+    SupportInfo.Free;
     saveDialog.Free;
   end;  //of finally
 end;
@@ -468,26 +468,26 @@ begin
     Options := Options + [ofFileMustExist];
 
     if TOSUtils.CheckWindows() then
-       begin
-       Filter := FLang.GetString(55);
-       FilterIndex := 2;
-       end  //of begin
+    begin
+      Filter := FLang.GetString(55);
+      FilterIndex := 2;
+    end  //of begin
     else
-       Filter := FLang.GetString(56);
+      Filter := FLang.GetString(56);
   end;  //of with  
 
   try
     if openDialog.Execute then
-       begin
-       Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
+    begin
+      Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
 
-       case openDialog.FilterIndex of
-         1: FSupportInfo.LoadFromIni(openDialog.FileName);
-         //2: FSupportInfo.LoadFromReg(openDialog.FileName);
-       end;  //of case
+      case openDialog.FilterIndex of
+        1: FSupportInfo.LoadFromIni(openDialog.FileName);
+        2: (FSupportInfo as TSupportInformation).LoadFromReg(openDialog.FileName);
+      end;  //of case
 
-       Refresh();
-       end;  //of begin
+      Refresh();
+    end;  //of begin
 
   finally
     openDialog.Free;
@@ -510,10 +510,10 @@ end;
 procedure TMain.mmExportEditClick(Sender: TObject);
 begin
   if ((eLogo.Text = '') and (eMan.Text = '') and (eModel.Text = '') and
-     (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
-     FLang.MessageBox(73, mtWarning)
+    (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
+    FLang.MessageBox(73, mtWarning)
   else
-     DoExport(False);
+    DoExport(False);
 end;
 
 { TMain.mmShowValuesClick
@@ -542,20 +542,20 @@ end;
 procedure TMain.mmDelValuesClick(Sender: TObject);
 begin
   if (FLang.MessageBox(61, mtQuestion) = IDYES) then
-     begin
-     mmDelLogo.Click;
+  begin
+    mmDelLogo.Click;
 
-     if (FLang.MessageBox(62, mtQuestion) = IDYES) then
-        DoExport(true);
+    if (FLang.MessageBox(62, mtQuestion) = IDYES) then
+      DoExport(True);
 
-     if FSupportInfo.Remove() then
-        begin
-        mmDelValues.Enabled := false;
-        FLang.MessageBox(64);
-        end  //of begin
-     else
-        FLang.MessageBox(FLang.GetString(66) + FLang.GetString(70), mtError);
-     end;  //of begin
+    if FSupportInfo.Remove() then
+    begin
+      mmDelValues.Enabled := false;
+      FLang.MessageBox(64);
+    end  //of begin
+    else
+      FLang.MessageBox(FLang.GetString(66) + FLang.GetString(70), mtError);
+  end;  //of begin
 end;
 
 { TMain.mmDelEditClick
@@ -587,23 +587,23 @@ var
 
 begin
   if FileExists(eLogo.Text) then                          //existiert Logo
-     if (ExtractFileExt(eLogo.Text) <> '.bmp') then       //Endung ".bmp"?
-        FLang.MessageBox(77, mtWarning)
-     else
-        begin
-		    if SelectDirectory(FLang.GetString(9), '', dir) then  //"Ordner wählen"
-           begin
-           dir := dir +'\'+ ExtractFileName(eLogo.Text);
+    if (ExtractFileExt(eLogo.Text) <> '.bmp') then       //Endung ".bmp"?
+      FLang.MessageBox(77, mtWarning)
+    else
+    begin
+		  if SelectDirectory(FLang.GetString(9), '', dir) then  //"Ordner wählen"
+      begin
+        dir := dir +'\'+ ExtractFileName(eLogo.Text);
 
-           if CopyFile(PChar(eLogo.Text), PChar(dir), true) then  //Logo kopieren
-              begin
-              FLang.MessageBox(FLang.GetString(78) + dir + FLang.GetString(79));
-              eLogo.Text := dir;                          //neuer Logo-Pfad
-              end  //of begin
-           else
-              FLang.MessageBox(76, mtError);
-           end;  //of begin
-		end  //of begin
+        if CopyFile(PChar(eLogo.Text), PChar(dir), true) then  //Logo kopieren
+        begin
+          FLang.MessageBox(FLang.GetString(78) + dir + FLang.GetString(79));
+          eLogo.Text := dir;                          //neuer Logo-Pfad
+        end  //of begin
+        else
+          FLang.MessageBox(76, mtError);
+      end;  //of begin
+		end  //of if
   else
     FLang.MessageBox(80, mtWarning);
 end;
@@ -743,11 +743,11 @@ end;
 procedure TMain.lCopyMouseEnter(Sender: TObject);
 begin
   with (Sender as TLabel) do
-    begin
+  begin
     Font.Style := Font.Style + [fsUnderline];
     Font.Color := clBlue;
     Cursor := crHandPoint;
-    end;  //of with
+  end;  //of with
 end;
 
 { TMain.lCopyMouseLeave
@@ -757,11 +757,11 @@ end;
 procedure TMain.lCopyMouseLeave(Sender: TObject);
 begin
   with (Sender as TLabel) do
-    begin
+  begin
     Font.Style := Font.Style - [fsUnderline];
     Font.Color := clBlack;
     Cursor := crDefault;
-    end;  //of with
+  end;  //of with
 end;
 
 end.

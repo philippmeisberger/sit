@@ -4,8 +4,7 @@ uses
   Forms,
   SitMain in 'SitMain.pas' {Form1},
   SitInfo in 'SitInfo.pas' {Form2},
-  SitAPI in 'SitAPI.pas',
-  SitUpdate in 'SitUpdate.pas' {Form3};
+  SitAPI in 'SitAPI.pas';
 
 {$R *.res}
 

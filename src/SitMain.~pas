@@ -96,7 +96,7 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
     procedure OnDownloadFinished(Sender: TObject; AFileName: string);
-    procedure OnUpdate(Sender: TObject; ANewBuild: Cardinal);
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
     procedure Refresh;
     procedure SetLanguage(ALangID: Word);
@@ -132,7 +132,7 @@ begin
   end;  //of with
 
   if ADirect then
-     SupportInfo := FSupportInfo
+    SupportInfo := TSupportInformation.Create(FSupportInfo)
   else
      SupportInfo := TSupportInformation.Create(eHours.Text, eLogo.Text, eMan.Text,
              eModel.Text, ePhone.Text, eUrl.Text);
@@ -152,7 +152,7 @@ begin
       end; //of case
 
   finally
-    SupportInfo := nil;
+    SupportInfo.Free;
     saveDialog.Free;
   end;  //of finally
 end;
@@ -177,7 +177,7 @@ end;
 
   Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
 
-procedure TMain.OnUpdate(Sender: TObject; ANewBuild: Cardinal);
+procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
 begin
   // Show dialog: Ask for permitting download
   with FLang do

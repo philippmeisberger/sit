@@ -36,6 +36,7 @@ type
     FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
   public
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
+    constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
     procedure Clear();
     function DeleteIcon(): Boolean; virtual; abstract;
     function Exists(): Boolean; virtual; abstract;
@@ -102,6 +103,21 @@ begin
   FUrl := AUrl;
   FPhone := APhone;
   FHours := AHours;
+end;
+
+{ public TSupportInformationBase.Create
+
+  Copy constructor for creating a copy of a TSupportInformationBase instance. }
+
+constructor TSupportInformationBase.Create(ASupportInformationBase: TSupportInformationBase);
+begin
+  inherited Create;
+  FIcon := ASupportInformationBase.Icon;
+  FMan := ASupportInformationBase.Manufacturer;
+  FModel := ASupportInformationBase.Model;
+  FHours := ASupportInformationBase.Hours;
+  FPhone := ASupportInformationBase.Phone;
+  FUrl := ASupportInformationBase.Url;
 end;
 
 { public TSupportInformationBase.Clear
@@ -428,7 +444,7 @@ end;
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
   ChangeFSRedirection(True);                
-  result := GetWinDir() + INFO_DIR;
+  result := TOSUtils.GetWinDir() + INFO_DIR;
   ChangeFSRedirection(False);
 end;
 
@@ -455,11 +471,13 @@ begin
 
     try
       ini.DeleteKey('Logo', 'Logo');
-      
+
     finally
       ini.Free;
-    end;  //of finally    
-  end;  //of begin  
+    end;  //of finally
+  end  //of begin
+  else
+    result := False;
 end;
 
 { public TSupportInformationXP.Exists
@@ -478,7 +496,7 @@ end;
 function TSupportInformationXP.GetOEMLogo(): string;
 begin
   ChangeFSRedirection(True);
-  result := GetWinDir() + LOGO_DIR;
+  result := TOSUtils.GetWinDir() + LOGO_DIR;
   ChangeFSRedirection(False);
 end;
 

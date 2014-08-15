@@ -36,6 +36,7 @@ type
     FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
   public
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
+    constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
     procedure Clear();
     function DeleteIcon(): Boolean; virtual; abstract;
     function Exists(): Boolean; virtual; abstract;
@@ -102,6 +103,21 @@ begin
   FUrl := AUrl;
   FPhone := APhone;
   FHours := AHours;
+end;
+
+{ public TSupportInformationBase.Create
+
+  Copy constructor for creating a copy of a TSupportInformationBase instance. }
+
+constructor TSupportInformationBase.Create(ASupportInformationBase: TSupportInformationBase);
+begin
+  inherited Create;
+  FIcon := ASupportInformationBase.Icon;
+  FMan := ASupportInformationBase.Manufacturer;
+  FModel := ASupportInformationBase.Model;
+  FHours := ASupportInformationBase.Hours;
+  FPhone := ASupportInformationBase.Phone;
+  FUrl := ASupportInformationBase.Url;
 end;
 
 { public TSupportInformationBase.Clear
@@ -450,16 +466,24 @@ begin
       Exit;
     end;  //of begin
 
-    // Delete logo path from *.ini file
-    ini := TIniFile.Create(GetOemInfo());
-
     try
-      ini.DeleteKey('Logo', 'Logo');
-      
-    finally
-      ini.Free;
-    end;  //of finally    
-  end;  //of begin  
+      // Delete logo path from *.ini file
+      ini := TIniFile.Create(GetOemInfo());
+
+      try
+        ini.DeleteKey('Logo', 'Logo');
+        result := True;
+
+      finally
+        ini.Free;
+      end;  //of finally
+
+    except
+      result := False
+    end;  //of except
+  end  //of begin
+  else
+    result := False;
 end;
 
 { public TSupportInformationXP.Exists
