@@ -11,7 +11,8 @@ unit SitInfo;
 interface
 
 uses
-  Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls, WinUtils, SysUtils;
+  Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls, OSUtils, SysUtils,
+  Classes;
 
 type
   { TInfo }
@@ -43,7 +44,7 @@ implementation
 
 procedure TInfo.FormCreate(Sender: TObject);
 begin
-  lBuild.Caption := '(Build: '+ IntToStr(TWinUtils.GetBuildNumber) +')';
+  lBuild.Caption := '(Build: '+ IntToStr(TOSUtils.GetBuildNumber) +')';
 end;
 
 

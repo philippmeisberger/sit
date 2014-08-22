@@ -16,7 +16,7 @@ uses
   SysUtils, Classes, UpdateCheckThread, DownloadThread, LanguageFile, OSUtils,
 
 {$IFDEF MSWINDOWS}
-  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, XPMan;
+  Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls;
 {$ELSE}
   LCLType;
 {$ENDIF}

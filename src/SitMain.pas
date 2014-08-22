@@ -132,19 +132,24 @@ begin
   end;  //of with
 
   if ADirect then
+    // Create copy of real TSupportInformation object
     SupportInfo := TSupportInformation.Create(FSupportInfo)
   else
-     SupportInfo := TSupportInformation.Create(eHours.Text, eLogo.Text, eMan.Text,
-             eModel.Text, ePhone.Text, eUrl.Text);
+    // Create new TSupportInformation object with content of text fields
+    SupportInfo := TSupportInformation.Create(eLogo.Text, eMan.Text, eModel.Text,
+       eUrl.Text, ePhone.Text, eHours.Text);
   try
     if TOSUtils.CheckWindows() then
     begin
+      // Windows >= Vista: Export as *.ini and *.reg
       saveDialog.Filter := FLang.GetString(55);
       saveDialog.FilterIndex := 2;
     end  //of begin
     else
+      // Windows < Vista: Export only as *.ini
       saveDialog.Filter := FLang.GetString(56);
 
+    // "Save" clicked
     if saveDialog.Execute then
       case saveDialog.FilterIndex of
         1: SupportInfo.SaveAsIni(saveDialog.FileName);

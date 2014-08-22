@@ -23,7 +23,7 @@ uses
 
 type
   { Events }
-  TOnUpdateEvent = procedure(Sender: TObject; ANewBuild: Cardinal) of object;
+  TOnUpdateEvent = procedure(Sender: TObject; const ANewBuild: Cardinal) of object;
 
   { TUpdateCheck }
   TUpdateCheck = class(TObject)
