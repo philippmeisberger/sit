@@ -17,7 +17,7 @@ uses
 
 type
   { TMain }
-  TMain = class(TForm, IChangeLanguageListener)
+  TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
     iBack: TImage;
     lCopy: TLabel;
     lVersion: TLabel;
@@ -94,9 +94,9 @@ type
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
+    procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
+    procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure DoExport(ADirect: Boolean);
-    procedure OnDownloadFinished(Sender: TObject; AFileName: string);
-    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
     procedure Refresh();
     procedure SetLanguage(Sender: TObject; ALangID: Word);
@@ -109,6 +109,38 @@ implementation
 
 {$R *.dfm}
 {$R manifest.res}
+
+{ private TMain.AfterUpdate
+
+  Event method that is called by TUpdate when download is finished. }
+
+procedure TMain.AfterUpdate(Sender: TObject; ADownloadedFileName: string);
+begin
+  if (ExtractFileExt(ADownloadedFileName) <> '.reg') then
+  begin
+    // Caption "Search for update"
+    mmUpdate.Caption := FLang.GetString(15);
+    mmUpdate.Enabled := False;
+  end  //of begin
+  else
+    mmDownloadCert.Enabled := False;
+end;
+
+{ private TMain.BeforeUpdate
+
+  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
+
+procedure TMain.BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+begin
+  // Show dialog: Ask for permitting download
+  with FLang do
+    if (MessageBox(Format(GetString(21) +^J+ GetString(22), [ANewBuild]),
+      mtQuestion, True) = IDYES) then
+      with TUpdate.Create(Self, FLang, FLang.GetString(24)) do
+        Download('sit.exe', 'SIT.exe')
+    else
+      mmUpdate.Caption := FLang.GetString(24);
+end;
 
 { private TMain.DoExport
 
@@ -158,38 +190,6 @@ begin
     SupportInfo.Free;
     saveDialog.Free;
   end;  //of finally
-end;
-
-{ private TMain.OnDownloadFinished
-
-  Event method that is called by TUpdate when download is finished. }
-
-procedure TMain.OnDownloadFinished(Sender: TObject; AFileName: string);
-begin
-  if (ExtractFileExt(AFileName) <> '.reg') then
-  begin
-    // Caption "Search for update"
-    mmUpdate.Caption := FLang.GetString(15);
-    mmUpdate.Enabled := False;
-  end  //of begin
-  else
-    mmDownloadCert.Enabled := False;
-end;
-
-{ private TMain.OnUpdate
-
-  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
-
-procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
-begin
-  // Show dialog: Ask for permitting download
-  with FLang do
-    if (MessageBox(Format(GetString(21) +^J+ GetString(22), [ANewBuild]),
-      mtQuestion, True) = IDYES) then
-      with TUpdate.Create(Self, FLang, FLang.GetString(24)) do
-        Download('sit.exe', 'SIT.exe')
-    else
-      mmUpdate.Caption := FLang.GetString(24);
 end;
 
 { private TMain.OpenLogo
@@ -322,7 +322,7 @@ begin
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
-  FUpdateCheck.OnUpdate := OnUpdate;
+  FUpdateCheck.AddListener(Self);
 
   // Check for update on startup
   FUpdateCheck.CheckForUpdate(False);
@@ -651,7 +651,7 @@ begin
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
      begin
-       OnUpdateFinish := OnDownloadFinished;
+       AddListener(Self);
        DownloadCertificate();
      end;  //of with
 end;

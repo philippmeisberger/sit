@@ -12,12 +12,12 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater,
+  ExtCtrls, Menus, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater, SitAPI,
   SitInfo;
 
 type
   { TMain }
-  TMain = class(TForm, IChangeLanguageListener)
+  TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
     iBack: TImage;
     lCopy: TLabel;
     lVersion: TLabel;
@@ -95,8 +95,8 @@ type
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
     procedure DoExport(ADirect: Boolean);
-    procedure OnDownloadFinished(Sender: TObject; AFileName: string);
-    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
+    procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
     procedure Refresh();
     procedure SetLanguage(Sender: TObject; ALangID: Word);
@@ -164,9 +164,9 @@ end;
 
   Event method that is called by TUpdate when download is finished. }
 
-procedure TMain.OnDownloadFinished(Sender: TObject; AFileName: string);
+procedure TMain.AfterUpdate(Sender: TObject; ADownloadedFileName: string);
 begin
-  if (ExtractFileExt(AFileName) <> '.reg') then
+  if (ExtractFileExt(ADownloadedFileName) <> '.reg') then
   begin
     // Caption "Search for update"
     mmUpdate.Caption := FLang.GetString(15);
@@ -180,7 +180,7 @@ end;
 
   Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
 
-procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+procedure TMain.BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
 begin
   // Show dialog: Ask for permitting download
   with FLang do
@@ -322,7 +322,7 @@ begin
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
-  FUpdateCheck.OnUpdate := OnUpdate;
+  FUpdateCheck.AddListener(Self);
 
   // Check for update on startup
   FUpdateCheck.CheckForUpdate(False);
@@ -651,7 +651,7 @@ begin
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
      begin
-       OnUpdateFinish := OnDownloadFinished;
+       AddListener(Self);
        DownloadCertificate();
      end;  //of with
 end;

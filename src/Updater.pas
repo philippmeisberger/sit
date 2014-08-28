@@ -22,8 +22,12 @@ uses
 {$ENDIF}
 
 type
-  { Events }
-  TOnUpdateEvent = procedure(Sender: TObject; const ANewBuild: Cardinal) of object;
+  { IUpdateListener }
+  IUpdateListener = interface
+  ['{D1CDAE74-717A-4C5E-9152-15FBA4A15552}']
+    procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
+    procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+  end;
 
   { TUpdateCheck }
   TUpdateCheck = class(TObject)
@@ -32,22 +36,21 @@ type
     FUserUpdate: Boolean;
     FRemoteDirName: string;
     FNewBuild: Cardinal;
-    FOnUpdate: TOnUpdateEvent;
     { TUpdateCheckThread events }
     procedure OnCheckError(Sender: TObject);
     procedure OnNoUpdateAvailable(Sender: TObject);
     procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
+  protected
+    FListeners: TInterfaceList;
   public
     constructor Create(ARemoteDirName: string; ALang: TLanguageFile);
+    destructor Destroy; override;
+    procedure AddListener(AListener: IUpdateListener);
     procedure CheckForUpdate(AUserUpdate: Boolean; ACurrentBuild: Cardinal = 0);
-    { external }
-    property OnUpdate: TOnUpdateEvent read FOnUpdate write FOnUpdate;
+    procedure RemoveListener(AListener: IUpdateListener);
   end;
 
 {$IFDEF MSWINDOWS}
-  { Events }
-  TOnUpdateFinishEvent = procedure(Sender: TObject; AFileName: string) of object;
-
   { TUpdate }
   TUpdate = class(TForm)
     pbProgress: TProgressBar;
@@ -60,7 +63,7 @@ type
     FThreadRuns: Boolean;
     FRemoteFileName, FLocalFileName, FFileName: string;
     FLang: TLanguageFile;
-    FOnFinish: TOnUpdateFinishEvent;
+    FListeners: TInterfaceList;
     procedure Reset();
     { TDownloadThread events }
     procedure OnDownloadCancel(Sender: TObject);
@@ -73,11 +76,12 @@ type
       AFormCaption: string = ''); overload;
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
       ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); overload;
+    destructor Destroy; override;
+    procedure AddListener(AListener: IUpdateListener);
     procedure Download(); overload;
     procedure Download(ARemoteFileName, ALocalFileName: string); overload;
     procedure DownloadCertificate();
-    { external }
-    property OnUpdateFinish: TOnUpdateFinishEvent read FOnFinish write FOnFinish;
+    procedure RemoveListener(AListener: IUpdateListener);
   end; 
 {$ENDIF}
 
@@ -98,6 +102,17 @@ begin
   inherited Create;
   FLang := ALang;
   FRemoteDirName := ARemoteDirName;
+  FListeners := TInterfaceList.Create;
+end;
+
+{ public TUpdateCheck.Destroy
+
+  Destructor for destroying an TUpdateCheck instance. }
+
+destructor TUpdateCheck.Destroy;
+begin
+  FreeAndNil(FListeners);
+  inherited Destroy;
 end;
 
 { private TUpdateCheck.OnCheckError
@@ -127,13 +142,28 @@ end;
   Event method that is called when TUpdateCheckThread search returns an update. }
 
 procedure TUpdateCheck.OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
+var
+  i: Word;
+  Listener: IUpdateListener;
+
 begin
   if (FNewBuild <> ANewBuild) then
     // Store newest build
     FNewBuild := ANewBuild;
 
-  // Notify user
-  FOnUpdate(Self, FNewBuild);
+  // Notify all listeners
+  for i := 0 to FListeners.Count -1 do
+    if Supports(FListeners[i], IUpdateListener, Listener) then
+      Listener.BeforeUpdate(Self, ANewBuild);
+end;
+
+{ public TUpdateCheck.AddListener
+
+  Adds a listener to the notification list. }
+
+procedure TUpdateCheck.AddListener(AListener: IUpdateListener);
+begin
+  FListeners.Add(AListener);
 end;
 
 { public TUpdateCheck.CheckForUpdate
@@ -171,6 +201,15 @@ begin
   end;  //of with
 end;
 
+{ public TUpdateCheck.RemoveListener
+
+  Removes a listener from the notification list. }
+
+procedure TUpdateCheck.RemoveListener(AListener: IUpdateListener);
+begin
+  FListeners.Remove(AListener);
+end;
+
 {$IFDEF MSWINDOWS}
 
 { TUpdate }
@@ -200,6 +239,16 @@ begin
   Create(AOwner, ALangFile, AFormCaption);
   FRemoteFileName := ARemoteFileName;
   FLocalFileName := ALocalFileName;
+end;
+
+{ public TUpdate.Destroy
+
+  Destructor for destroying an TUpdate instance. }
+
+destructor TUpdate.Destroy;
+begin
+  FreeAndNil(FListeners);
+  inherited Destroy;
 end;
 
 { private TUpdate.Reset
@@ -244,6 +293,10 @@ end;
   Event method that is called by TDownloadThread when download is finished. }
 
 procedure TUpdate.OnDownloadFinished(Sender: TObject);
+var
+  i: Word;
+  Listener: IUpdateListener;
+
 begin
   // Caption "finished"
   bFinished.Caption := FLang.GetString(8);
@@ -257,8 +310,10 @@ begin
       DeleteFile(PChar(FFileName));
 {$ENDIF}
 
-  // Notify main form
-  FOnFinish(Self, FFileName);
+  // Notify all listeners
+  for i := 0 to FListeners.Count -1 do
+    if Supports(FListeners[i], IUpdateListener, Listener) then
+      Listener.AfterUpdate(Self, FFileName);
 end;
 
 { private TUpdate.OnDownloading
@@ -278,6 +333,15 @@ end;
 procedure TUpdate.OnDownloadStart(Sender: TThread; const AFileSize: Integer);
 begin
   pbProgress.Max := AFileSize;
+end;
+
+{ public TUpdate.AddListener
+
+  Adds a listener to the notification list. }
+
+procedure TUpdate.AddListener(AListener: IUpdateListener);
+begin
+  FListeners.Add(AListener);
 end;
 
 { public TUpdate.Download
@@ -346,6 +410,15 @@ end;
 procedure TUpdate.DownloadCertificate();
 begin
   Download('cert.reg', 'Install_PMCW_Cert.reg');
+end;
+
+{ public TUpdate.RemoveListener
+
+  Removes a listener from the notification list. }
+
+procedure TUpdate.RemoveListener(AListener: IUpdateListener);
+begin
+  FListeners.Remove(AListener);
 end;
 
 { TUpdate.bFinishedClick
