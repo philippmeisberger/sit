@@ -16,9 +16,9 @@ uses
 type
   { Thread events }
   TOnDownloadStartEvent = procedure(Sender: TThread;
-    const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
+    {$IFDEF MSWINDOWS}const AFileSize: Integer{$ELSE}AFileSize: Int64{$ENDIF}) of object;
   TOnDownloadingEvent = procedure(Sender: TThread;
-    const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
+    {$IFDEF MSWINDOWS}const ADownloadSize: Integer{$ELSE}ADownloadSize: Int64{$ENDIF}) of object;
   TOnDownloadErrorEvent = procedure(Sender: TThread; AResponseCode: Integer) of object;
 
   { TDownloadThread }
@@ -45,9 +45,9 @@ type
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
     procedure Downloading(Sender: TObject; AWorkMode: TWorkMode;
-      const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+      {$IFDEF MSWINDOWS}const ADownloadSize: Integer{$ELSE}ADownloadSize: Int64{$ENDIF});
     procedure DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
-      const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+      {$IFDEF MSWINDOWS}const AFileSize: Integer{$ELSE}AFileSize: Int64{$ENDIF});
     function GetUniqueFileName(const AFileName: string): string;
     procedure OnUserCancel(Sender: TObject);
     { Externalized events }
@@ -167,7 +167,7 @@ end;
   Event that is called by TIdHttp when download starts. }
 
 procedure TDownloadThread.DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
-  const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+  {$IFDEF MSWINDOWS}const AFileSize: Integer{$ELSE}AFileSize: Int64{$ENDIF});
 begin
   // Convert Byte into Kilobyte (KB = Byte/1024)
   FFileSize := AFileSize div 1024;
@@ -184,7 +184,7 @@ end;
   Event that is called by TIdHttp while download is in progress. }
 
 procedure TDownloadThread.Downloading(Sender: TObject; AWorkMode: TWorkMode;
-  const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+  {$IFDEF MSWINDOWS}const ADownloadSize: Integer{$ELSE}ADownloadSize: Int64{$ENDIF});
 begin
   if (not Self.Terminated) then
   begin

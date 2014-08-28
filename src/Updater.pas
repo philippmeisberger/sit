@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Update VCL v2.1                           }
+{ PM Code Works Cross Plattform Updater v2.1                              }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -44,6 +44,7 @@ type
     property OnUpdate: TOnUpdateEvent read FOnUpdate write FOnUpdate;
   end;
 
+{$IFDEF MSWINDOWS}
   { Events }
   TOnUpdateFinishEvent = procedure(Sender: TObject; AFileName: string) of object;
 
@@ -65,13 +66,8 @@ type
     procedure OnDownloadCancel(Sender: TObject);
     procedure OnDownloadError(Sender: TThread; AResponseCode: Integer);
     procedure OnDownloadFinished(Sender: TObject);
-  {$IFDEF MSWINDOWS}
     procedure OnDownloading(Sender: TThread; const ADownloadSize: Integer);
     procedure OnDownloadStart(Sender: TThread; const AFileSize: Integer);
-  {$ELSE}
-    procedure OnDownloading(Sender: TThread; const ADownloadSize: Int64);
-    procedure OnDownloadStart(Sender: TThread; const AFileSize: Int64);
-  {$ENDIF}
   public
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
       AFormCaption: string = ''); overload;
@@ -82,10 +78,8 @@ type
     procedure DownloadCertificate();
     { external }
     property OnUpdateFinish: TOnUpdateFinishEvent read FOnFinish write FOnFinish;
-  end;
-
-var
-  Update: TUpdate;
+  end; 
+{$ENDIF}
 
 implementation
 
@@ -177,6 +171,7 @@ begin
   end;  //of with
 end;
 
+{$IFDEF MSWINDOWS}
 
 { TUpdate }
 
@@ -270,8 +265,7 @@ end;
 
   Event method that is called by TDownloadThread when download is in progress. }
 
-procedure TUpdate.OnDownloading(Sender: TThread;
-  const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+procedure TUpdate.OnDownloading(Sender: TThread; const ADownloadSize: Integer);
 begin
   pbProgress.Position := ADownloadSize;
   lSize.Caption := IntToStr(ADownloadSize) +'/'+ IntToStr(pbProgress.Max) +'KB';
@@ -281,8 +275,7 @@ end;
 
   Event method that is called by TDownloadThread when download starts. }
 
-procedure TUpdate.OnDownloadStart(Sender: TThread;
-  const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+procedure TUpdate.OnDownloadStart(Sender: TThread; const AFileSize: Integer);
 begin
   pbProgress.Max := AFileSize;
 end;
@@ -325,21 +318,12 @@ begin
         FOnUserCancel := OnUserCancel;
 
         // Link TProgressBar events and start download thread
-      {$IFDEF MSWINDOWS}
         OnDownloading := Self.OnDownloading;
         OnCancel := OnDownloadCancel;
         OnStart := OnDownloadStart;
         OnFinish := OnDownloadFinished;
         OnError := OnDownloadError;
-        Resume;
-      {$ELSE}
-        OnDownloading := @Self.OnDownloading;
-        OnCancel := @OnDownloadCancel;
-        OnStart := @OnDownloadStart;
-        OnFinish := @OnDownloadFinished;
-        OnError := @OnDownloadError;
-        Start;
-      {$ENDIF}        
+        Resume;      
       end;  //of with
 
       // Caption "cancel"
@@ -390,5 +374,6 @@ begin
     // Close form
     CanClose := True;
 end;
+{$ENDIF}
 
 end.

@@ -12,12 +12,12 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, Menus, SitAPI, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater,
+  ExtCtrls, Menus, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater, SitAPI,
   SitInfo;
 
 type
   { TMain }
-  TMain = class(TForm)
+  TMain = class(TForm, IChangeLanguageListener)
     iBack: TImage;
     lCopy: TLabel;
     lVersion: TLabel;
@@ -98,10 +98,8 @@ type
     procedure OnDownloadFinished(Sender: TObject; AFileName: string);
     procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function OpenLogo(): Boolean;
-    procedure Refresh;
-    procedure SetLanguage(ALangID: Word);
-  public
-    procedure ChangeLanguage(AMenuItem: TMenuItem; ALangID: Word);
+    procedure Refresh();
+    procedure SetLanguage(Sender: TObject; ALangID: Word);
   end;
 
 var
@@ -267,12 +265,12 @@ end;
 
   Updates all component captions with new language text. }
 
-procedure TMain.SetLanguage(ALangID: Word);
+procedure TMain.SetLanguage(Sender: TObject; ALangID: Word);
 begin
   FLang.Lang := ALangID;
 
   with FLang do
-    begin
+  begin
     // Set captions for TMenuItems
     mmFile.Caption := GetString(31);
     mmImport.Caption := GetString(32);
@@ -310,17 +308,7 @@ begin
     // Set captions for buttons
     bAccept.Caption := GetString(49);
     bShowSupport.Caption := GetString(50);
-    end;  //of with
-end;
-
-{ public TMain.ChangeLanguage
-
-  Event that is called when user changes the language. }
-
-procedure TMain.ChangeLanguage(AMenuItem: TMenuItem; ALangID: Word);
-begin
-  SetLanguage(ALangID);
-  AMenuItem.Checked := True;
+  end;  //of with
 end;
 
 { TMain.FormCreate }
@@ -329,6 +317,8 @@ procedure TMain.FormCreate(Sender: TObject);
 begin
   // German language default
   FLang := TLanguageFile.Create(100, Application);
+  FLang.AddListener(Self);
+  SetLanguage(Self, FLang.Lang);
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
@@ -371,20 +361,20 @@ begin
   
   // Check for incompatibility
   if not (newWindows or (windows[1] in ['X','2'])) then
-     begin
-     Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
-     bAccept.Enabled := false;
-     mmFile.Enabled := false;
-     mmEdit.Enabled := false;
-     eLogo.Enabled := false;
-     eMan.Enabled := false;
-     ePhone.Enabled := false;
-     eHours.Enabled := false;
-     eModel.Enabled := false;
-     eUrl.Enabled := false;
-     bShowSupport.Enabled := false;
-     Exit;
-     end;  //of begin
+  begin
+    Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
+    bAccept.Enabled := false;
+    mmFile.Enabled := false;
+    mmEdit.Enabled := false;
+    eLogo.Enabled := false;
+    eMan.Enabled := false;
+    ePhone.Enabled := false;
+    eHours.Enabled := false;
+    eModel.Enabled := false;
+    eUrl.Enabled := false;
+    bShowSupport.Enabled := false;
+    Exit;
+  end;  //of begin
 
   // Show support information
   mmShowValues.Click;
@@ -634,19 +624,19 @@ end;
 
 procedure TMain.mmGerClick(Sender: TObject);
 begin
-  ChangeLanguage(mmGer, 100);
+  FLang.ChangeLanguage(Sender, 100);
 end;
 
 
 procedure TMain.mmEngClick(Sender: TObject);
 begin
-  ChangeLanguage(mmEng, 200);
+  FLang.ChangeLanguage(Sender, 200);
 end;
 
 
 procedure TMain.mmFraClick(Sender: TObject);
 begin
-  ChangeLanguage(mmFra, 300);
+  FLang.ChangeLanguage(Sender, 300);
 end;
 
 { TMain.mmDwnldCertClick
