@@ -94,9 +94,9 @@ type
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
-    procedure DoExport(ADirect: Boolean);
     procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    procedure DoExport(ADirect: Boolean);
     function OpenLogo(): Boolean;
     procedure Refresh();
     procedure SetLanguage(Sender: TObject; ALangID: Word);
@@ -109,6 +109,38 @@ implementation
 
 {$R *.dfm}
 {$R manifest.res}
+
+{ private TMain.AfterUpdate
+
+  Event method that is called by TUpdate when download is finished. }
+
+procedure TMain.AfterUpdate(Sender: TObject; ADownloadedFileName: string);
+begin
+  if (ExtractFileExt(ADownloadedFileName) <> '.reg') then
+  begin
+    // Caption "Search for update"
+    mmUpdate.Caption := FLang.GetString(15);
+    mmUpdate.Enabled := False;
+  end  //of begin
+  else
+    mmDownloadCert.Enabled := False;
+end;
+
+{ private TMain.BeforeUpdate
+
+  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
+
+procedure TMain.BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+begin
+  // Show dialog: Ask for permitting download
+  with FLang do
+    if (MessageBox(Format(GetString(21) +^J+ GetString(22), [ANewBuild]),
+      mtQuestion, True) = IDYES) then
+      with TUpdate.Create(Self, FLang, FLang.GetString(24)) do
+        Download('sit.exe', 'SIT.exe')
+    else
+      mmUpdate.Caption := FLang.GetString(24);
+end;
 
 { private TMain.DoExport
 
@@ -158,38 +190,6 @@ begin
     SupportInfo.Free;
     saveDialog.Free;
   end;  //of finally
-end;
-
-{ private TMain.OnDownloadFinished
-
-  Event method that is called by TUpdate when download is finished. }
-
-procedure TMain.AfterUpdate(Sender: TObject; ADownloadedFileName: string);
-begin
-  if (ExtractFileExt(ADownloadedFileName) <> '.reg') then
-  begin
-    // Caption "Search for update"
-    mmUpdate.Caption := FLang.GetString(15);
-    mmUpdate.Enabled := False;
-  end  //of begin
-  else
-    mmDownloadCert.Enabled := False;
-end;
-
-{ private TMain.OnUpdate
-
-  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
-
-procedure TMain.BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
-begin
-  // Show dialog: Ask for permitting download
-  with FLang do
-    if (MessageBox(Format(GetString(21) +^J+ GetString(22), [ANewBuild]),
-      mtQuestion, True) = IDYES) then
-      with TUpdate.Create(Self, FLang, FLang.GetString(24)) do
-        Download('sit.exe', 'SIT.exe')
-    else
-      mmUpdate.Caption := FLang.GetString(24);
 end;
 
 { private TMain.OpenLogo
@@ -621,18 +621,27 @@ begin
         FLang.MessageBox(67, mtError);
 end;
 
+{ TMain.mmGerClick
+
+  MainMenu entry that allows to change the current language to german. }
 
 procedure TMain.mmGerClick(Sender: TObject);
 begin
   FLang.ChangeLanguage(Sender, 100);
 end;
 
+{ TMain.mmEngClick
+
+  MainMenu entry that allows to change the current language to english. }
 
 procedure TMain.mmEngClick(Sender: TObject);
 begin
   FLang.ChangeLanguage(Sender, 200);
 end;
 
+{ TMain.mmFraClick
+
+  MainMenu entry that allows to change the current language to french. }
 
 procedure TMain.mmFraClick(Sender: TObject);
 begin

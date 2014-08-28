@@ -33,7 +33,7 @@ type
   { IChangeLanguageListener }
   IChangeLanguageListener = interface
   ['{FF4AAD19-49DC-403B-8EA0-3E24D984B603}']
-    procedure SetLanguage(Sender: TObject; ALangID: Word);
+    procedure SetLanguage(Sender: TObject);
   end;
 
   { MessageBox look }
@@ -189,10 +189,12 @@ var
   Listener: IChangeLanguageListener;
 
 begin
+  FLang := ALangID;
+
   // Notify all listeners
   for i := 0 to FListeners.Count -1 do
     if Supports(FListeners[i], IChangeLanguageListener, Listener) then
-      Listener.SetLanguage(ASender, ALangID);
+      Listener.SetLanguage(Self);
 
   // Select the current language
   if (ASender is TMenuItem) then

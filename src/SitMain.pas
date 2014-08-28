@@ -99,7 +99,7 @@ type
     procedure DoExport(ADirect: Boolean);
     function OpenLogo(): Boolean;
     procedure Refresh();
-    procedure SetLanguage(Sender: TObject; ALangID: Word);
+    procedure SetLanguage(Sender: TObject);
   end;
 
 var
@@ -265,10 +265,8 @@ end;
 
   Updates all component captions with new language text. }
 
-procedure TMain.SetLanguage(Sender: TObject; ALangID: Word);
+procedure TMain.SetLanguage(Sender: TObject);
 begin
-  FLang.Lang := ALangID;
-
   with FLang do
   begin
     // Set captions for TMenuItems
@@ -318,7 +316,7 @@ begin
   // German language default
   FLang := TLanguageFile.Create(100, Application);
   FLang.AddListener(Self);
-  SetLanguage(Self, FLang.Lang);
+  SetLanguage(Self);
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
@@ -621,18 +619,27 @@ begin
         FLang.MessageBox(67, mtError);
 end;
 
+{ TMain.mmGerClick
+
+  MainMenu entry that allows to change the current language to german. }
 
 procedure TMain.mmGerClick(Sender: TObject);
 begin
   FLang.ChangeLanguage(Sender, 100);
 end;
 
+{ TMain.mmEngClick
+
+  MainMenu entry that allows to change the current language to english. }
 
 procedure TMain.mmEngClick(Sender: TObject);
 begin
   FLang.ChangeLanguage(Sender, 200);
 end;
 
+{ TMain.mmFraClick
+
+  MainMenu entry that allows to change the current language to french. }
 
 procedure TMain.mmFraClick(Sender: TObject);
 begin
