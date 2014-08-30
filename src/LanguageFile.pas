@@ -13,12 +13,10 @@ unit LanguageFile;
 interface
 
 uses
-  Classes, SysUtils, Forms, Menus,
+  Classes, SysUtils, Forms,
 {$IFDEF MSWINDOWS}
   Windows;
-{$ENDIF}
-
-{$IFDEF LINUX}
+{$ELSE}
   IniFiles, LCLType;
 
 const
@@ -195,10 +193,6 @@ begin
   for i := 0 to FListeners.Count -1 do
     if Supports(FListeners[i], IChangeLanguageListener, Listener) then
       Listener.SetLanguage(Self);
-
-  // Select the current language
-  if (ASender is TMenuItem) then
-    (ASender as TMenuItem).Checked := True;
 end;
 
 { public TLanguageFile.MessageBox
