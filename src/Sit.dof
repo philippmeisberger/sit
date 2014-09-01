@@ -90,8 +90,8 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Users\Phil\sit\bin
-UnitOutputDir=C:\Users\Phil\sit\src
+OutputDir=..\bin
+UnitOutputDir=
 PackageDLLOutputDir=
 PackageDCPOutputDir=
 SearchPath=
@@ -134,14 +134,3 @@ OriginalFilename=
 ProductName=SIT
 ProductVersion=3.0
 Comments=
-[HistoryLists\hlUnitAliases]
-Count=1
-Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
-[HistoryLists\hlUnitOutputDirectory]
-Count=2
-Item0=C:\Users\Phil\sit\src
-Item1=C:\Users\Phil\sit-35fff790edbe\src
-[HistoryLists\hlOutputDirectorry]
-Count=2
-Item0=C:\Users\Phil\sit\bin
-Item1=C:\Users\Phil\sit-35fff790edbe\bin
