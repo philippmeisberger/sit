@@ -8,6 +8,8 @@
 
 unit DownloadThread;
 
+{$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
+
 interface
 
 uses
@@ -87,13 +89,8 @@ begin
   // Link HTTP events
   with FHttp do
   begin
-  {$IFDEF MSWINDOWS}
     OnWorkBegin := DownloadStart;
     OnWork := Downloading;
-  {$ELSE}
-    OnWorkBegin := @DownloadStart;
-    OnWork := @Downloading;
-  {$ENDIF}
   end;  //of begin
 end;
 
@@ -131,33 +128,19 @@ begin
 
     // Check if download was successful?
     if (FResponseCode = 200) then
-    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnFinish);
-    {$ELSE}
-      Synchronize(@DoNotifyOnFinish);
-    {$ENDIF}       
 
   except
     on E: EAbort do
     begin
       DeleteFile(FFileName);
-
-    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnCancel);
-    {$ELSE}
-      Synchronize(@DoNotifyOnCancel);
-    {$ENDIF}
     end;  //of begin
 
     on E: Exception do
     begin
       DeleteFile(FFileName);
-
-    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnError);
-    {$ELSE}
-      Synchronize(@DoNotifyOnError);
-    {$ENDIF}
     end;  //of begin
   end;  //of try
 end;
@@ -171,12 +154,7 @@ procedure TDownloadThread.DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
 begin
   // Convert Byte into Kilobyte (KB = Byte/1024)
   FFileSize := AFileSize div 1024;
-
-  {$IFDEF MSWINDOWS}
-    Synchronize(DoNotifyOnStart);
-  {$ELSE}
-    Synchronize(@DoNotifyOnStart);
-  {$ENDIF}
+  Synchronize(DoNotifyOnStart);
 end;
 
 { public TDownloadThread.Downloading
@@ -190,12 +168,7 @@ begin
   begin
     // Convert Byte into Kilobyte (KB = Byte/1024)
     FDownloadSize := ADownloadSize div 1024;
-
-  {$IFDEF MSWINDOWS}
     Synchronize(DoNotifyOnDownloading);
-  {$ELSE}
-    Synchronize(@DoNotifyOnDownloading);
-  {$ENDIF}
   end  //of begin
   else
     Abort;

@@ -122,8 +122,7 @@ begin
   SetLanguage(Self);
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
-  FUpdateCheck.AddListener(Self);
+  FUpdateCheck := TUpdateCheck.Create(Self, 'SIT', FLang);
 
   // Check for update on startup
   FUpdateCheck.CheckForUpdate(False);
@@ -663,10 +662,7 @@ begin
      + FLang.GetString(28), mtQuestion) = IDYES)) then
      // Download certificate
      with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
-     begin
-       AddListener(Self);
        DownloadCertificate();
-     end;  //of with
 end;
 
 { TMain.mmUpdateClick

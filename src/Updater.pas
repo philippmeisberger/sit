@@ -8,7 +8,7 @@
 
 unit Updater;
 
-{$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
+{$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
 interface
 
@@ -43,7 +43,9 @@ type
   protected
     FListeners: TInterfaceList;
   public
-    constructor Create(ARemoteDirName: string; ALang: TLanguageFile);
+    constructor Create(ARemoteDirName: string; ALang: TLanguageFile); overload;
+    constructor Create(AOwner: TComponent; ARemoteDirName: string;
+      ALang: TLanguageFile); overload;
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
     procedure CheckForUpdate(AUserUpdate: Boolean; ACurrentBuild: Cardinal = 0);
@@ -103,6 +105,17 @@ begin
   FLang := ALang;
   FRemoteDirName := ARemoteDirName;
   FListeners := TInterfaceList.Create;
+end;
+
+{ public TUpdateCheck.Create
+
+  Constructor for creating an TUpdateCheck instance. }
+
+constructor TUpdateCheck.Create(AOwner: TComponent; ARemoteDirName: string;
+  ALang: TLanguageFile);
+begin
+  Create(ARemoteDirName, ALang);
+  FListeners.Add(AOwner);
 end;
 
 { public TUpdateCheck.Destroy
@@ -187,15 +200,12 @@ begin
   // Search for update
   with TUpdateCheckThread.Create(ACurrentBuild, FRemoteDirName) do
   begin
-  {$IFDEF MSWINDOWS}
     OnUpdate := OnUpdateAvailable;
     OnNoUpdate := OnNoUpdateAvailable;
     OnError := OnCheckError;
+  {$IFDEF MSWINDOWS}
     Resume;
   {$ELSE}
-    OnUpdate := @OnUpdateAvailable;
-    OnNoUpdate := @OnNoUpdateAvailable;
-    OnError := @OnCheckError;
     Start;
   {$ENDIF}
   end;  //of with
@@ -227,6 +237,13 @@ begin
 
   if (AFormCaption <> '') then
     Self.Caption := AFormCaption;
+
+  // Init list of listeners
+  FListeners := TInterfaceList.Create;
+
+  // Add owner to list to receive events
+  if Assigned(AOwner) then
+    FListeners.Add(AOwner);
 end;
 
 { public TUpdate.Create
@@ -449,4 +466,4 @@ begin
 end;
 {$ENDIF}
 
-end.
+end.

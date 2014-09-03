@@ -8,7 +8,7 @@
 
 unit UpdateCheckThread;
 
-{$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
+{$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
 interface
 
@@ -95,26 +95,14 @@ begin
 
     // Check if downloaded version is newer than current version
     if (FNewBuild > FCurBuild) then
-    // Notify "update available"
-    {$IFDEF MSWINDOWS}
+      // Notify "update available"
       Synchronize(DoNotifyOnUpdate)
-    {$ELSE}
-      Synchronize(@DoNotifyOnUpdate)
-    {$ENDIF}
     else
-    // Notify "no update available"
-    {$IFDEF MSWINDOWS}
+      // Notify "no update available"
       Synchronize(DoNotifyOnNoUpdate);
-    {$ELSE}
-      Synchronize(@DoNotifyOnNoUpdate);
-    {$ENDIF}
 
   except
-  {$IFDEF MSWINDOWS}
     Synchronize(DoNotifyOnError);
-  {$ELSE}
-    Synchronize(@DoNotifyOnError);
-  {$ENDIF}
   end;  //of except
 end;
 
@@ -150,4 +138,4 @@ begin
     OnUpdate(Self, FNewBuild);
 end;
 
-end.
+end.

@@ -110,6 +110,84 @@ implementation
 {$R *.dfm}
 {$R manifest.res}
 
+{ TMain.FormCreate
+
+  VCL event that is called when form is being created. }
+
+procedure TMain.FormCreate(Sender: TObject);
+begin
+  // German language default
+  FLang := TLanguageFile.Create(100, Application);
+  FLang.AddListener(Self);
+  SetLanguage(Self);
+
+  // Init update notificator
+  FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
+  FUpdateCheck.AddListener(Self);
+
+  // Check for update on startup
+  FUpdateCheck.CheckForUpdate(False);
+
+  // Init support information instance
+  if TOSUtils.CheckWindows() then
+    FSupportInfo := TSupportInformation.Create
+  else
+    FSupportInfo := TSupportInformationXP.Create;
+end;
+
+{ TMain.FormDestroy
+
+  VCL event that is called when form is being destroyed. }
+
+procedure TMain.FormDestroy(Sender: TObject);
+begin
+  FSupportInfo.Free;
+  FUpdateCheck.Free;
+  FLang.Free;
+end;
+
+{ TMain.FormShow
+
+  VCL event that is called when form is shown. }
+
+procedure TMain.FormShow(Sender: TObject);
+const
+  BCM_FIRST = $1600;
+  BCM_SETSHIELD = BCM_FIRST + $000C;
+
+var
+  windows: string;
+  newWindows: Boolean;
+
+begin
+  windows := TOSUtils.GetWinVersion();
+  newWindows := TOSUtils.CheckWindows();
+  cbCopyIcon.Enabled := newWindows;
+  
+  // Check for incompatibility
+  if not (newWindows or (windows[1] in ['X','2'])) then
+  begin
+    Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
+    bAccept.Enabled := false;
+    mmFile.Enabled := false;
+    mmEdit.Enabled := false;
+    eLogo.Enabled := false;
+    eMan.Enabled := false;
+    ePhone.Enabled := false;
+    eHours.Enabled := false;
+    eModel.Enabled := false;
+    eUrl.Enabled := false;
+    bShowSupport.Enabled := false;
+    Exit;
+  end;  //of begin
+
+  // Show support information
+  mmShowValues.Click;
+
+  // Make UAC-Shield button
+  SendMessage(bAccept.Handle, BCM_SETSHIELD, 0, integer(True)); 
+end;
+
 { private TMain.AfterUpdate
 
   Event method that is called by TUpdate when download is finished. }
@@ -307,78 +385,6 @@ begin
     bAccept.Caption := GetString(49);
     bShowSupport.Caption := GetString(50);
   end;  //of with
-end;
-
-{ TMain.FormCreate }
-
-procedure TMain.FormCreate(Sender: TObject);
-begin
-  // German language default
-  FLang := TLanguageFile.Create(100, Application);
-  FLang.AddListener(Self);
-  SetLanguage(Self);
-
-  // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
-  FUpdateCheck.AddListener(Self);
-
-  // Check for update on startup
-  FUpdateCheck.CheckForUpdate(False);
-
-  // Init support information instance
-  if TOSUtils.CheckWindows() then
-    FSupportInfo := TSupportInformation.Create
-  else
-    FSupportInfo := TSupportInformationXP.Create;
-end;
-
-{ TMain.FormDestroy }
-
-procedure TMain.FormDestroy(Sender: TObject);
-begin
-  FSupportInfo.Free;
-  FUpdateCheck.Free;
-  FLang.Free;
-end;
-
-{ TMain.FormShow }
-
-procedure TMain.FormShow(Sender: TObject);
-const
-  BCM_FIRST = $1600;
-  BCM_SETSHIELD = BCM_FIRST + $000C;
-
-var
-  windows: string;
-  newWindows: Boolean;
-
-begin
-  windows := TOSUtils.GetWinVersion();
-  newWindows := TOSUtils.CheckWindows();
-  cbCopyIcon.Enabled := newWindows;
-  
-  // Check for incompatibility
-  if not (newWindows or (windows[1] in ['X','2'])) then
-  begin
-    Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
-    bAccept.Enabled := false;
-    mmFile.Enabled := false;
-    mmEdit.Enabled := false;
-    eLogo.Enabled := false;
-    eMan.Enabled := false;
-    ePhone.Enabled := false;
-    eHours.Enabled := false;
-    eModel.Enabled := false;
-    eUrl.Enabled := false;
-    bShowSupport.Enabled := false;
-    Exit;
-  end;  //of begin
-
-  // Show support information
-  mmShowValues.Click;
-
-  // Make UAC-Shield button
-  SendMessage(bAccept.Handle, BCM_SETSHIELD, 0, integer(True)); 
 end;
 
 { TMain.bAcceptClick
