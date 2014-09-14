@@ -534,7 +534,7 @@ object Info: TInfo
         Top = 96
         Width = 21
         Height = 14
-        Caption = 'v2.1'
+        Caption = 'v3.0'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11

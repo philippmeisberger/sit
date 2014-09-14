@@ -18,7 +18,6 @@ uses
 type
   { TMain }
   TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
-    iBack: TImage;
     lCopy: TLabel;
     lVersion: TLabel;
     Image: TImage;

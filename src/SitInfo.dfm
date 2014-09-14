@@ -584,7 +584,7 @@ object Info: TInfo
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '08/2014')
+          '09/2014')
         ReadOnly = True
         TabOrder = 0
       end
@@ -635,11 +635,10 @@ object Info: TInfo
         Anchors = [akLeft, akTop, akRight, akBottom]
         Lines.Strings = (
           'SIT (alias "Supportinfo-Tool")'
-          'Ein Freeware-Programm von Philipp Meisberger (PM Code Works)'
+          'Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)'
           ''
           'History'
           '--------'
-          ''
           ''
           'Version 2.1 [26.07.13]'
           ''
@@ -767,15 +766,9 @@ object Info: TInfo
           
             '----------------------------------------------------------------' +
             '-------'
-          'SIT ist Freeware. Das hei'#223't, dass das Kopieren und die'
-          
-            'Weitergabe von Clearas erlaubt ist. Weiterhin ist die Ver'#246'ffentl' +
-            'ichung '
-          'auf WWW-Servern und Datentr'#228'gern erlaubt. Allerdings muss das'
-          
-            'Programm vollst'#228'ndig und in der Original-Form kopiert werden. Da' +
-            's'
-          'Kopieren von Teilen des Programmes ist nicht erlaubt. '
+          'SIT wurde unter der BSD-Lizenz ver'#246'ffentlicht und ist somit '
+          'Open-Source. Der Quelltext kann auf der Website heruntergeladen '
+          'werden.'
           
             'Soll SIT auf eine kommerzielle CD-ROM (mit Magazin) gepresst wer' +
             '-'
@@ -786,7 +779,7 @@ object Info: TInfo
             'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
             '.'
           ''
-          '08/2014')
+          '09/2014')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0
