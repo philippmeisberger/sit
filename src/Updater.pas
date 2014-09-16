@@ -21,6 +21,9 @@ uses
   LCLType;
 {$ENDIF}
 
+const
+  URL_DOWNLOAD = URL_DIR + 'downloader.php?file=';
+  
 type
   { IUpdateListener }
   IUpdateListener = interface
@@ -80,8 +83,9 @@ type
       ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); overload;
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
-    procedure Download(); overload;
-    procedure Download(ARemoteFileName, ALocalFileName: string); overload;
+    procedure Download(ADownloadDirectory: string = ''); overload;
+    procedure Download(ARemoteFileName, ALocalFileName: string;
+      ADownloadDirectory: string = ''); overload;
     procedure DownloadCertificate();
     procedure RemoveListener(AListener: IUpdateListener);
   end; 
@@ -365,31 +369,39 @@ end;
 
   Starts downloading a file. }
 
-procedure TUpdate.Download();
+procedure TUpdate.Download(ADownloadDirectory: string = '');
 begin
   if ((FRemoteFileName = '') or (FLocalFileName = '')) then
     raise Exception.Create('Missing argument: "RemoteFileName" or "LocalFileName"!');
 
-  Download(FRemoteFileName, FLocalFileName);
+  Download(FRemoteFileName, FLocalFileName, ADownloadDirectory);
 end;
 
 { public TUpdate.Download
 
   Starts downloading a file. }
 
-procedure TUpdate.Download(ARemoteFileName, ALocalFileName: string);
+procedure TUpdate.Download(ARemoteFileName, ALocalFileName: string; 
+  ADownloadDirectory: string = '');
 var
-  Dir, Url: string;
+  Url: string;
+  Continue: Boolean;
 
 begin
   FRemoteFileName := ARemoteFileName;
   FLocalFileName := ALocalFileName;
+  
+  // Download folder still set?
+  if (ADownloadDirectory <> '') then
+    Continue := True
+  else
+    // Show SelectDirectory dialog
+    Continue := SelectDirectory(FLang.GetString(9), '', ADownloadDirectory);
 
-  // Show "Choose folder" dialog
-  if SelectDirectory(FLang.GetString(9), '', Dir) then
+  if Continue then
   begin
-    Url := URL_DIR +'downloader.php?file='+ FRemoteFileName;
-    FFileName := IncludeTrailingPathDelimiter(Dir) + FLocalFileName;
+    Url := URL_DOWNLOAD + FRemoteFileName;
+    FFileName := IncludeTrailingPathDelimiter(ADownloadDirectory) + FLocalFileName;
 
     // Try to init thread
     try
@@ -417,7 +429,7 @@ begin
   end  //of begin
   else
     // Cancel clicked
-    Reset;
+    Reset();
 end;
 
 { TUpdate.DownloadCertificate
@@ -426,7 +438,7 @@ end;
 
 procedure TUpdate.DownloadCertificate();
 begin
-  Download('cert.reg', 'Install_PMCW_Cert.reg');
+  Download('cert.reg', 'Install_PMCW_Cert.reg', TOSUtils.GetTempDir());
 end;
 
 { public TUpdate.RemoveListener
