@@ -145,10 +145,6 @@ end;
   VCL event that is called when form is shown. }
 
 procedure TMain.FormShow(Sender: TObject);
-const
-  BCM_FIRST = $1600;
-  BCM_SETSHIELD = BCM_FIRST + $000C;
-
 var
   windows: string;
   newWindows: Boolean;
@@ -179,7 +175,7 @@ begin
   mmShowValues.Click;
 
   // Make UAC-Shield button
-  SendMessage(bAccept.Handle, BCM_SETSHIELD, 0, integer(True)); 
+  TOSUtils.MakeUACShieldButton(bAccept.Handle);
 end;
 
 { private TMain.AfterUpdate
@@ -230,7 +226,7 @@ begin
     if (ExtractFileExt(eLogo.Text) = '.bmp') then
     begin
       // Show dialog
-		  if SelectDirectory(FLang.GetString(9), '', dir) then
+      if SelectDirectory(FLang.GetString(9), '', dir) then
       begin
         dir := dir +'\'+ ExtractFileName(eLogo.Text);
 

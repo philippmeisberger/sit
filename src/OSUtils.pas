@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Operating System Utilities Unit v1.5                      }
+{ PM Code Works Operating System Utilities Unit v1.5.1                    }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -51,6 +51,7 @@ type
     class function GetWinDir(): string;
     class function GetWinVersion(AShowServicePack: Boolean = False): string;  //not by me
     class function HKeyToStr(AHKey: HKey): string;
+    class function MakeUACShieldButton(AButtonHandle: HWND): Integer;
     class function OpenUrl(const AUrl: string): Boolean;
     class function PlaySound(AFileName: string; ASynchronized: Boolean = False): Boolean;
     class function PMCertExists(): Boolean;
@@ -457,6 +458,19 @@ begin
       else
         raise EOSUtilsException.Create('Bad format error! Unknown HKEY!');
 end;
+
+{ public TOSUtils.MakeUACShieldButton
+
+  Adds the Windows UAC shield to a button. }
+
+class function TOSUtils.MakeUACShieldButton(AButtonHandle: HWND): Integer;
+const
+  BCM_FIRST = $1600;
+  BCM_SETSHIELD = BCM_FIRST + $000C;
+
+begin
+  result := SendMessage(AButtonHandle, BCM_SETSHIELD, 0, Integer(True));
+end;
 {$ENDIF}
 
 { public TOSUtils.OpenUrl
@@ -645,3 +659,4 @@ end;
 {$ENDIF}
 
 end.
+

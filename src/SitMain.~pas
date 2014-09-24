@@ -230,7 +230,7 @@ begin
     if (ExtractFileExt(eLogo.Text) = '.bmp') then
     begin
       // Show dialog
-		  if SelectDirectory(FLang.GetString(9), '', dir) then
+      if SelectDirectory(FLang.GetString(9), '', dir) then
       begin
         dir := dir +'\'+ ExtractFileName(eLogo.Text);
 

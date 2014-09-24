@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Operating System Utilities Unit v1.5                      }
+{ PM Code Works Operating System Utilities Unit v1.5.1                    }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -41,12 +41,13 @@ type
   protected
     class function KillProcess(AExeName: string): Boolean;
   public
+    class function AddUACShield(AHandle: HWND): Integer;
     class function CheckWindows(): Boolean;
     class function CreateTempDir(const AFolderName: string): Boolean;
     class function ExecuteFile(const AFilePath: string): Boolean;
     class function ExitWindows(AAction: Word): Boolean;
     class function ExplorerReboot(): Boolean;
-    class function GetBuildNumber(): Word;
+    class function GetBuildNumber(): Cardinal;
     class function GetTempDir(): string;
     class function GetWinDir(): string;
     class function GetWinVersion(AShowServicePack: Boolean = False): string;  //not by me
@@ -54,7 +55,7 @@ type
     class function OpenUrl(const AUrl: string): Boolean;
     class function PlaySound(AFileName: string; ASynchronized: Boolean = False): Boolean;
     class function PMCertExists(): Boolean;
-    class function ShowAddRegistryDialog(const FRegFilePath: string): Boolean;
+    class function ShowAddRegistryDialog(const ARegFilePath: string): Boolean;
     class function Shutdown(): Boolean;
    	class function StrToHKey(AMainKey: string): HKEY;
   end;
@@ -198,6 +199,19 @@ end;
 
 { TOSUtils }
 
+{ public TOSUtils.AddUACShield
+
+  Adds the Windows UAC shield to a component. }
+
+class function TOSUtils.AddUACShield(AHandle: HWND): Integer;
+const
+  BCM_FIRST = $1600;
+  BCM_SETSHIELD = BCM_FIRST + $000C;
+
+begin
+  result := SendMessage(AHandle, BCM_SETSHIELD, 0, Integer(True));
+end;
+
 { public TOSUtils.KillProcess
 
   Terminates a given process. }
@@ -312,7 +326,7 @@ end;
 
   Returns build number of current running *.exe. }
 
-class function TOSUtils.GetBuildNumber(): Word;
+class function TOSUtils.GetBuildNumber(): Cardinal;
 var
   VerInfoSize, VerValueSize, Dummy: DWord;
   VerInfo: Pointer;
@@ -645,3 +659,4 @@ end;
 {$ENDIF}
 
 end.
+
