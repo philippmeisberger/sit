@@ -95,6 +95,7 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    function CopyIcon(): Boolean;
     procedure DoExport(ADirect: Boolean);
     function OpenLogo(): Boolean;
     procedure Refresh();
@@ -216,6 +217,43 @@ begin
         Download('sit.exe', 'SIT.exe')
     else
       mmUpdate.Caption := FLang.GetString(24);
+end;
+
+{ private TMain.CopyIcon
+
+  Allows users to copy a icon in *.bmp format. }
+
+function TMain.CopyIcon(): Boolean;
+var
+  dir: string;
+
+begin
+  result := False;
+
+  // Icon exists and extension is .bmp
+  if FileExists(eLogo.Text) then
+    if (ExtractFileExt(eLogo.Text) = '.bmp') then
+    begin
+      // Show dialog
+		  if SelectDirectory(FLang.GetString(9), '', dir) then
+      begin
+        dir := dir +'\'+ ExtractFileName(eLogo.Text);
+
+        // Copy icon
+        if CopyFile(PChar(eLogo.Text), PChar(dir), True) then
+        begin
+          FLang.MessageBox(FLang.GetString(78) + dir + FLang.GetString(79));
+          eLogo.Text := dir;
+          result := True;
+        end  //of begin
+        else
+          FLang.MessageBox(76, mtError);
+      end;  //of begin
+		end  //of begin
+    else
+      FLang.MessageBox(80, mtWarning)
+  else
+    FLang.MessageBox(77, mtWarning);
 end;
 
 { private TMain.DoExport
@@ -394,19 +432,20 @@ begin
   if (Flang.MessageBox(60, mtQuestion) = IDYES) then
   try
     if cbCopyIcon.Checked then
-      mmCopyIcon.Click;
+      if not CopyIcon() then
+        Exit;
 
     with FSupportInfo do
     begin
       // Icon exists?
-      if ((eLogo.Text = '') xor (FileExists(eLogo.Text))) then
-        Icon := eLogo.Text
-      else
+      if ((not FileExists(eLogo.Text)) xor (eLogo.Text = '')) then
       begin
         Flang.MessageBox(77, mtWarning);
         eLogo.SetFocus;
         Exit;
-      end;  //of if
+      end  //of begin
+      else
+        Icon := eLogo.Text;
 
       if (eMan.Text <> '') then
       begin
@@ -419,7 +458,7 @@ begin
       end  //of begin
       else
       begin
-        Flang.MessageBox(73, mtWarning);
+        FLang.MessageBox(73, mtWarning);
         eMan.SetFocus;
         Exit;
       end;  //of if
@@ -578,31 +617,9 @@ end;
 
   Allows users to copy a icon in *.bmp format. }
 
-procedure TMain.mmCopyIconClick(Sender: TObject);               //Logo kopieren
-var
-  dir: string;
-
+procedure TMain.mmCopyIconClick(Sender: TObject);
 begin
-  if FileExists(eLogo.Text) then                          //existiert Logo
-    if (ExtractFileExt(eLogo.Text) <> '.bmp') then       //Endung ".bmp"?
-      FLang.MessageBox(77, mtWarning)
-    else
-    begin
-		  if SelectDirectory(FLang.GetString(9), '', dir) then  //"Ordner wählen"
-      begin
-        dir := dir +'\'+ ExtractFileName(eLogo.Text);
-
-        if CopyFile(PChar(eLogo.Text), PChar(dir), true) then  //Logo kopieren
-        begin
-          FLang.MessageBox(FLang.GetString(78) + dir + FLang.GetString(79));
-          eLogo.Text := dir;                          //neuer Logo-Pfad
-        end  //of begin
-        else
-          FLang.MessageBox(76, mtError);
-      end;  //of begin
-		end  //of if
-  else
-    FLang.MessageBox(80, mtWarning);
+  CopyIcon();
 end;
 
 { TMain.mmDelLogoClick

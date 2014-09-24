@@ -21,6 +21,7 @@ const
   URL_BASE = 'http://www.pm-codeworks.de/';
   URL_CONTACT = URL_BASE +'kontakt.html';
 
+  { Registry value name constants }
   INFO_ICON = 'Logo';
   INFO_MAN = 'Manufacturer';
   INFO_MODEL = 'Model';
@@ -169,7 +170,16 @@ procedure TSupportInformationBase.SaveAsIni(const AFilename: string);
 var
   ext: string;
   ini: TIniFile;
-  
+
+  procedure AppendToFile(const ASection, AName, AValue: string);
+  begin
+    if (AValue <> '') then
+      ini.WriteString(ASection, AName, AValue)
+    else
+      if ini.ValueExists(ASection, AName) then
+        ini.DeleteKey(ASection, AName);
+  end;
+
 begin
   if (ExtractFileExt(AFileName) = '') then
     ext := '.ini'
@@ -179,15 +189,12 @@ begin
   ini := TIniFile.Create(AFileName + ext);
 
   try
-    with ini do
-    begin
-      WriteString(INFO_ICON, INFO_ICON, FIcon);
-      WriteString(INFO_GENERAL, INFO_MAN, FMan);
-      WriteString(INFO_GENERAL, INFO_MODEL, FModel);
-      WriteString(INFO_GENERAL, INFO_URL, FUrl);
-      WriteString(SUPPORT_INFO, INFO_PHONE, FPhone);
-      WriteString(SUPPORT_INFO, INFO_HOURS, FHours);
-    end;  //of with
+    AppendToFile(INFO_ICON, INFO_ICON, FIcon);
+    AppendToFile(INFO_GENERAL, INFO_MAN, FMan);
+    AppendToFile(INFO_GENERAL, INFO_MODEL, FModel);
+    AppendToFile(INFO_GENERAL, INFO_URL, FUrl);
+    AppendToFile(SUPPORT_INFO, INFO_PHONE, FPhone);
+    AppendToFile(SUPPORT_INFO, INFO_HOURS, FHours);
 
   finally
     ini.Free;
@@ -202,8 +209,32 @@ end;
   Deletes the support information icon if exists. }
 
 function TSupportInformation.DeleteIcon(): Boolean;
+var
+  reg: TRegistry;
+
 begin
-  result := DeleteFile(GetOEMLogo());
+  // Delete icon file
+  if not DeleteFile(GetOEMLogo()) then
+  begin
+    result := False;
+    Exit;
+  end  //of begin
+  else
+  begin
+    // Remove Registry value
+    reg := TRegistry.Create(SetKeyAccessMode());
+
+    try
+      reg.RootKey := HKEY_LOCAL_MACHINE;
+      reg.OpenKey(OEMINFO_KEY, True);
+      reg.DeleteValue(INFO_ICON);
+      result := True;
+
+    finally
+      reg.CloseKey();
+      reg.Free;
+    end;  //of try
+  end;  //of if
 end;
 
 { public TSupportInformation.Exists
@@ -337,8 +368,8 @@ begin
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey('SOFTWARE\Microsoft\Windows\CurrentVersion', True);
-    result := reg.DeleteKey('OEMInformation');
+    reg.OpenKey(ExtractFileDir(OEMINFO_KEY), True);
+    result := reg.DeleteKey(ExtractFileName(OEMINFO_KEY));
 
   finally
     reg.CloseKey();
@@ -466,15 +497,21 @@ begin
       Exit;
     end;  //of begin
 
-    // Delete logo path from *.ini file
-    ini := TIniFile.Create(GetOemInfo());
-
     try
-      ini.DeleteKey('Logo', 'Logo');
+      // Delete logo path from *.ini file
+      ini := TIniFile.Create(GetOemInfo());
 
-    finally
-      ini.Free;
-    end;  //of finally
+      try
+        ini.DeleteKey('Logo', 'Logo');
+        result := True;
+
+      finally
+        ini.Free;
+      end;  //of finally
+
+    except
+      result := False
+    end;  //of except
   end  //of begin
   else
     result := False;
