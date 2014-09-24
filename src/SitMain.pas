@@ -80,15 +80,11 @@ type
     procedure mmDownloadCertClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
     procedure mmInfoClick(Sender: TObject);
-    procedure eHoursDblClick(Sender: TObject);
     procedure eLogoDblClick(Sender: TObject);
-    procedure eManDblClick(Sender: TObject);
-    procedure eModelDblClick(Sender: TObject);
-    procedure ePhoneDblClick(Sender: TObject);
-    procedure eUrlDblClick(Sender: TObject);
     procedure lCopyClick(Sender: TObject);
     procedure lCopyMouseEnter(Sender: TObject);
     procedure lCopyMouseLeave(Sender: TObject);
+    procedure eUrlDblClick(Sender: TObject);
   private
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
@@ -97,7 +93,6 @@ type
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function CopyIcon(): Boolean;
     procedure DoExport(ADirect: Boolean);
-    function OpenLogo(): Boolean;
     procedure Refresh();
     procedure SetLanguage(Sender: TObject);
   end;
@@ -167,16 +162,16 @@ begin
   if not (newWindows or (windows[1] in ['X','2'])) then
   begin
     Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
-    bAccept.Enabled := false;
-    mmFile.Enabled := false;
-    mmEdit.Enabled := false;
-    eLogo.Enabled := false;
-    eMan.Enabled := false;
-    ePhone.Enabled := false;
-    eHours.Enabled := false;
-    eModel.Enabled := false;
-    eUrl.Enabled := false;
-    bShowSupport.Enabled := false;
+    bAccept.Enabled := False;
+    mmFile.Enabled := False;
+    mmEdit.Enabled := False;
+    eLogo.Enabled := False;
+    eMan.Enabled := False;
+    ePhone.Enabled := False;
+    eHours.Enabled := False;
+    eModel.Enabled := False;
+    eUrl.Enabled := False;
+    bShowSupport.Enabled := False;
     Exit;
   end;  //of begin
 
@@ -242,18 +237,18 @@ begin
         // Copy icon
         if CopyFile(PChar(eLogo.Text), PChar(dir), True) then
         begin
-          FLang.MessageBox(FLang.GetString(78) + dir + FLang.GetString(79));
+          FLang.MessageBox(Format(FLang.GetString(77), [dir]));
           eLogo.Text := dir;
           result := True;
         end  //of begin
         else
-          FLang.MessageBox(76, mtError);
+          FLang.MessageBox(70, mtError);
       end;  //of begin
 		end  //of begin
     else
-      FLang.MessageBox(80, mtWarning)
+      FLang.MessageBox(78, mtWarning)
   else
-    FLang.MessageBox(77, mtWarning);
+    FLang.MessageBox(76, mtWarning);
 end;
 
 { private TMain.DoExport
@@ -266,93 +261,49 @@ var
   saveDialog : TSaveDialog;
 
 begin
-  saveDialog := TSaveDialog.Create(Self);
-
-  with saveDialog do
-  begin
-    Title := FLang.GetString(52);
-    FileName := FLang.GetString(54);
-    Options := Options + [ofOverwritePrompt];
-  end;  //of with
-
-  if ADirect then
-    // Create copy of real TSupportInformation object
-    SupportInfo := TSupportInformation.Create(FSupportInfo)
-  else
-    // Create new TSupportInformation object with content of text fields
-    SupportInfo := TSupportInformation.Create(eLogo.Text, eMan.Text, eModel.Text,
-       eUrl.Text, ePhone.Text, eHours.Text);
   try
-    if TOSUtils.CheckWindows() then
+    saveDialog := TSaveDialog.Create(Self);
+
+    with saveDialog do
     begin
-      // Windows >= Vista: Export as *.ini and *.reg
-      saveDialog.Filter := FLang.GetString(55);
-      saveDialog.FilterIndex := 2;
-    end  //of begin
+      Title := FLang.GetString(52);
+      FileName := FLang.GetString(54);
+      Options := Options + [ofOverwritePrompt];
+    end;  //of with
+
+    if ADirect then
+      // Create deep copy of TSupportInformation object
+      SupportInfo := TSupportInformation.Create(FSupportInfo)
     else
-      // Windows < Vista: Export only as *.ini
-      saveDialog.Filter := FLang.GetString(56);
-
-    // "Save" clicked
-    if saveDialog.Execute then
-      case saveDialog.FilterIndex of
-        1: SupportInfo.SaveAsIni(saveDialog.FileName);
-        2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
-      end; //of case
-
-  finally
-    SupportInfo.Free;
-    saveDialog.Free;
-  end;  //of finally
-end;
-
-{ private TMain.OpenLogo
-
-  Allows users to search for a support information icon in *.bmp format. }
-
-function TMain.OpenLogo(): Boolean;
-var
-  OpenLogoDialog : TOpenPictureDialog;
-
-begin
-  result := True;
-  OpenLogoDialog := TOpenPictureDialog.Create(Self);
-
-  with OpenLogoDialog do
-  begin
-    Options := Options + [ofFileMustExist];
-    Filter := FLang.GetString(57);
-    Title := FLang.GetString(53);
-
-    if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
-    begin
-      InitialDir := ExtractFilePath(eLogo.Text);
-      FileName := ExtractFileName(eLogo.Text);
-    end  //of begin
-    else
-      InitialDir := GetCurrentDir;
-  end;  //of with
-
-  try
-    if OpenLogoDialog.Execute then
-    begin
-      Image.Picture.LoadFromFile(OpenLogoDialog.FileName);
-
-      // Check resolution > 400 x 500
-      if ((Image.Height > 400) or (Image.Width > 500)) then
+      // Create new TSupportInformation object with content of text fields
+      SupportInfo := TSupportInformation.Create(eLogo.Text, eMan.Text,
+        eModel.Text, eUrl.Text, ePhone.Text, eHours.Text);
+    try
+      if TOSUtils.CheckWindows() then
       begin
-        FLang.MessageBox(FLang.GetString(58)+ IntToStr(Image.Height) +'x'+
-                   IntToStr(Image.Width) +')!' +^J+ FLang.GetString(59), mtWarning);
-        result := False;
+        // Windows >= Vista: Export as *.ini and *.reg
+        saveDialog.Filter := FLang.GetString(55);
+        saveDialog.FilterIndex := 2;
       end  //of begin
       else
-        eLogo.Text := OpenLogoDialog.FileName;
-    end; //of if
+        // Windows < Vista: Export only as *.ini
+        saveDialog.Filter := FLang.GetString(56);
 
-  finally
-    OpenLogoDialog.Free;
-    eLogo.SetFocus;
-  end;  //of finally
+      // "Save" clicked
+      if saveDialog.Execute then
+        case saveDialog.FilterIndex of
+          1: SupportInfo.SaveAsIni(saveDialog.FileName);
+          2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
+        end; //of case
+
+    finally
+      SupportInfo.Free;
+      saveDialog.Free;
+    end;  //of try
+
+  except
+    FLang.MessageBox(69, mtError);
+  end;  //of try
 end;
 
 { private TMain.Refresh
@@ -420,6 +371,7 @@ begin
     // Set captions for buttons
     bAccept.Caption := GetString(49);
     bShowSupport.Caption := GetString(50);
+    bAdd.Hint := GetString(53);
   end;  //of with
 end;
 
@@ -479,12 +431,52 @@ end;
 
 { TMain.bAddClick
 
-  Allows users to add a support information icon. }
+  Allows users to search for a support information icon in *.bmp format. }
 
 procedure TMain.bAddClick(Sender: TObject);
+var
+  OpenLogoDialog : TOpenPictureDialog;
+
 begin
-  if not OpenLogo() then
-    OpenLogo();
+  OpenLogoDialog := TOpenPictureDialog.Create(Self);
+
+  with OpenLogoDialog do
+  begin
+    Options := Options + [ofFileMustExist];
+    Filter := FLang.GetString(57);
+    Title := FLang.GetString(53);
+
+    // Icon exists?
+    if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
+    begin
+      // Open path of current icon
+      InitialDir := ExtractFilePath(eLogo.Text);
+      FileName := ExtractFileName(eLogo.Text);
+    end  //of begin
+    else
+      // Open picture folder of current user
+      InitialDir := '%USERPROFILE%\Pictures';
+  end;  //of with
+
+  try
+    if OpenLogoDialog.Execute then
+    begin
+      Image.Picture.LoadFromFile(OpenLogoDialog.FileName);
+
+      // Check square format of image and warn user
+      if (Image.Height <> Image.Width) then
+      begin
+        FLang.MessageBox(Format(FLang.GetString(58), [Image.Height, Image.Width]) +
+          FLang.GetString(59), mtWarning);
+      end;  //of begin
+
+      eLogo.Text := OpenLogoDialog.FileName;
+    end; //of if
+
+  finally
+    OpenLogoDialog.Free;
+    eLogo.SetFocus;
+  end;  //of finally
 end;
 
 { TMain.mmImportClick
@@ -503,19 +495,22 @@ begin
     Title := FLang.GetString(51);
     Options := Options + [ofFileMustExist];
 
+    // Windows >= Vista: Import *.ini and *.reg files
     if TOSUtils.CheckWindows() then
     begin
       Filter := FLang.GetString(55);
       FilterIndex := 2;
     end  //of begin
     else
+      // Windows < Vista: Import only *.ini files
       Filter := FLang.GetString(56);
   end;  //of with  
 
   try
     if openDialog.Execute then
     begin
-      Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+ ExtractFileName(openDialog.FileName);
+      Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+
+        ExtractFileName(openDialog.FileName);
 
       case openDialog.FilterIndex of
         1: FSupportInfo.LoadFromIni(openDialog.FileName);
@@ -527,7 +522,7 @@ begin
 
   finally
     openDialog.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { TMain.mmExportClick
@@ -577,20 +572,22 @@ end;
 
 procedure TMain.mmDelValuesClick(Sender: TObject);
 begin
-  if (FLang.MessageBox(61, mtQuestion) = IDYES) then
+  // Show confirmation before deleting
+  if (FLang.MessageBox(61, mtConfirm) = IDYES) then
   begin
     mmDelLogo.Click;
 
     if (FLang.MessageBox(62, mtQuestion) = IDYES) then
       DoExport(True);
 
+    // Remove entries
     if FSupportInfo.Remove() then
     begin
-      mmDelValues.Enabled := false;
+      mmDelValues.Enabled := False;
       FLang.MessageBox(64);
     end  //of begin
     else
-      FLang.MessageBox(FLang.GetString(66) + FLang.GetString(70), mtError);
+      FLang.MessageBox(FLang.GetString(66) + FLang.GetString(18), mtError);
   end;  //of begin
 end;
 
@@ -600,10 +597,14 @@ end;
 
 procedure TMain.mmDelEditClick(Sender: TObject);
 begin
+  // Set title
   Caption := Application.Title + TOSUtils.GetArchitecture();
-  mmDelLogo.Enabled := false;
+
+  // Update VCL
+  mmDelLogo.Enabled := False;
   mmDelLogo.Visible := mmDelLogo.Enabled;
-  //FSupportInfo.Clear;
+
+  // Clear text fields
   eLogo.Clear;
   eMan.Clear;
   eModel.Clear;
@@ -629,15 +630,16 @@ end;
 procedure TMain.mmDelLogoClick(Sender: TObject);
 begin
   if FileExists(FSupportInfo.GetOEMLogo()) then
+    // Show confirmation
     if (FLang.MessageBox(63, mtQuestion) = IDYES) then
       if FSupportInfo.DeleteIcon() then
       begin
-        mmDelLogo.Visible := false;
-        mmDelLogo.Enabled := false;
+        mmDelLogo.Visible := False;
+        mmDelLogo.Enabled := False;
         eLogo.Clear;
       end  //of begin
       else
-        FLang.MessageBox(67, mtError);
+        FLang.MessageBox(FLang.GetString(67) + FLang.GetString(70), mtError);
 end;
 
 { TMain.mmGerClick
@@ -714,37 +716,33 @@ begin
   Info.Free;
 end;
 
+{ TMain.eLogoDblClick
+
+  Allows users to display open logo dialog when double click on text field. }
+
 procedure TMain.eLogoDblClick(Sender: TObject);
 begin
   if (eLogo.Text = '') then
-     OpenLogo
+    bAdd.Click
   else
-     eLogo.SelectAll;
+    eLogo.SelectAll;
 end;
 
-procedure TMain.eManDblClick(Sender: TObject);
-begin
-  eMan.SelectAll;
-end;
+{ TMain.eUrlDblClick
 
-procedure TMain.eModelDblClick(Sender: TObject);
-begin
-  eModel.SelectAll;
-end;
-
-procedure TMain.ePhoneDblClick(Sender: TObject);
-begin
-  ePhone.SelectAll;
-end;
-
-procedure TMain.eHoursDblClick(Sender: TObject);
-begin
-  eHours.SelectAll;
-end;
+  Allows users to open selected URL in default webbrowser. }
 
 procedure TMain.eUrlDblClick(Sender: TObject);
 begin
-  eUrl.SelectAll;
+  // Ask user to open URL
+  if ((eUrl.Text <> '') and (FLang.MessageBox(79, mtQuestion) = ID_YES)) then
+  begin
+    // Try to open URL
+    if not TOSUtils.OpenUrl(eUrl.Text) then
+      FLang.MessageBox(80, mtError)
+  end
+  else
+    eUrl.SelectAll;
 end;
 
 { TMain.lCopyClick
@@ -758,7 +756,7 @@ end;
 
 { TMain.lCopyMouseEnter
 
-  Allows a label to have the look like a hyperlink.  }
+  Allows a label to have the look like a hyperlink. }
 
 procedure TMain.lCopyMouseEnter(Sender: TObject);
 begin

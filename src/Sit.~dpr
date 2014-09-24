@@ -2,9 +2,10 @@ program Sit;
 
 uses
   Forms,
-  SitMain in 'SitMain.pas' {Form1},
-  SitInfo in 'SitInfo.pas' {Form2},
-  SitAPI in 'SitAPI.pas';
+  SitMain in 'SitMain.pas' {Main},
+  SitInfo in 'SitInfo.pas' {Info},
+  SitAPI in 'SitAPI.pas',
+  PMComponents in 'PMComponents.pas';
 
 {$R *.res}
 

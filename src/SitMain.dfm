@@ -52,12 +52,6 @@ object Main: TMain
     Height = 14
     Anchors = [akTop, akRight]
     Caption = 'v3.0'
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clBlack
-    Font.Height = -11
-    Font.Name = 'Arial'
-    Font.Style = []
-    ParentFont = False
     Transparent = True
   end
   object Image: TImage
@@ -107,7 +101,6 @@ object Main: TMain
       EditLabel.Caption = 'Uhrzeit:'
       EditLabel.Transparent = True
       TabOrder = 3
-      OnDblClick = eHoursDblClick
     end
     object eModel: TLabeledEdit
       Left = 18
@@ -119,25 +112,17 @@ object Main: TMain
       EditLabel.Caption = 'Modell:'
       EditLabel.Transparent = True
       TabOrder = 1
-      OnDblClick = eModelDblClick
     end
     object ePhone: TLabeledEdit
       Left = 152
       Top = 35
-      Width = 129
+      Width = 125
       Height = 22
       EditLabel.Width = 76
       EditLabel.Height = 14
       EditLabel.Caption = 'Telefonnummer:'
       EditLabel.Transparent = True
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'Arial'
-      Font.Style = []
-      ParentFont = False
       TabOrder = 2
-      OnDblClick = ePhoneDblClick
     end
     object eMan: TLabeledEdit
       Left = 18
@@ -149,7 +134,6 @@ object Main: TMain
       EditLabel.Caption = 'Hersteller:'
       EditLabel.Transparent = True
       TabOrder = 0
-      OnDblClick = eManDblClick
     end
     object eUrl: TLabeledEdit
       Left = 152
@@ -182,6 +166,8 @@ object Main: TMain
       Height = 23
       Anchors = [akTop, akRight]
       Caption = '...'
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 1
       OnClick = bAddClick
     end
@@ -199,8 +185,6 @@ object Main: TMain
       Top = 36
       Width = 316
       Height = 22
-      HelpType = htKeyword
-      HelpKeyword = 'Logopfad'
       Anchors = [akLeft, akTop, akRight]
       EditLabel.Width = 52
       EditLabel.Height = 14

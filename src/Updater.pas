@@ -78,9 +78,9 @@ type
     procedure OnDownloadStart(Sender: TThread; const AFileSize: Integer);
   public
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      AFormCaption: string = ''); overload;
+      AFormCaption: string = ''); reintroduce; overload;
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); overload;
+      ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); reintroduce; overload;
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
     procedure Download(ADownloadDirectory: string = ''); overload;
