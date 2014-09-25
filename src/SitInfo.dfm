@@ -562,6 +562,9 @@ object Info: TInfo
             '- "Logo ausw'#228'hlen"-Dialog startet im Bilder-Verzeichnis des Benu' +
             'tzers'
           '  - Ausgew'#228'hltes Logo muss keine bestimmten Ma'#223'e mehr haben'
+          
+            '- "Logo kopieren"-Funktion verwendet nun "Speichern unter"-Dialo' +
+            'g'
           '- Update-Funktion v2.1'
           
             '- "Speichern unter"-Dialog beim Herunterladen des Zertifikats en' +

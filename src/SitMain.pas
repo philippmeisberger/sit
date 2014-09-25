@@ -91,7 +91,7 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
-    function CopyIcon(): Boolean;
+    function CopyIcon(): string;
     procedure DoExport(ADirect: Boolean);
     procedure Refresh();
     procedure SetLanguage(Sender: TObject);
@@ -214,37 +214,55 @@ end;
 
   Allows users to copy a icon in *.bmp format. }
 
-function TMain.CopyIcon(): Boolean;
+function TMain.CopyIcon(): string;
 var
-  dir: string;
+  saveDialog : TSaveDialog;
 
 begin
-  result := False;
+  result := '';
 
-  // Icon exists and extension is .bmp
-  if FileExists(eLogo.Text) then
-    if (ExtractFileExt(eLogo.Text) = '.bmp') then
-    begin
-      // Show dialog
-      if SelectDirectory(FLang.GetString(9), '', dir) then
-      begin
-        dir := dir +'\'+ ExtractFileName(eLogo.Text);
-
-        // Copy icon
-        if CopyFile(PChar(eLogo.Text), PChar(dir), True) then
-        begin
-          FLang.MessageBox(Format(FLang.GetString(77), [dir]));
-          eLogo.Text := dir;
-          result := True;
-        end  //of begin
-        else
-          FLang.MessageBox(70, mtError);
-      end;  //of begin
-		end  //of begin
-    else
-      FLang.MessageBox(78, mtWarning)
-  else
+  // Icon exists?
+  if not FileExists(eLogo.Text) then
+  begin
     FLang.MessageBox(76, mtWarning);
+    Exit;
+  end;  //of if
+
+  // Icon is a *.bmp file
+  if (ExtractFileExt(eLogo.Text) <> '.bmp') then
+  begin
+    FLang.MessageBox(78, mtWarning);
+    Exit;
+  end;  //of if
+
+  // init dialog
+  saveDialog := TSaveDialog.Create(Self);
+
+  try
+    with saveDialog do
+    begin
+      Title := FLang.GetString(52);
+      FileName := ExtractFileName(eLogo.Text);
+      Filter := FLang.GetString(57);
+      Options := Options + [ofOverwritePrompt];
+    end;  //of with
+
+    // Save clicked
+    if saveDialog.Execute then
+    begin
+      // Copy icon
+      if CopyFile(PChar(eLogo.Text), PChar(saveDialog.FileName), False) then
+      begin
+        FLang.MessageBox(Format(FLang.GetString(77), [saveDialog.FileName]));
+        result := saveDialog.FileName;
+      end  //of begin
+      else
+        FLang.MessageBox(70, mtError);
+    end;  //of begin
+
+  finally
+    saveDialog.Free;
+  end;  //of try
 end;
 
 { private TMain.DoExport
@@ -257,9 +275,9 @@ var
   saveDialog : TSaveDialog;
 
 begin
-  try
-    saveDialog := TSaveDialog.Create(Self);
+  saveDialog := TSaveDialog.Create(Self);
 
+  try
     with saveDialog do
     begin
       Title := FLang.GetString(52);
@@ -376,25 +394,44 @@ end;
   Allows user to commit changes on support information. }
 
 procedure TMain.bAcceptClick(Sender: TObject);
+var
+  NewIconPath: string;
+
 begin
   if (Flang.MessageBox(60, mtQuestion) = IDYES) then
   try
+    // Make copy of selected icon?
     if cbCopyIcon.Checked then
-      if not CopyIcon() then
+    begin
+      NewIconPath := CopyIcon();
+
+      if (NewIconPath <> '') then
+        eLogo.Text := NewIconPath
+      else
         Exit;
+    end;  //of if
 
     with FSupportInfo do
     begin
       // Icon exists?
       if ((not FileExists(eLogo.Text)) xor (eLogo.Text = '')) then
       begin
-        Flang.MessageBox(77, mtWarning);
+        Flang.MessageBox(76, mtWarning);
         eLogo.SetFocus;
         Exit;
       end  //of begin
       else
-        Icon := eLogo.Text;
+        // Check icon is *.bmp file
+        if (ExtractFileExt(eLogo.Text) <> '.bmp') then
+        begin
+          FLang.MessageBox(78, mtWarning);
+          eLogo.SetFocus;
+          Exit;
+        end  //of begin
+        else
+          Icon := eLogo.Text;
 
+      // Manufacturer is essential!
       if (eMan.Text <> '') then
       begin
         Phone := ePhone.Text;

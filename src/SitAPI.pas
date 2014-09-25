@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ SIT API Interface Unit v3.0                                             }
+{ SIT API Interface Unit v3.1                                             }
 {                                                                         }
 { Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
@@ -14,12 +14,16 @@ uses
   Windows, Classes, SysUtils, Registry, IniFiles, OSUtils, ShellAPI;
 
 const
+  { Ini-file section name constants }
+  INI_GENERAL = 'General';
+  INI_SUPPORT_INFO = 'Support Information';
+
+  { OEM information location >= Windows 2000 }
+  OEMINFO_LOGO = '\System32\OEMLOGO.bmp';
+  OEMINFO_INFO = '\System32\OEMINFO.ini';
+
+  { OEM information location >= Windows Vista }
   OEMINFO_KEY = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
-  SUPPORT_INFO = 'Support Information';
-  LOGO_DIR = '\System32\OEMLOGO.bmp';
-  INFO_DIR = '\System32\OEMINFO.ini';
-  URL_BASE = 'http://www.pm-codeworks.de/';
-  URL_CONTACT = URL_BASE +'kontakt.html';
 
   { Registry value name constants }
   INFO_ICON = 'Logo';
@@ -28,7 +32,6 @@ const
   INFO_PHONE = 'SupportPhone';
   INFO_HOURS = 'SupportHours';
   INFO_URL = 'SupportURL';
-  INFO_GENERAL = 'General';
 
 type
   { Support information base class }
@@ -150,16 +153,16 @@ begin
     with ini do
     begin
       FIcon := ReadString(INFO_ICON, INFO_ICON, '');
-      FMan := ReadString(INFO_GENERAL, INFO_MAN, '');
-      FModel := ReadString(INFO_GENERAL, INFO_MODEL, '');
-      FUrl := ReadString(INFO_GENERAL, INFO_URL, '');
-      FPhone := ReadString(SUPPORT_INFO, INFO_PHONE, '');
-      FHours := ReadString(SUPPORT_INFO, INFO_HOURS, '');
+      FMan := ReadString(INI_GENERAL, INFO_MAN, '');
+      FModel := ReadString(INI_GENERAL, INFO_MODEL, '');
+      FUrl := ReadString(INI_GENERAL, INFO_URL, '');
+      FPhone := ReadString(INI_SUPPORT_INFO, INFO_PHONE, '');
+      FHours := ReadString(INI_SUPPORT_INFO, INFO_HOURS, '');
     end;  //of with
 
   finally
     ini.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformationBase.SaveAsIni
@@ -185,20 +188,20 @@ begin
     ext := '.ini'
   else
     ext := '';
-      
+
   ini := TIniFile.Create(AFileName + ext);
 
   try
     AppendToFile(INFO_ICON, INFO_ICON, FIcon);
-    AppendToFile(INFO_GENERAL, INFO_MAN, FMan);
-    AppendToFile(INFO_GENERAL, INFO_MODEL, FModel);
-    AppendToFile(INFO_GENERAL, INFO_URL, FUrl);
-    AppendToFile(SUPPORT_INFO, INFO_PHONE, FPhone);
-    AppendToFile(SUPPORT_INFO, INFO_HOURS, FHours);
+    AppendToFile(INI_GENERAL, INFO_MAN, FMan);
+    AppendToFile(INI_GENERAL, INFO_MODEL, FModel);
+    AppendToFile(INI_GENERAL, INFO_URL, FUrl);
+    AppendToFile(INI_SUPPORT_INFO, INFO_PHONE, FPhone);
+    AppendToFile(INI_SUPPORT_INFO, INFO_HOURS, FHours);
 
   finally
     ini.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 
@@ -222,7 +225,7 @@ begin
   else
   begin
     // Remove Registry value
-    reg := TRegistry.Create(SetKeyAccessMode());
+    reg := TRegistry.Create(DenyWOW64Redirection(KEY_SET_VALUE));
 
     try
       reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -246,7 +249,7 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(SetKeyAccessMode());
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -258,7 +261,7 @@ begin
   finally
     reg.CloseKey();
     reg.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformation.GetOEMLogo
@@ -270,7 +273,7 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(SetKeyAccessMode());
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -284,7 +287,7 @@ begin
   finally
     reg.CloseKey();
     reg.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformation.Load
@@ -304,7 +307,7 @@ var
   end;
   
 begin
-  reg := TRegistry.Create(SetKeyAccessMode());
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -320,7 +323,7 @@ begin
   finally
     reg.CloseKey();
     reg.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformation.LoadFromReg
@@ -352,7 +355,7 @@ begin
 
   finally
     regFile.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformation.Remove
@@ -364,7 +367,7 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(SetKeyAccessMode());
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_WRITE));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -374,7 +377,7 @@ begin
   finally
     reg.CloseKey();
     reg.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformation.Save
@@ -395,7 +398,7 @@ var
   end;
 
 begin
-  reg := TRegistry.Create(SetKeyAccessMode());
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_ALL_ACCESS));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -411,7 +414,7 @@ begin
   finally
     reg.CloseKey();
     reg.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 { public TSupportInformation.Show
@@ -420,7 +423,7 @@ end;
 
 procedure TSupportInformation.Show(AHandle: HWND);
 begin
-  ShellExecute(AHandle, nil, 'control', 'system', nil, SW_SHOWNORMAL);
+  ShellExecute(AHandle, 'open', 'control', 'system', nil, SW_SHOWNORMAL);
 end;
 
 { public TSupportInformation.SaveAsReg
@@ -462,7 +465,7 @@ begin
 
   finally
     regFile.Free;
-  end;  //of finally
+  end;  //of try
 end;
 
 
@@ -474,47 +477,16 @@ end;
 
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
-  ChangeFSRedirection(True);                
-  result := TOSUtils.GetWinDir() + INFO_DIR;
-  ChangeFSRedirection(False);
+  result := TOSUtils.GetWinDir() + OEMINFO_INFO;
 end;
 
 { public TSupportInformationXP.DeleteIcon
 
-  Deletes the OEMLOGO.bmp if exists and changes OEMINFO.ini }
+  Deletes the OEMLOGO.bmp if exists. }
 
 function TSupportInformationXP.DeleteIcon(): Boolean;
-var
-  ini: TIniFile;
-
 begin
-  if DeleteFile(GetOemLogo()) then
-  begin
-    // OEMINFO.ini exists?
-    if not FileExists(GetOemInfo()) then
-    begin
-      result := True;
-      Exit;
-    end;  //of begin
-
-    try
-      // Delete logo path from *.ini file
-      ini := TIniFile.Create(GetOemInfo());
-
-      try
-        ini.DeleteKey('Logo', 'Logo');
-        result := True;
-
-      finally
-        ini.Free;
-      end;  //of finally
-
-    except
-      result := False
-    end;  //of except
-  end  //of begin
-  else
-    result := False;
+  result := DeleteFile(GetOemLogo());
 end;
 
 { public TSupportInformationXP.Exists
@@ -532,9 +504,7 @@ end;
 
 function TSupportInformationXP.GetOEMLogo(): string;
 begin
-  ChangeFSRedirection(True);
-  result := TOSUtils.GetWinDir() + LOGO_DIR;
-  ChangeFSRedirection(False);
+  result := TOSUtils.GetWinDir() + OEMINFO_LOGO;
 end;
 
 { public TSupportInformationXP.Load
@@ -542,8 +512,32 @@ end;
   Loads fresh support information. }
 
 procedure TSupportInformationXP.Load();
+var
+  ini: TIniFile;
+
 begin
-  LoadFromIni(GetOEMInfo());
+  // Read OEMINFO.ini
+  ini := TIniFile.Create(GetOEMInfo());
+
+  try
+    with ini do
+    begin
+      FMan := ReadString(INI_GENERAL, INFO_MAN, '');
+      FModel := ReadString(INI_GENERAL, INFO_MODEL, '');
+      FUrl := ReadString(INI_GENERAL, INFO_URL, '');
+      FPhone := ReadString(INI_SUPPORT_INFO, 'Line3', '');
+      FHours := ReadString(INI_SUPPORT_INFO, 'Line4', '');
+    end;  //of with
+
+  finally
+    ini.Free;
+  end;  //of try
+
+  // OEMLOGO.bmp exists?
+  if FileExists(GetOEMLogo()) then
+    FIcon := GetOEMLogo()
+  else
+    FIcon := '';
 end;
 
 { public TSupportInformation.Remove
@@ -560,8 +554,28 @@ end;
   Commits changes on support information. }
 
 procedure TSupportInformationXP.Save();
+var
+  ini: TIniFile;
+
 begin
-  SaveAsIni(GetOemInfo());
+  ini := TIniFile.Create(GetOEMInfo());
+
+  try
+    with ini do
+    begin
+      WriteString(INI_GENERAL, INFO_MAN, FMan);
+      WriteString(INI_GENERAL, INFO_MODEL, FModel);
+      WriteString(INI_GENERAL, INFO_URL, FUrl);
+      WriteString(INI_SUPPORT_INFO, 'Line1', FMan);
+      WriteString(INI_SUPPORT_INFO, 'Line2', FModel);
+      WriteString(INI_SUPPORT_INFO, 'Line3', FPhone);
+      WriteString(INI_SUPPORT_INFO, 'Line4', FHours);
+      WriteString(INI_SUPPORT_INFO, 'Line5', FUrl);
+    end;  //of with
+
+  finally
+    ini.Free;
+  end;  //of try
 
   // Copy logo if exists
   if FileExists(FIcon) then

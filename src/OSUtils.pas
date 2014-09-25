@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Operating System Utilities Unit v1.5.1                    }
+{ PM Code Works Operating System Utilities Unit v1.6                      }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -8,7 +8,7 @@
 
 unit OSUtils;
 
-{$IFDEF LINUX} {$mode objfpc}{$H+} {$ENDIF}
+{$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
 interface
 
@@ -18,6 +18,11 @@ uses
 {$ELSE}
   Process, Resource, ElfReader, VersionResource, LResources;
 {$ENDIF}
+
+const
+  { PMCW Website URLs }
+  URL_BASE = 'http://www.pm-codeworks.de/';
+  URL_CONTACT = URL_BASE +'kontakt.html';
 
 type
   { Exception class }
@@ -30,8 +35,9 @@ type
     class function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean; //not by me
   protected
     class function ChangeFSRedirection(AAccess: Boolean): Boolean;            //not by me
+    class function DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
    	class function IsWindows64(): Boolean;                                    //not by me
-    class function SetKeyAccessMode(): Cardinal;
+    class function SetKeyAccessMode(): Cardinal; deprecated;
   public
     class function GetArchitecture(): string;
   end;
@@ -88,23 +94,23 @@ var
   GetNativeSystemInfo: TGetNativeSystemInfo;
 
 begin
-  result := false;
+  result := False;
   LibraryHandle := GetModuleHandle(kernel32);
 
   if (LibraryHandle <> 0) then
-     begin
-     GetNativeSystemInfo := GetProcAddress(LibraryHandle, 'GetNativeSystemInfo');
+  begin
+    GetNativeSystemInfo := GetProcAddress(LibraryHandle, 'GetNativeSystemInfo');
 
-     if Assigned(GetNativeSystemInfo) then
-        begin
-        GetNativeSystemInfo(SystemInfo);
-        result := true;
-        end  //of begin
-     else
-        GetSystemInfo(SystemInfo);
-     end  //of begin
+    if Assigned(GetNativeSystemInfo) then
+    begin
+      GetNativeSystemInfo(SystemInfo);
+      result := True;
+    end  //of begin
+    else
+      GetSystemInfo(SystemInfo);
+  end  //of begin
   else
-     GetSystemInfo(SystemInfo);
+    GetSystemInfo(SystemInfo);
 end;
 
 { protected TWinWOW64.ChangeFSRedirection
@@ -123,11 +129,11 @@ var
   Wow64FsEnableRedirection: LongBool;
 
 begin
-  result := true;
+  result := True;
 
   // WOW64 only available on 64bit Windows
   if not IsWindows64 then
-     Exit;
+    Exit;
 
   try
     hHandle := GetModuleHandle('kernel32.dll');
@@ -135,18 +141,18 @@ begin
     @Wow64DisableWow64FsRedirection := GetProcAddress(hHandle, 'Wow64DisableWow64FsRedirection');
 
     if AAccess then
-       begin
-       if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
-          (@Wow64DisableWow64FsRedirection <> nil)) then
-          Wow64DisableWow64FsRedirection(Wow64FsEnableRedirection);
-       end
+    begin
+      if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
+        (@Wow64DisableWow64FsRedirection <> nil)) then
+        Wow64DisableWow64FsRedirection(Wow64FsEnableRedirection);
+    end
     else
       if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
-         (@Wow64DisableWow64FsRedirection <> nil)) then
-         Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection);
+        (@Wow64DisableWow64FsRedirection <> nil)) then
+        Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection);
 
   except
-    result := false;
+    result := False;
   end;  //of try
 end;
 
@@ -175,27 +181,46 @@ end;
 class function TWinWOW64.GetArchitecture(): string;
 begin
   if IsWindows64() then
-     result := ' [64bit]'
+    result := ' [64bit]'
   else
-     result := ' [32bit]';
+    result := ' [32bit]';
 end;
 
 { protected TWinWOW64.SetKeyAccessMode
 
   Returns optimal access rights for writing a registry key under 64bit systems. }
 
-class function TWinWOW64.SetKeyAccessMode: Cardinal;
+class function TWinWOW64.SetKeyAccessMode(): Cardinal;
 const
   KEY_WOW64_64KEY = $0100;
 
 begin
-  // Used Windows is a 64bit OS? 
+  // Used Windows is a 64bit OS?
   if IsWindows64() then
-     result := KEY_ALL_ACCESS or KEY_WOW64_64KEY
+    // Deny WOW64 redirection
+    result := KEY_ALL_ACCESS or KEY_WOW64_64KEY
   else
-     result := KEY_ALL_ACCESS or KEY_WRITE;
+    result := KEY_ALL_ACCESS or KEY_WRITE;
 end;
 
+{ protected TWinWOW64.DenyWOW64Redirection
+
+  Disables the WOW64 Registry redirection temporary under 64bit systems that
+  a 32 bit application can get access to the 64 bit Registry. }
+
+class function TWinWOW64.DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
+const
+  KEY_WOW64_64KEY = $0100;
+
+begin
+  // Used Windows is a 64bit OS?
+  if IsWindows64() then
+    // Deny WOW64 redirection
+    result := KEY_WOW64_64KEY or AAccessRight
+  else
+    // Ignore redirection
+    result := AAccessRight;
+end;
 
 { TOSUtils }
 
@@ -569,8 +594,8 @@ const
   PM_CERT_ID = '9954401782F317187F6E692C5C5DB00D008FF741';
 
 begin
-  Exists := false;
-  reg := TRegistry.Create(KEY_READ);
+  Exists := False;
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
   
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;

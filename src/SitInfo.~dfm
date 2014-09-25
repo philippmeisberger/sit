@@ -550,6 +550,26 @@ object Info: TInfo
           'History'
           '--------'
           ''
+          'Version 3.0 [2x.09.14]'
+          ''
+          '- API Version 3.1'
+          '- Neuer Icon'
+          
+            '- Oranges Hintergrund-Bild entfernt und durch Einf'#228'rben der Form' +
+            ' ersetzt'
+          '- Doppelklick auf URL-Textfeld '#246'ffnet URL im Webbrowser'
+          
+            '- "Logo ausw'#228'hlen"-Dialog startet im Bilder-Verzeichnis des Benu' +
+            'tzers'
+          '  - Ausgew'#228'hltes Logo muss keine bestimmten Ma'#223'e mehr haben'
+          '- Update-Funktion v2.1'
+          
+            '- "Speichern unter"-Dialog beim Herunterladen des Zertifikats en' +
+            'tfernt'
+          '- Sonstige kleinere Verbesserungen'
+          ''
+          '----------------------------------------'
+          ''
           'Version 2.1 [26.07.13]'
           ''
           '- API Version 3'
@@ -671,7 +691,7 @@ object Info: TInfo
           ''
           'Version 1.0 [01.02.11]'
           ''
-          'Erste funktionierende Version von SIT (alias "Supportinfo-Tool")'
+          'Erste Version von SIT (alias "Supportinfo-Tool")'
           ''
           
             '----------------------------------------------------------------' +
