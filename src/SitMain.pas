@@ -29,14 +29,14 @@ type
     mmExport: TMenuItem;
     mmEdit: TMenuItem;
     mmShowValues: TMenuItem;
-    mmDelValues: TMenuItem;
+    mmDeleteValues: TMenuItem;
     mmHelp: TMenuItem;
     mmInfo: TMenuItem;
     mmExportEdit: TMenuItem;
     N1: TMenuItem;
     N2: TMenuItem;
-    mmDelEdit: TMenuItem;
-    mmDelLogo: TMenuItem;
+    mmDeleteEdits: TMenuItem;
+    mmDeleteIcon: TMenuItem;
     mmDownloadCert: TMenuItem;
     mmUpdate: TMenuItem;
     N3: TMenuItem;
@@ -70,9 +70,9 @@ type
     procedure mmExportClick(Sender: TObject);
     procedure mmExportEditClick(Sender: TObject);
     procedure mmShowValuesClick(Sender: TObject);
-    procedure mmDelValuesClick(Sender: TObject);
-    procedure mmDelEditClick(Sender: TObject);
-    procedure mmDelLogoClick(Sender: TObject);
+    procedure mmDeleteValuesClick(Sender: TObject);
+    procedure mmDeleteEditsClick(Sender: TObject);
+    procedure mmDeleteIconClick(Sender: TObject);
     procedure mmGerClick(Sender: TObject);
     procedure mmEngClick(Sender: TObject);
     procedure mmFraClick(Sender: TObject);
@@ -336,8 +336,7 @@ begin
     eHours.Text := Hours;
   end;  //of with
 
-  mmDelLogo.Enabled := FileExists(FSupportInfo.Icon);
-  mmDelLogo.Visible := mmDelLogo.Enabled;
+  mmDeleteIcon.Enabled := FileExists(FSupportInfo.Icon);
 end;
 
 { private TMain.SetLanguage
@@ -356,10 +355,10 @@ begin
 
     mmEdit.Caption := GetString(35);
     mmShowValues.Caption := GetString(36);
-    mmDelValues.Caption := GetString(37);
-    mmDelEdit.Caption := GetString(38);
+    mmDeleteValues.Caption := GetString(37);
+    mmDeleteEdits.Caption := GetString(38);
     mmCopyIcon.Caption := GetString(40);
-    mmDelLogo.Caption := GetString(39);
+    mmDeleteIcon.Caption := GetString(39);
 
     mmView.Caption := GetString(42);
     mmLang.Caption := GetString(25);
@@ -427,13 +426,12 @@ begin
           FLang.MessageBox(78, mtWarning);
           eLogo.SetFocus;
           Exit;
-        end  //of begin
-        else
-          Icon := eLogo.Text;
+        end;  //of begin
 
       // Manufacturer is essential!
       if (eMan.Text <> '') then
       begin
+        Icon := eLogo.Text;
         Phone := ePhone.Text;
         Hours := eHours.Text;
         Manufacturer := eMan.Text;
@@ -586,13 +584,13 @@ end;
 
 procedure TMain.mmShowValuesClick(Sender: TObject);
 begin
-  mmDelEdit.Click;
+  mmDeleteEdits.Click;
 
   try
     FSupportInfo.Load();
     Refresh();
-    mmDelValues.Enabled := FSupportInfo.Exists();
-    mmExport.Enabled := mmDelValues.Enabled;
+    mmDeleteValues.Enabled := FSupportInfo.Exists();
+    mmExport.Enabled := mmDeleteValues.Enabled;
 
   except
     FLang.MessageBox(68, mtError);
@@ -603,12 +601,12 @@ end;
 
   Allows users to delete support information. }
 
-procedure TMain.mmDelValuesClick(Sender: TObject);
+procedure TMain.mmDeleteValuesClick(Sender: TObject);
 begin
   // Show confirmation before deleting
   if (FLang.MessageBox(61, mtConfirm) = IDYES) then
   begin
-    mmDelLogo.Click;
+    mmDeleteIcon.Click;
 
     if (FLang.MessageBox(62, mtQuestion) = IDYES) then
       DoExport(True);
@@ -616,11 +614,12 @@ begin
     // Remove entries
     if FSupportInfo.Remove() then
     begin
-      mmDelValues.Enabled := False;
+      mmDeleteValues.Enabled := False;
+      mmDeleteIcon.Enabled := FileExists(FSupportInfo.Icon);
       FLang.MessageBox(64);
     end  //of begin
     else
-      FLang.MessageBox(FLang.GetString(66) + FLang.GetString(18), mtError);
+      FLang.MessageBox(66, mtError);
   end;  //of begin
 end;
 
@@ -628,14 +627,10 @@ end;
 
   Allows users to clear all text fields. }
 
-procedure TMain.mmDelEditClick(Sender: TObject);
+procedure TMain.mmDeleteEditsClick(Sender: TObject);
 begin
   // Set title
   Caption := Application.Title + TOSUtils.GetArchitecture();
-
-  // Update VCL
-  mmDelLogo.Enabled := False;
-  mmDelLogo.Visible := mmDelLogo.Enabled;
 
   // Clear text fields
   eLogo.Clear;
@@ -660,19 +655,18 @@ end;
 
   Allows users to delete the support information icon. }
 
-procedure TMain.mmDelLogoClick(Sender: TObject);
+procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
-  if FileExists(FSupportInfo.GetOEMLogo()) then
+  if FileExists(FSupportInfo.Icon) then
     // Show confirmation
     if (FLang.MessageBox(63, mtQuestion) = IDYES) then
       if FSupportInfo.DeleteIcon() then
       begin
-        mmDelLogo.Visible := False;
-        mmDelLogo.Enabled := False;
-        eLogo.Clear;
+        mmDeleteIcon.Enabled := False;
+        FSupportInfo.Icon := '';
       end  //of begin
       else
-        FLang.MessageBox(FLang.GetString(67) + FLang.GetString(70), mtError);
+        FLang.MessageBox(67, mtError);
 end;
 
 { TMain.mmGerClick
