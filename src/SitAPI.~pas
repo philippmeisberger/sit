@@ -42,9 +42,10 @@ type
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
     constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
     procedure Clear();
-    function DeleteIcon(): Boolean; virtual; abstract;
+    function DeleteOEMIcon(): Boolean; virtual; abstract;
     function Exists(): Boolean; virtual; abstract;
-    function GetOEMLogo(): string; virtual; abstract;
+    function GetOEMIcon(): string; virtual; abstract;
+    function OEMIconExists(): Boolean;
     procedure Load(); virtual; abstract;
     procedure LoadFromIni(const AFilename: string);
     function Remove(): Boolean; virtual; abstract;
@@ -63,9 +64,9 @@ type
   { Support information class >= Windows Vista }
   TSupportInformation = class(TSupportInformationBase)
   public
-    function DeleteIcon(): Boolean; override;
+    function DeleteOEMIcon(): Boolean; override;
     function Exists(): Boolean; override;
-    function GetOEMLogo(): string; override;
+    function GetOEMIcon(): string; override;
     procedure Load(); override;
     procedure LoadFromReg(const AFilename: string);
     function Remove(): Boolean; override;
@@ -79,9 +80,9 @@ type
   private
     function GetOEMInfo(): string;
   public
-    function DeleteIcon(): Boolean; override;
+    function DeleteOEMIcon(): Boolean; override;
     function Exists(): Boolean; override;
-    function GetOEMLogo(): string; override;
+    function GetOEMIcon(): string; override;
     procedure Load(); override;
     function Remove(): Boolean; override;
     procedure Save(); override;
@@ -136,6 +137,15 @@ begin
   FModel := '';
   FPhone := '';
   FUrl := '';
+end;
+
+{ public TSupportInformationBase.OEMIconExists
+
+  Checks if support information icon exists. }
+
+function TSupportInformationBase.OEMIconExists(): Boolean;
+begin
+  result := FileExists(GetOEMIcon());
 end;
 
 { public TSupportInformationBase.LoadFromIni
@@ -209,35 +219,32 @@ end;
 
 { public TSupportInformation.DeleteIcon
 
-  Deletes the support information icon if exists. }
+  Deletes the support information icon. }
 
-function TSupportInformation.DeleteIcon(): Boolean;
+function TSupportInformation.DeleteOEMIcon(): Boolean;
 var
   reg: TRegistry;
+  Icon: string;
 
 begin
-  // Delete icon file
-  if not DeleteFile(GetOEMLogo()) then
-  begin
-    result := False;
-    Exit;
-  end  //of begin
-  else
-  begin
-    // Remove Registry value
-    reg := TRegistry.Create(DenyWOW64Redirection(KEY_SET_VALUE));
+  reg := TRegistry.Create(DenyWOW64Redirection(KEY_WRITE or KEY_READ));
 
-    try
-      reg.RootKey := HKEY_LOCAL_MACHINE;
-      reg.OpenKey(OEMINFO_KEY, True);
-      reg.DeleteValue(INFO_ICON);
-      result := True;
+  try
+    reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    finally
-      reg.CloseKey();
-      reg.Free;
-    end;  //of try
-  end;  //of if
+    if reg.OpenKey(OEMINFO_KEY, False) then
+    begin
+      // Remove icon file and registry value
+      Icon := reg.ReadString(INFO_ICON);
+      result := DeleteFile(Icon) and reg.DeleteValue(INFO_ICON);
+    end  //of begin
+    else
+      result := False;
+
+  finally
+    reg.CloseKey();
+    reg.Free;
+  end;  //of try
 end;
 
 { public TSupportInformation.Exists
@@ -264,11 +271,11 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.GetOEMLogo
+{ public TSupportInformation.GetOEMIcon
 
-  Returns path to support information logo. }
+  Returns path to support information icon. }
 
-function TSupportInformation.GetOEMLogo(): string;
+function TSupportInformation.GetOEMIcon(): string;
 var
   reg: TRegistry;
 
@@ -313,6 +320,7 @@ begin
     reg.RootKey := HKEY_LOCAL_MACHINE;
     reg.OpenKey(OEMINFO_KEY, True);
 
+    // Read all OEM information
     FIcon := ReadValue(INFO_ICON);
     FHours := ReadValue(INFO_HOURS);
     FMan := ReadValue(INFO_MAN);
@@ -371,8 +379,11 @@ begin
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(ExtractFileDir(OEMINFO_KEY), True);
-    result := reg.DeleteKey(ExtractFileName(OEMINFO_KEY));
+
+    if reg.OpenKey(ExtractFileDir(OEMINFO_KEY), False) then
+      result := reg.DeleteKey(ExtractFileName(OEMINFO_KEY))
+    else
+      result := False;
 
   finally
     reg.CloseKey();
@@ -480,13 +491,13 @@ begin
   result := TOSUtils.GetWinDir() + OEMINFO_INFO;
 end;
 
-{ public TSupportInformationXP.DeleteIcon
+{ public TSupportInformationXP.DeleteOEMIcon
 
   Deletes the OEMLOGO.bmp if exists. }
 
-function TSupportInformationXP.DeleteIcon(): Boolean;
+function TSupportInformationXP.DeleteOEMIcon(): Boolean;
 begin
-  result := DeleteFile(GetOemLogo());
+  result := DeleteFile(FIcon);
 end;
 
 { public TSupportInformationXP.Exists
@@ -495,14 +506,14 @@ end;
   
 function TSupportInformationXP.Exists(): Boolean;
 begin
-  result := FileExists(GetOemInfo()) or FileExists(GetOemLogo());
+  result := FileExists(GetOemInfo());
 end;
 
-{ public TSupportInformationXP.GetOEMLogo
+{ public TSupportInformationXP.GetOEMIcon
 
   Returns path to support information logo. }
 
-function TSupportInformationXP.GetOEMLogo(): string;
+function TSupportInformationXP.GetOEMIcon(): string;
 begin
   result := TOSUtils.GetWinDir() + OEMINFO_LOGO;
 end;
@@ -534,11 +545,13 @@ begin
   end;  //of try
 
   // OEMLOGO.bmp exists?
-  if FileExists(GetOEMLogo()) then
-    FIcon := GetOEMLogo();
+  if OEMIconExists() then
+    FIcon := GetOEMIcon()
+  else
+    FIcon := '';
 end;
 
-{ public TSupportInformation.Remove
+{ public TSupportInformationXP.Remove
 
   Removes support information. }
 
@@ -577,7 +590,7 @@ begin
 
   // Copy logo if exists
   if FileExists(FIcon) then
-    CopyFile(PChar(FIcon), PChar(GetOemLogo()), False);
+    CopyFile(PChar(FIcon), PChar(GetOEMIcon()), False);
 end;
 
 { public TSupportInformationXP.Show

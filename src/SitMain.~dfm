@@ -227,15 +227,15 @@ object Main: TMain
       object N2: TMenuItem
         Caption = '-'
       end
-      object mmDelValues: TMenuItem
+      object mmDeleteValues: TMenuItem
         Caption = 'Eintr'#228'ge l'#246'schen'
         ShortCut = 117
-        OnClick = mmDelValuesClick
+        OnClick = mmDeleteValuesClick
       end
-      object mmDelEdit: TMenuItem
+      object mmDeleteEdits: TMenuItem
         Caption = 'Eingaben l'#246'schen'
         ShortCut = 118
-        OnClick = mmDelEditClick
+        OnClick = mmDeleteEditsClick
       end
       object N5: TMenuItem
         Caption = '-'
@@ -245,12 +245,10 @@ object Main: TMain
         ShortCut = 119
         OnClick = mmCopyIconClick
       end
-      object mmDelLogo: TMenuItem
+      object mmDeleteIcon: TMenuItem
         Caption = 'Logo l'#246'schen'
-        Enabled = False
         ShortCut = 120
-        Visible = False
-        OnClick = mmDelLogoClick
+        OnClick = mmDeleteIconClick
       end
     end
     object mmView: TMenuItem

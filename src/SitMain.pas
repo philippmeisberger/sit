@@ -12,8 +12,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, Menus, ExtDlgs, FileCtrl, LanguageFile, OSUtils, Updater, SitAPI,
-  SitInfo;
+  ExtCtrls, Menus, ExtDlgs, LanguageFile, OSUtils, Updater, SitAPI, SitInfo;
 
 type
   { TMain }
@@ -29,14 +28,14 @@ type
     mmExport: TMenuItem;
     mmEdit: TMenuItem;
     mmShowValues: TMenuItem;
-    mmDelValues: TMenuItem;
+    mmDeleteValues: TMenuItem;
     mmHelp: TMenuItem;
     mmInfo: TMenuItem;
     mmExportEdit: TMenuItem;
     N1: TMenuItem;
     N2: TMenuItem;
-    mmDelEdit: TMenuItem;
-    mmDelLogo: TMenuItem;
+    mmDeleteEdits: TMenuItem;
+    mmDeleteIcon: TMenuItem;
     mmDownloadCert: TMenuItem;
     mmUpdate: TMenuItem;
     N3: TMenuItem;
@@ -70,9 +69,9 @@ type
     procedure mmExportClick(Sender: TObject);
     procedure mmExportEditClick(Sender: TObject);
     procedure mmShowValuesClick(Sender: TObject);
-    procedure mmDelValuesClick(Sender: TObject);
-    procedure mmDelEditClick(Sender: TObject);
-    procedure mmDelLogoClick(Sender: TObject);
+    procedure mmDeleteValuesClick(Sender: TObject);
+    procedure mmDeleteEditsClick(Sender: TObject);
+    procedure mmDeleteIconClick(Sender: TObject);
     procedure mmGerClick(Sender: TObject);
     procedure mmEngClick(Sender: TObject);
     procedure mmFraClick(Sender: TObject);
@@ -93,7 +92,7 @@ type
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function CopyIcon(): string;
     procedure DoExport(ADirect: Boolean);
-    procedure Refresh();
+    procedure RefreshEdits();
     procedure SetLanguage(Sender: TObject);
   end;
 
@@ -170,6 +169,9 @@ begin
     bShowSupport.Enabled := False;
     Exit;
   end;  //of begin
+
+  // Load support information
+  FSupportInfo.Load();
 
   // Show support information
   mmShowValues.Click;
@@ -320,24 +322,26 @@ begin
   end;  //of try
 end;
 
-{ private TMain.Refresh
+{ private TMain.RefreshEdits
 
   Refreshs all text fields. }
 
-procedure TMain.Refresh();
+procedure TMain.RefreshEdits();
 begin
-  with FSupportInfo do
-  begin
-    eLogo.Text := Icon;
-    eMan.Text := Manufacturer;
-    eModel.Text := Model;
-    eUrl.Text := Url;
-    ePhone.Text := Phone;
-    eHours.Text := Hours;
-  end;  //of with
+  try
+    with FSupportInfo do
+    begin
+      eLogo.Text := Icon;
+      eMan.Text := Manufacturer;
+      eModel.Text := Model;
+      eUrl.Text := Url;
+      ePhone.Text := Phone;
+      eHours.Text := Hours;
+    end;  //of with
 
-  mmDelLogo.Enabled := FileExists(FSupportInfo.Icon);
-  mmDelLogo.Visible := mmDelLogo.Enabled;
+  except
+    FLang.MessageBox(68, mtError);
+  end; //of try
 end;
 
 { private TMain.SetLanguage
@@ -356,10 +360,10 @@ begin
 
     mmEdit.Caption := GetString(35);
     mmShowValues.Caption := GetString(36);
-    mmDelValues.Caption := GetString(37);
-    mmDelEdit.Caption := GetString(38);
+    mmDeleteValues.Caption := GetString(37);
+    mmDeleteEdits.Caption := GetString(38);
     mmCopyIcon.Caption := GetString(40);
-    mmDelLogo.Caption := GetString(39);
+    mmDeleteIcon.Caption := GetString(39);
 
     mmView.Caption := GetString(42);
     mmLang.Caption := GetString(25);
@@ -398,6 +402,7 @@ var
   NewIconPath: string;
 
 begin
+  // Confirm save progress
   if (Flang.MessageBox(60, mtQuestion) = IDYES) then
   try
     // Make copy of selected icon?
@@ -411,51 +416,61 @@ begin
         Exit;
     end;  //of if
 
-    with FSupportInfo do
-    begin
+    // Check icon constraints
+    if (eLogo.Text <> '') then
       // Icon exists?
-      if ((not FileExists(eLogo.Text)) xor (eLogo.Text = '')) then
+      if not FileExists(eLogo.Text) then
       begin
-        Flang.MessageBox(76, mtWarning);
         eLogo.SetFocus;
-        Exit;
+        raise EAbort.Create(FLang.GetString(76));
       end  //of begin
       else
-        // Check icon is *.bmp file
+        // Icon is a *.bmp file?
         if (ExtractFileExt(eLogo.Text) <> '.bmp') then
         begin
-          FLang.MessageBox(78, mtWarning);
           eLogo.SetFocus;
-          Exit;
-        end  //of begin
-        else
-          Icon := eLogo.Text;
+          raise EAbort.Create(FLang.GetString(78));
+        end;  //of if
 
-      // Manufacturer is essential!
-      if (eMan.Text <> '') then
+    // Save support information
+    // Note: Manufacturer is essential!
+    if (eMan.Text <> '') then
+      with FSupportInfo do
       begin
+        Icon := eLogo.Text;
         Phone := ePhone.Text;
         Hours := eHours.Text;
         Manufacturer := eMan.Text;
         Model := eModel.Text;
         Url := eUrl.Text;
         Save();
-      end  //of begin
-      else
-      begin
-        FLang.MessageBox(73, mtWarning);
-        eMan.SetFocus;
-        Exit;
-      end;  //of if
-    end;  //of with
+      end  //of with
+    else
+    begin
+      eMan.SetFocus;
+      raise EAbort.Create(FLang.GetString(73));
+    end;  //of if
 
+    // Refresh VCL
+    mmDeleteValues.Enabled := True;
+    mmDeleteIcon.Enabled := FileExists(FSupportInfo.Icon);
+    Caption := Application.Title + TOSUtils.GetArchitecture();
+
+    // Show success message in best case
     Flang.MessageBox(65);
-    mmShowValues.Click;
 
   except
-    FLang.MessageBox(71, mtError);
-  end;  //of except
+    on E: EAbort do
+      FLang.MessageBox(E.Message, mtWarning);
+
+    on E: Exception do
+      FLang.MessageBox(71, mtError);
+  end;  //of try
 end;
+
+{ TMain.bShowSupportClick
+
+  Allows users to show the saved support information in Windows. }
 
 procedure TMain.bShowSupportClick(Sender: TObject);
 begin
@@ -550,7 +565,8 @@ begin
         2: (FSupportInfo as TSupportInformation).LoadFromReg(openDialog.FileName);
       end;  //of case
 
-      Refresh();
+      // Load content of loaded file into text fields
+      RefreshEdits();
     end;  //of begin
 
   finally
@@ -582,45 +598,44 @@ end;
 
 { TMain.mmShowValuesClick
 
-  Allows users to load and show support information. }
+  Allows users to show support information. }
 
 procedure TMain.mmShowValuesClick(Sender: TObject);
 begin
-  mmDelEdit.Click;
+  // Set title
+  Caption := Application.Title + TOSUtils.GetArchitecture();
 
-  try
-    FSupportInfo.Load();
-    Refresh();
-    mmDelValues.Enabled := FSupportInfo.Exists();
-    mmExport.Enabled := mmDelValues.Enabled;
-
-  except
-    FLang.MessageBox(68, mtError);
-  end; //of except
+  // Refresh VCL
+  mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
+  mmDeleteValues.Enabled := FSupportInfo.Exists();
+  mmExport.Enabled := mmDeleteValues.Enabled;
+  RefreshEdits();
 end;
 
 { TMain.mmDelValuesClick
 
   Allows users to delete support information. }
 
-procedure TMain.mmDelValuesClick(Sender: TObject);
+procedure TMain.mmDeleteValuesClick(Sender: TObject);
 begin
   // Show confirmation before deleting
   if (FLang.MessageBox(61, mtConfirm) = IDYES) then
   begin
-    mmDelLogo.Click;
-
     if (FLang.MessageBox(62, mtQuestion) = IDYES) then
       DoExport(True);
+
+    // Remove icon?
+    mmDeleteIcon.Click;
 
     // Remove entries
     if FSupportInfo.Remove() then
     begin
-      mmDelValues.Enabled := False;
+      mmDeleteValues.Enabled := False;
+      mmDeleteIcon.Enabled := False;
       FLang.MessageBox(64);
     end  //of begin
     else
-      FLang.MessageBox(FLang.GetString(66) + FLang.GetString(18), mtError);
+      FLang.MessageBox(66, mtError);
   end;  //of begin
 end;
 
@@ -628,16 +643,8 @@ end;
 
   Allows users to clear all text fields. }
 
-procedure TMain.mmDelEditClick(Sender: TObject);
+procedure TMain.mmDeleteEditsClick(Sender: TObject);
 begin
-  // Set title
-  Caption := Application.Title + TOSUtils.GetArchitecture();
-
-  // Update VCL
-  mmDelLogo.Enabled := False;
-  mmDelLogo.Visible := mmDelLogo.Enabled;
-
-  // Clear text fields
   eLogo.Clear;
   eMan.Clear;
   eModel.Clear;
@@ -660,19 +667,17 @@ end;
 
   Allows users to delete the support information icon. }
 
-procedure TMain.mmDelLogoClick(Sender: TObject);
+procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
-  if FileExists(FSupportInfo.GetOEMLogo()) then
-    // Show confirmation
-    if (FLang.MessageBox(63, mtQuestion) = IDYES) then
-      if FSupportInfo.DeleteIcon() then
-      begin
-        mmDelLogo.Visible := False;
-        mmDelLogo.Enabled := False;
-        eLogo.Clear;
-      end  //of begin
-      else
-        FLang.MessageBox(FLang.GetString(67) + FLang.GetString(70), mtError);
+  // Show confirmation
+  if (FLang.MessageBox(63, mtQuestion) = IDYES) then
+    if FSupportInfo.DeleteOEMIcon() then
+    begin
+      mmDeleteIcon.Enabled := False;
+      FSupportInfo.Icon := '';
+    end  //of begin
+    else
+      FLang.MessageBox(67, mtError);
 end;
 
 { TMain.mmGerClick
@@ -709,11 +714,11 @@ end;
 procedure TMain.mmDownloadCertClick(Sender: TObject);
 begin
   // Certificate already installed?
-  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(27) +^J
-     + FLang.GetString(28), mtQuestion) = IDYES)) then
-     // Download certificate
-     with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
-       DownloadCertificate();
+  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(27) +^J+
+    FLang.GetString(28), mtQuestion) = IDYES)) then
+    // Download certificate
+    with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
+      DownloadCertificate();
 end;
 
 { TMain.mmUpdateClick
