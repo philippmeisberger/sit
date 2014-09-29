@@ -41,11 +41,10 @@ type
   public
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
     constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
-    procedure Clear();
+    procedure Clear(); virtual;
     function DeleteOEMIcon(): Boolean; virtual; abstract;
     function Exists(): Boolean; virtual; abstract;
     function GetOEMIcon(): string; virtual; abstract;
-    function OEMIconExists(): Boolean;
     procedure Load(); virtual; abstract;
     procedure LoadFromIni(const AFilename: string);
     function Remove(): Boolean; virtual; abstract;
@@ -80,6 +79,7 @@ type
   private
     function GetOEMInfo(): string;
   public
+    procedure Clear(); override;
     function DeleteOEMIcon(): Boolean; override;
     function Exists(): Boolean; override;
     function GetOEMIcon(): string; override;
@@ -137,15 +137,6 @@ begin
   FModel := '';
   FPhone := '';
   FUrl := '';
-end;
-
-{ public TSupportInformationBase.OEMIconExists
-
-  Checks if support information icon exists. }
-
-function TSupportInformationBase.OEMIconExists(): Boolean;
-begin
-  result := FileExists(GetOEMIcon());
 end;
 
 { public TSupportInformationBase.LoadFromIni
@@ -491,6 +482,19 @@ begin
   result := TOSUtils.GetWinDir() + OEMINFO_INFO;
 end;
 
+{ public TSupportInformationXP.Clear
+
+  Clears the entered support information except the icon. }
+
+procedure TSupportInformationXP.Clear();
+begin
+  FHours := '';
+  FMan := '';
+  FModel := '';
+  FPhone := '';
+  FUrl := '';
+end;
+
 { public TSupportInformationXP.DeleteOEMIcon
 
   Deletes the OEMLOGO.bmp if exists. }
@@ -545,7 +549,7 @@ begin
   end;  //of try
 
   // OEMLOGO.bmp exists?
-  if OEMIconExists() then
+  if FileExists(GetOEMIcon()) then
     FIcon := GetOEMIcon()
   else
     FIcon := '';
@@ -590,7 +594,10 @@ begin
 
   // Copy logo if exists
   if FileExists(FIcon) then
-    CopyFile(PChar(FIcon), PChar(GetOEMIcon()), False);
+    if CopyFile(PChar(FIcon), PChar(GetOEMIcon()), False) then
+      FIcon := GetOEMIcon()
+    else
+      raise Exception.Create('Error while copying icon!');
 end;
 
 { public TSupportInformationXP.Show

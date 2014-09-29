@@ -1,6 +1,6 @@
 object Main: TMain
-  Left = 500
-  Top = 223
+  Left = 577
+  Top = 243
   HorzScrollBar.Visible = False
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle

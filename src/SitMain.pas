@@ -80,10 +80,10 @@ type
     procedure mmReportClick(Sender: TObject);
     procedure mmInfoClick(Sender: TObject);
     procedure eLogoDblClick(Sender: TObject);
+    procedure eUrlDblClick(Sender: TObject);
     procedure lCopyClick(Sender: TObject);
     procedure lCopyMouseEnter(Sender: TObject);
     procedure lCopyMouseLeave(Sender: TObject);
-    procedure eUrlDblClick(Sender: TObject);
   private
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
@@ -91,8 +91,9 @@ type
     procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
     function CopyIcon(): string;
+    procedure CheckIcon(AFile: string);
     procedure DoExport(ADirect: Boolean);
-    procedure RefreshEdits();
+    procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     procedure SetLanguage(Sender: TObject);
   end;
 
@@ -212,58 +213,66 @@ begin
       mmUpdate.Caption := FLang.GetString(24);
 end;
 
+{ private TMain.CheckIcon
+
+  Checks icon constraints. }
+
+procedure TMain.CheckIcon(AFile: string);
+begin
+  // Icon exists?
+  if not FileExists(AFile) then
+  begin
+    eLogo.SetFocus;
+    raise EAbort.Create(FLang.GetString(76));
+  end  //of begin
+  else
+    // Icon is a *.bmp file?
+    if (ExtractFileExt(AFile) <> '.bmp') then
+    begin
+      eLogo.SetFocus;
+      raise EAbort.Create(FLang.GetString(78));
+    end;  //of if
+end;
+
 { private TMain.CopyIcon
 
   Allows users to copy a icon in *.bmp format. }
 
 function TMain.CopyIcon(): string;
 var
-  saveDialog : TSaveDialog;
+  SaveDialog : TSaveDialog;
 
 begin
   result := '';
 
-  // Icon exists?
-  if not FileExists(eLogo.Text) then
-  begin
-    FLang.MessageBox(76, mtWarning);
-    Exit;
-  end;  //of if
-
-  // Icon is a *.bmp file
-  if (ExtractFileExt(eLogo.Text) <> '.bmp') then
-  begin
-    FLang.MessageBox(78, mtWarning);
-    Exit;
-  end;  //of if
-
   // init dialog
-  saveDialog := TSaveDialog.Create(Self);
+  SaveDialog := TSaveDialog.Create(Self);
 
   try
-    with saveDialog do
+    with SaveDialog do
     begin
       Title := FLang.GetString(52);
       FileName := ExtractFileName(eLogo.Text);
       Filter := FLang.GetString(57);
+      DefaultExt := '.bmp';
       Options := Options + [ofOverwritePrompt];
     end;  //of with
 
     // Save clicked
-    if saveDialog.Execute then
+    if SaveDialog.Execute then
     begin
       // Copy icon
-      if CopyFile(PChar(eLogo.Text), PChar(saveDialog.FileName), False) then
+      if CopyFile(PChar(eLogo.Text), PChar(SaveDialog.FileName), False) then
       begin
-        FLang.MessageBox(Format(FLang.GetString(77), [saveDialog.FileName]));
-        result := saveDialog.FileName;
+        FLang.MessageBox(Format(FLang.GetString(77), [SaveDialog.FileName]));
+        result := SaveDialog.FileName;
       end  //of begin
       else
         FLang.MessageBox(70, mtError);
     end;  //of begin
 
   finally
-    saveDialog.Free;
+    SaveDialog.Free;
   end;  //of try
 end;
 
@@ -272,19 +281,34 @@ end;
   Allows users to export support information as *.reg or *.ini file. }
   
 procedure TMain.DoExport(ADirect: Boolean);
-var
+var                                    
+  SaveDialog : TSaveDialog;
   SupportInfo: TSupportInformationBase;
-  saveDialog : TSaveDialog;
 
 begin
-  saveDialog := TSaveDialog.Create(Self);
+  SaveDialog := TSaveDialog.Create(Self);
 
   try
-    with saveDialog do
+    // Set dialog options
+    with SaveDialog do
     begin
       Title := FLang.GetString(52);
       FileName := FLang.GetString(54);
       Options := Options + [ofOverwritePrompt];
+
+      // Set OS dependend filter
+      if TOSUtils.CheckWindows() then
+      begin
+        // Windows >= Vista: Export as *.ini and *.reg
+        Filter := FLang.GetString(55);
+        FilterIndex := 2;
+      end  //of begin
+      else
+      begin
+        // Windows < Vista: Export only as *.ini
+        Filter := FLang.GetString(56);
+        DefaultExt := '.ini';
+      end;  //of if
     end;  //of with
 
     if ADirect then
@@ -294,19 +318,10 @@ begin
       // Create new TSupportInformation object with content of text fields
       SupportInfo := TSupportInformation.Create(eLogo.Text, eMan.Text,
         eModel.Text, eUrl.Text, ePhone.Text, eHours.Text);
-    try
-      if TOSUtils.CheckWindows() then
-      begin
-        // Windows >= Vista: Export as *.ini and *.reg
-        saveDialog.Filter := FLang.GetString(55);
-        saveDialog.FilterIndex := 2;
-      end  //of begin
-      else
-        // Windows < Vista: Export only as *.ini
-        saveDialog.Filter := FLang.GetString(56);
 
+    try
       // "Save" clicked
-      if saveDialog.Execute then
+      if SaveDialog.Execute then
         case saveDialog.FilterIndex of
           1: SupportInfo.SaveAsIni(saveDialog.FileName);
           2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
@@ -314,7 +329,7 @@ begin
 
     finally
       SupportInfo.Free;
-      saveDialog.Free;
+      SaveDialog.Free;
     end;  //of try
 
   except
@@ -326,10 +341,10 @@ end;
 
   Refreshs all text fields. }
 
-procedure TMain.RefreshEdits();
+procedure TMain.RefreshEdits(ASupportInfo: TSupportInformationBase);
 begin
   try
-    with FSupportInfo do
+    with ASupportInfo do
     begin
       eLogo.Text := Icon;
       eMan.Text := Manufacturer;
@@ -399,45 +414,34 @@ end;
 
 procedure TMain.bAcceptClick(Sender: TObject);
 var
-  NewIconPath: string;
+  IconPath: string;
 
 begin
   // Confirm save progress
-  if (Flang.MessageBox(60, mtQuestion) = IDYES) then
+  if (FLang.MessageBox(60, mtQuestion) = IDYES) then
   try
+    IconPath := eLogo.Text;
+
+    // Check icon constraints
+    if (IconPath <> '') then
+      CheckIcon(IconPath);
+
     // Make copy of selected icon?
     if cbCopyIcon.Checked then
     begin
-      NewIconPath := CopyIcon();
+      IconPath := CopyIcon();
 
-      if (NewIconPath <> '') then
-        eLogo.Text := NewIconPath
-      else
+      // User clicked cancel?
+      if (IconPath = '') then
         Exit;
     end;  //of if
-
-    // Check icon constraints
-    if (eLogo.Text <> '') then
-      // Icon exists?
-      if not FileExists(eLogo.Text) then
-      begin
-        eLogo.SetFocus;
-        raise EAbort.Create(FLang.GetString(76));
-      end  //of begin
-      else
-        // Icon is a *.bmp file?
-        if (ExtractFileExt(eLogo.Text) <> '.bmp') then
-        begin
-          eLogo.SetFocus;
-          raise EAbort.Create(FLang.GetString(78));
-        end;  //of if
 
     // Save support information
     // Note: Manufacturer is essential!
     if (eMan.Text <> '') then
       with FSupportInfo do
       begin
-        Icon := eLogo.Text;
+        Icon := IconPath;
         Phone := ePhone.Text;
         Hours := eHours.Text;
         Manufacturer := eMan.Text;
@@ -452,9 +456,7 @@ begin
     end;  //of if
 
     // Refresh VCL
-    mmDeleteValues.Enabled := True;
-    mmDeleteIcon.Enabled := FileExists(FSupportInfo.Icon);
-    Caption := Application.Title + TOSUtils.GetArchitecture();
+    mmShowValues.Click;
 
     // Show success message in best case
     Flang.MessageBox(65);
@@ -488,25 +490,27 @@ var
 begin
   OpenLogoDialog := TOpenPictureDialog.Create(Self);
 
-  with OpenLogoDialog do
-  begin
-    Options := Options + [ofFileMustExist];
-    Filter := FLang.GetString(57);
-    Title := FLang.GetString(53);
-
-    // Icon exists?
-    if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
-    begin
-      // Open path of current icon
-      InitialDir := ExtractFilePath(eLogo.Text);
-      FileName := ExtractFileName(eLogo.Text);
-    end  //of begin
-    else
-      // Open picture folder of current user
-      InitialDir := '%USERPROFILE%\Pictures';
-  end;  //of with
-
   try
+    // Set dialog options
+    with OpenLogoDialog do
+    begin
+      Options := Options + [ofFileMustExist];
+      Filter := FLang.GetString(57);
+      Title := FLang.GetString(53);
+
+      // Icon exists?
+      if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
+      begin
+        // Open path of current icon
+        InitialDir := ExtractFilePath(eLogo.Text);
+        FileName := ExtractFileName(eLogo.Text);
+      end  //of begin
+      else
+        // Open picture folder of current user
+        InitialDir := '%USERPROFILE%\Pictures';
+    end;  //of with
+
+    // "Open" clicked
     if OpenLogoDialog.Execute then
     begin
       Image.Picture.LoadFromFile(OpenLogoDialog.FileName);
@@ -533,44 +537,56 @@ end;
 
 procedure TMain.mmImportClick(Sender: TObject);
 var
-  openDialog : TOpenDialog;
+  OpenDialog : TOpenDialog;
+  SupportInfo: TSupportInformationBase;
 
 begin
-  openDialog := TOpenDialog.Create(Self);
-
-  with openDialog do
-  begin
-    Title := FLang.GetString(51);
-    Options := Options + [ofFileMustExist];
-
-    // Windows >= Vista: Import *.ini and *.reg files
-    if TOSUtils.CheckWindows() then
-    begin
-      Filter := FLang.GetString(55);
-      FilterIndex := 2;
-    end  //of begin
-    else
-      // Windows < Vista: Import only *.ini files
-      Filter := FLang.GetString(56);
-  end;  //of with  
+  OpenDialog := TOpenDialog.Create(Self);
 
   try
-    if openDialog.Execute then
+    // Set dialog options
+    with OpenDialog do
     begin
-      Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+
-        ExtractFileName(openDialog.FileName);
+      Title := FLang.GetString(51);
+      Options := Options + [ofFileMustExist];
 
-      case openDialog.FilterIndex of
-        1: FSupportInfo.LoadFromIni(openDialog.FileName);
-        2: (FSupportInfo as TSupportInformation).LoadFromReg(openDialog.FileName);
-      end;  //of case
+      // Windows >= Vista: Import *.ini and *.reg files
+      if TOSUtils.CheckWindows() then
+      begin
+        Filter := FLang.GetString(55);
+        FilterIndex := 2;
+      end  //of begin
+      else
+        // Windows < Vista: Import only *.ini files
+        Filter := FLang.GetString(56);
+    end;  //of with
 
-      // Load content of loaded file into text fields
-      RefreshEdits();
-    end;  //of begin
+    // Create deep copy of TSupportInformation object
+    SupportInfo := TSupportInformation.Create(FSupportInfo);
 
-  finally
-    openDialog.Free;
+    try
+      // "Open" clicked
+      if OpenDialog.Execute then
+      begin
+        Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+
+          ExtractFileName(OpenDialog.FileName);
+
+        case OpenDialog.FilterIndex of
+          1: SupportInfo.LoadFromIni(OpenDialog.FileName);
+          2: (SupportInfo as TSupportInformation).LoadFromReg(OpenDialog.FileName);
+        end;  //of case
+
+        // Load content of loaded file into text fields
+        RefreshEdits(SupportInfo);
+      end;  //of begin
+
+    finally
+      SupportInfo.Free;
+      OpenDialog.Free;
+    end;  //of try
+
+  except
+    FLang.MessageBox(72, mtError);
   end;  //of try
 end;
 
@@ -609,7 +625,9 @@ begin
   mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
   mmDeleteValues.Enabled := FSupportInfo.Exists();
   mmExport.Enabled := mmDeleteValues.Enabled;
-  RefreshEdits();
+
+  // Load content of loaded support information into text fields
+  RefreshEdits(FSupportInfo);
 end;
 
 { TMain.mmDelValuesClick
@@ -631,7 +649,9 @@ begin
     if FSupportInfo.Remove() then
     begin
       mmDeleteValues.Enabled := False;
-      mmDeleteIcon.Enabled := False;
+      mmExport.Enabled := False;
+      mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
+      FSupportInfo.Clear;
       FLang.MessageBox(64);
     end  //of begin
     else
@@ -645,6 +665,7 @@ end;
 
 procedure TMain.mmDeleteEditsClick(Sender: TObject);
 begin
+  Caption := Application.Title + TOSUtils.GetArchitecture();
   eLogo.Clear;
   eMan.Clear;
   eModel.Clear;
@@ -660,7 +681,20 @@ end;
 
 procedure TMain.mmCopyIconClick(Sender: TObject);
 begin
-  CopyIcon();
+  try
+    // Check icon constraints
+    CheckIcon(eLogo.Text);
+
+    // Start copy process
+    CopyIcon();
+
+  except
+    on E: EAbort do
+      FLang.MessageBox(E.Message, mtWarning);
+
+    on E: Exception do
+      FLang.MessageBox(70, mtError);
+  end;  //of try
 end;
 
 { TMain.mmDelLogoClick
@@ -707,7 +741,7 @@ begin
   FLang.ChangeLanguage(Sender, 300);
 end;
 
-{ TMain.mmDwnldCertClick
+{ TMain.mmDownloadCertClick
 
   MainMenu entry that allows to download the PM Code Works certificate. }
 
@@ -773,7 +807,7 @@ end;
 procedure TMain.eUrlDblClick(Sender: TObject);
 begin
   // Ask user to open URL
-  if ((eUrl.Text <> '') and (FLang.MessageBox(79, mtQuestion) = ID_YES)) then
+  if ((eUrl.Text <> '') and (FLang.MessageBox(79, mtQuestion) = IDYES)) then
   begin
     // Try to open URL
     if not TOSUtils.OpenUrl(eUrl.Text) then

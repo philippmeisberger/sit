@@ -41,7 +41,7 @@ type
   public
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
     constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
-    procedure Clear();
+    procedure Clear(); virtual;
     function DeleteOEMIcon(): Boolean; virtual; abstract;
     function Exists(): Boolean; virtual; abstract;
     function GetOEMIcon(): string; virtual; abstract;
@@ -79,6 +79,7 @@ type
   private
     function GetOEMInfo(): string;
   public
+    procedure Clear(); override;
     function DeleteOEMIcon(): Boolean; override;
     function Exists(): Boolean; override;
     function GetOEMIcon(): string; override;
@@ -481,6 +482,19 @@ begin
   result := TOSUtils.GetWinDir() + OEMINFO_INFO;
 end;
 
+{ public TSupportInformationXP.Clear
+
+  Clears the entered support information except the icon. }
+
+procedure TSupportInformationXP.Clear();
+begin
+  FHours := '';
+  FMan := '';
+  FModel := '';
+  FPhone := '';
+  FUrl := '';
+end;
+
 { public TSupportInformationXP.DeleteOEMIcon
 
   Deletes the OEMLOGO.bmp if exists. }
@@ -557,6 +571,7 @@ end;
 procedure TSupportInformationXP.Save();
 var
   ini: TIniFile;
+  OEMIcon: string;
 
 begin
   ini := TIniFile.Create(GetOEMInfo());
@@ -578,9 +593,14 @@ begin
     ini.Free;
   end;  //of try
 
+  OEMIcon := GetOEMIcon();
+
   // Copy logo if exists
-  if FileExists(FIcon) then
-    CopyFile(PChar(FIcon), PChar(GetOEMIcon()), False);
+  if (FileExists(FIcon) and (FIcon <> OEMIcon)) then
+    if CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
+      FIcon := OEMIcon
+    else
+      raise Exception.Create('Error while copying icon!');
 end;
 
 { public TSupportInformationXP.Show
