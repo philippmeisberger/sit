@@ -50,7 +50,7 @@ type
     function Remove(): Boolean; virtual; abstract;
     procedure Save(); virtual; abstract;
     procedure SaveAsIni(const AFilename: string);
-    procedure Show(AHandle: HWND); virtual; abstract;
+    procedure Show(AOwner: HWND = 0); virtual; abstract;
     { external }
     property Hours: string read FHours write FHours;
     property Icon: string read FIcon write FIcon;
@@ -69,9 +69,9 @@ type
     procedure Load(); override;
     procedure LoadFromReg(const AFilename: string);
     function Remove(): Boolean; override;
-    procedure SaveAsReg(const AFilename: string);
     procedure Save(); override;
-    procedure Show(AHandle: HWND); override;
+    procedure SaveAsReg(const AFilename: string);
+    procedure Show(AOwner: HWND = 0); override;
   end;
 
   { Support information class >= Windows 2000 }
@@ -86,7 +86,7 @@ type
     procedure Load(); override;
     function Remove(): Boolean; override;
     procedure Save(); override;
-    procedure Show(AHandle: HWND); override;
+    procedure Show(AOwner: HWND = 0); override;
   end;
 
 
@@ -332,7 +332,7 @@ end;
 procedure TSupportInformation.LoadFromReg(const AFilename: string);
 var
   regFile: TStringList;
-  icon: string;
+  Icon: string;
 
   function DelPathIndicator(AName: string): string;
   begin
@@ -344,8 +344,8 @@ begin
 
   try
     regFile.LoadFromFile(AFilename);
-    icon := StringReplace(regFile.Values['"'+INFO_ICON+'"'], '\\', '\', [rfReplaceAll]);
-    FIcon := DelPathIndicator(icon);
+    Icon := StringReplace(regFile.Values['"'+INFO_ICON+'"'], '\\', '\', [rfReplaceAll]);
+    FIcon := DelPathIndicator(Icon);
     FMan := DelPathIndicator(regFile.Values['"'+INFO_MAN+'"']);
     FModel := DelPathIndicator(regFile.Values['"'+INFO_MODEL+'"']);
     FPhone := DelPathIndicator(regFile.Values['"'+INFO_PHONE+'"']);
@@ -419,15 +419,6 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.Show
-
-  Shows Windows system properties. }
-
-procedure TSupportInformation.Show(AHandle: HWND);
-begin
-  ShellExecute(AHandle, 'open', 'control', 'system', nil, SW_SHOWNORMAL);
-end;
-
 { public TSupportInformation.SaveAsReg
 
   Saves a TSupportInformation object as a *.reg file. }  
@@ -444,6 +435,7 @@ var
   end;
   
 begin
+  // init *.reg file
   regFile := TStringList.Create;
   regFile.Append('Windows Registry Editor Version 5.00');
   regFile.Append('');
@@ -463,11 +455,21 @@ begin
     else
       ext := '';
        
+    // Save *.reg file
     regFile.SaveToFile(AFilename + ext);
 
   finally
     regFile.Free;
   end;  //of try
+end;
+
+{ public TSupportInformation.Show
+
+  Shows Windows system properties. }
+
+procedure TSupportInformation.Show(AOwner: HWND = 0);
+begin
+  ShellExecute(AOwner, nil, 'control', 'system', nil, SW_SHOWNORMAL);
 end;
 
 
@@ -595,8 +597,8 @@ begin
 
   OEMIcon := GetOEMIcon();
 
-  // Copy logo if exists
-  if (FileExists(FIcon) and (FIcon <> OEMIcon)) then
+  // Copy logo only if paths differ
+  if (FIcon <> OEMIcon) then
     if CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
       FIcon := OEMIcon
     else
@@ -607,9 +609,9 @@ end;
 
   Shows Windows system properties. }
 
-procedure TSupportInformationXP.Show(AHandle: HWND);
+procedure TSupportInformationXP.Show(AOwner: HWND = 0);
 begin
-  ShellExecute(AHandle, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
+  ShellExecute(AOwner, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
 end;
 
 end.

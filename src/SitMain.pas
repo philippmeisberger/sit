@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ SIT Main Unit                                                           }
+{ Support Information Tool Main Unit                                      }
 {                                                                         }
 { Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
@@ -90,11 +90,12 @@ type
     FUpdateCheck: TUpdateCheck;
     procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
     procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
-    function CopyIcon(): string;
     procedure CheckIcon(AFile: string);
-    procedure DoExport(ADirect: Boolean);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     procedure SetLanguage(Sender: TObject);
+    function ShowCopyIconDialog(): string;
+    procedure ShowExportDialog(AExportEdits: Boolean);
+    procedure ShowValues(AReload: Boolean);
   end;
 
 var
@@ -171,11 +172,8 @@ begin
     Exit;
   end;  //of begin
 
-  // Load support information
-  FSupportInfo.Load();
-
   // Show support information
-  mmShowValues.Click;
+  ShowValues(True);
 
   // Make UAC-Shield button
   TOSUtils.MakeUACShieldButton(bAccept.Handle);
@@ -232,109 +230,6 @@ begin
       eLogo.SetFocus;
       raise EAbort.Create(FLang.GetString(78));
     end;  //of if
-end;
-
-{ private TMain.CopyIcon
-
-  Allows users to copy a icon in *.bmp format. }
-
-function TMain.CopyIcon(): string;
-var
-  SaveDialog : TSaveDialog;
-
-begin
-  result := '';
-
-  // init dialog
-  SaveDialog := TSaveDialog.Create(Self);
-
-  try
-    with SaveDialog do
-    begin
-      Title := FLang.GetString(52);
-      FileName := ExtractFileName(eLogo.Text);
-      Filter := FLang.GetString(57);
-      DefaultExt := '.bmp';
-      Options := Options + [ofOverwritePrompt];
-    end;  //of with
-
-    // Save clicked
-    if SaveDialog.Execute then
-    begin
-      // Copy icon
-      if CopyFile(PChar(eLogo.Text), PChar(SaveDialog.FileName), False) then
-      begin
-        FLang.MessageBox(Format(FLang.GetString(77), [SaveDialog.FileName]));
-        result := SaveDialog.FileName;
-      end  //of begin
-      else
-        FLang.MessageBox(70, mtError);
-    end;  //of begin
-
-  finally
-    SaveDialog.Free;
-  end;  //of try
-end;
-
-{ private TMain.DoExport
-
-  Allows users to export support information as *.reg or *.ini file. }
-  
-procedure TMain.DoExport(ADirect: Boolean);
-var                                    
-  SaveDialog : TSaveDialog;
-  SupportInfo: TSupportInformationBase;
-
-begin
-  SaveDialog := TSaveDialog.Create(Self);
-
-  try
-    // Set dialog options
-    with SaveDialog do
-    begin
-      Title := FLang.GetString(52);
-      FileName := FLang.GetString(54);
-      Options := Options + [ofOverwritePrompt];
-
-      // Set OS dependend filter
-      if TOSUtils.CheckWindows() then
-      begin
-        // Windows >= Vista: Export as *.ini and *.reg
-        Filter := FLang.GetString(55);
-        FilterIndex := 2;
-      end  //of begin
-      else
-      begin
-        // Windows < Vista: Export only as *.ini
-        Filter := FLang.GetString(56);
-        DefaultExt := '.ini';
-      end;  //of if
-    end;  //of with
-
-    if ADirect then
-      // Create deep copy of TSupportInformation object
-      SupportInfo := TSupportInformation.Create(FSupportInfo)
-    else
-      // Create new TSupportInformation object with content of text fields
-      SupportInfo := TSupportInformation.Create(eLogo.Text, eMan.Text,
-        eModel.Text, eUrl.Text, ePhone.Text, eHours.Text);
-
-    try
-      // "Save" clicked
-      if SaveDialog.Execute then
-        case saveDialog.FilterIndex of
-          1: SupportInfo.SaveAsIni(saveDialog.FileName);
-          2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
-        end; //of case
-
-    finally
-      SupportInfo.Free;
-      SaveDialog.Free;
-    end;  //of try
-
-  except
-    FLang.MessageBox(69, mtError);
-  end;  //of try
 end;
 
 { private TMain.RefreshEdits
@@ -408,6 +303,132 @@ begin
   end;  //of with
 end;
 
+{ private TMain.ShowCopyIconDialog
+
+  Allows users to copy a icon in *.bmp format. }
+
+function TMain.ShowCopyIconDialog(): string;
+var
+  SaveDialog : TSaveDialog;
+
+begin
+  result := '';
+
+  // init dialog
+  SaveDialog := TSaveDialog.Create(Self);
+
+  try
+    with SaveDialog do
+    begin
+      Title := FLang.GetString(52);
+      FileName := ExtractFileName(eLogo.Text);
+      Filter := FLang.GetString(57);
+      DefaultExt := '.bmp';
+      Options := Options + [ofOverwritePrompt];
+    end;  //of with
+
+    // Save clicked
+    if SaveDialog.Execute then
+    begin
+      // Copy icon
+      if CopyFile(PChar(eLogo.Text), PChar(SaveDialog.FileName), False) then
+      begin
+        FLang.MessageBox(Format(FLang.GetString(77), [SaveDialog.FileName]));
+        result := SaveDialog.FileName;
+      end  //of begin
+      else
+        FLang.MessageBox(70, mtError);
+    end;  //of begin
+
+  finally
+    SaveDialog.Free;
+  end;  //of try
+end;
+
+{ private TMain.ShowExportDialog
+
+  Allows users to export support information as *.reg or *.ini file. }
+  
+procedure TMain.ShowExportDialog(AExportEdits: Boolean);
+var
+  SaveDialog : TSaveDialog;
+  SupportInfo: TSupportInformationBase;
+
+begin
+  // init dialog
+  SaveDialog := TSaveDialog.Create(Self);
+
+  try
+    // Set dialog options
+    with SaveDialog do
+    begin
+      Title := FLang.GetString(52);
+      FileName := FLang.GetString(54);
+      Options := Options + [ofOverwritePrompt];
+
+      // Set OS dependend filter
+      if TOSUtils.CheckWindows() then
+      begin
+        // Windows >= Vista: Export as *.ini and *.reg
+        Filter := FLang.GetString(55);
+        FilterIndex := 2;
+      end  //of begin
+      else
+      begin
+        // Windows < Vista: Export only as *.ini
+        Filter := FLang.GetString(56);
+        DefaultExt := '.ini';
+      end;  //of if
+    end;  //of with
+
+    if AExportEdits then
+      // Create new TSupportInformation object with content of text fields
+      SupportInfo := TSupportInformation.Create(eLogo.Text, eMan.Text,
+        eModel.Text, eUrl.Text, ePhone.Text, eHours.Text)
+    else
+      // Create deep copy of TSupportInformation object
+      SupportInfo := TSupportInformation.Create(FSupportInfo);
+
+    try
+      // "Save" clicked
+      if SaveDialog.Execute then
+        case saveDialog.FilterIndex of
+          1: SupportInfo.SaveAsIni(saveDialog.FileName);
+          2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
+        end; //of case
+
+    finally
+      SupportInfo.Free;
+      SaveDialog.Free;
+    end;  //of try
+
+  except
+    FLang.MessageBox(69, mtError);
+  end;  //of try
+end;
+
+{ private TMain.ShowValues
+
+  Allows users to show support information. }
+
+procedure TMain.ShowValues(AReload: Boolean);
+begin
+  // Set title
+  Caption := Application.Title + TOSUtils.GetArchitecture();
+
+  if AReload then
+    // Reload support information
+    FSupportInfo.Load();
+
+  // Refresh VCL
+  mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
+  mmDeleteValues.Enabled := FSupportInfo.Exists();
+  mmExport.Enabled := mmDeleteValues.Enabled;
+
+  // Load content of loaded support information into text fields
+  RefreshEdits(FSupportInfo);
+end;
+
 { TMain.bAcceptClick
 
   Allows user to commit changes on support information. }
@@ -429,7 +450,7 @@ begin
     // Make copy of selected icon?
     if cbCopyIcon.Checked then
     begin
-      IconPath := CopyIcon();
+      IconPath := ShowCopyIconDialog();
 
       // User clicked cancel?
       if (IconPath = '') then
@@ -456,7 +477,7 @@ begin
     end;  //of if
 
     // Refresh VCL
-    mmShowValues.Click;
+    ShowValues(False);
 
     // Show success message in best case
     Flang.MessageBox(65);
@@ -476,7 +497,7 @@ end;
 
 procedure TMain.bShowSupportClick(Sender: TObject);
 begin
-  FSupportInfo.Show(Application.Handle);
+  FSupportInfo.Show();
 end;
 
 { TMain.bAddClick
@@ -488,6 +509,7 @@ var
   OpenLogoDialog : TOpenPictureDialog;
 
 begin
+  // init dialog
   OpenLogoDialog := TOpenPictureDialog.Create(Self);
 
   try
@@ -541,6 +563,7 @@ var
   SupportInfo: TSupportInformationBase;
 
 begin
+  // init dialog
   OpenDialog := TOpenDialog.Create(Self);
 
   try
@@ -596,7 +619,7 @@ end;
 
 procedure TMain.mmExportClick(Sender: TObject);
 begin
-  DoExport(True);
+  ShowExportDialog(False);
 end;
 
 { TMain.mmExportEditClick
@@ -609,7 +632,7 @@ begin
     (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
     FLang.MessageBox(73, mtWarning)
   else
-    DoExport(False);
+    ShowExportDialog(True);
 end;
 
 { TMain.mmShowValuesClick
@@ -618,16 +641,7 @@ end;
 
 procedure TMain.mmShowValuesClick(Sender: TObject);
 begin
-  // Set title
-  Caption := Application.Title + TOSUtils.GetArchitecture();
-
-  // Refresh VCL
-  mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
-  mmDeleteValues.Enabled := FSupportInfo.Exists();
-  mmExport.Enabled := mmDeleteValues.Enabled;
-
-  // Load content of loaded support information into text fields
-  RefreshEdits(FSupportInfo);
+  ShowValues(True);
 end;
 
 { TMain.mmDelValuesClick
@@ -640,7 +654,7 @@ begin
   if (FLang.MessageBox(61, mtConfirm) = IDYES) then
   begin
     if (FLang.MessageBox(62, mtQuestion) = IDYES) then
-      DoExport(True);
+      ShowExportDialog(False);
 
     // Remove icon?
     mmDeleteIcon.Click;
@@ -686,7 +700,7 @@ begin
     CheckIcon(eLogo.Text);
 
     // Start copy process
-    CopyIcon();
+    ShowCopyIconDialog();
 
   except
     on E: EAbort do

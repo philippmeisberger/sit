@@ -494,7 +494,7 @@ object Info: TInfo
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '09/2014')
+          '10/2014')
         ReadOnly = True
         TabOrder = 0
       end
@@ -550,7 +550,7 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.0 [2x.09.14]'
+          'Version 3.0 [02.10.14]'
           ''
           '- API Version 3.1'
           '- Neuer Icon'
@@ -565,6 +565,7 @@ object Info: TInfo
           
             '- "Logo kopieren"-Funktion verwendet nun "Speichern unter"-Dialo' +
             'g'
+          '- Mutex hinzugef'#252'gt'
           '- Update-Funktion v2.1'
           
             '- "Speichern unter"-Dialog beim Herunterladen des Zertifikats en' +
@@ -712,7 +713,7 @@ object Info: TInfo
             'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
             '.'
           ''
-          '09/2014')
+          '10/2014')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0
