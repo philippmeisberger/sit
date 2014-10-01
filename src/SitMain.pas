@@ -93,7 +93,7 @@ type
     procedure CheckIcon(AFile: string);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     procedure SetLanguage(Sender: TObject);
-    function ShowCopyIconDialog(): string;
+    function ShowCopyIconDialog(AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
     procedure ShowValues(AReload: Boolean);
   end;
@@ -307,7 +307,7 @@ end;
 
   Allows users to copy a icon in *.bmp format. }
 
-function TMain.ShowCopyIconDialog(): string;
+function TMain.ShowCopyIconDialog(AFile: string): string;
 var
   SaveDialog : TSaveDialog;
 
@@ -321,7 +321,7 @@ begin
     with SaveDialog do
     begin
       Title := FLang.GetString(52);
-      FileName := ExtractFileName(eLogo.Text);
+      FileName := ExtractFileName(AFile);
       Filter := FLang.GetString(57);
       DefaultExt := '.bmp';
       Options := Options + [ofOverwritePrompt];
@@ -331,7 +331,7 @@ begin
     if SaveDialog.Execute then
     begin
       // Copy icon
-      if CopyFile(PChar(eLogo.Text), PChar(SaveDialog.FileName), False) then
+      if CopyFile(PChar(AFile), PChar(SaveDialog.FileName), False) then
       begin
         FLang.MessageBox(Format(FLang.GetString(77), [SaveDialog.FileName]));
         result := SaveDialog.FileName;
@@ -422,6 +422,7 @@ begin
 
   // Refresh VCL
   mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
+  mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
   mmDeleteValues.Enabled := FSupportInfo.Exists();
   mmExport.Enabled := mmDeleteValues.Enabled;
 
@@ -443,18 +444,21 @@ begin
   try
     IconPath := eLogo.Text;
 
-    // Check icon constraints
+    // Icon exists?
     if (IconPath <> '') then
+    begin
+      // Check icon constraints
       CheckIcon(IconPath);
 
-    // Make copy of selected icon?
-    if cbCopyIcon.Checked then
-    begin
-      IconPath := ShowCopyIconDialog();
+      // Make copy of selected icon?
+      if cbCopyIcon.Checked then
+      begin
+        IconPath := ShowCopyIconDialog(eLogo.Text);
 
-      // User clicked cancel?
-      if (IconPath = '') then
-        Exit;
+        // User clicked cancel?
+        if (IconPath = '') then
+          Exit;
+      end;  //of if
     end;  //of if
 
     // Save support information
@@ -665,6 +669,7 @@ begin
       mmDeleteValues.Enabled := False;
       mmExport.Enabled := False;
       mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
+      mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
       FSupportInfo.Clear;
       FLang.MessageBox(64);
     end  //of begin
@@ -697,10 +702,10 @@ procedure TMain.mmCopyIconClick(Sender: TObject);
 begin
   try
     // Check icon constraints
-    CheckIcon(eLogo.Text);
+    CheckIcon(FSupportInfo.Icon);
 
-    // Start copy process
-    ShowCopyIconDialog();
+    // Start copy icon procedure
+    ShowCopyIconDialog(FSupportInfo.Icon);
 
   except
     on E: EAbort do
@@ -722,6 +727,7 @@ begin
     if FSupportInfo.DeleteOEMIcon() then
     begin
       mmDeleteIcon.Enabled := False;
+      mmCopyIcon.Enabled := False;
       FSupportInfo.Icon := '';
     end  //of begin
     else
