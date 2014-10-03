@@ -330,7 +330,11 @@ begin
     // Save clicked
     if SaveDialog.Execute then
     begin
-      // Copy icon
+      // Destination file is a *.bmp file?
+      if (ExtractFileExt(SaveDialog.FileName) <> '.bmp') then
+        raise EAbort.Create(FLang.GetString(78));
+
+      // Copy valid icon
       if CopyFile(PChar(AFile), PChar(SaveDialog.FileName), False) then
       begin
         FLang.MessageBox(Format(FLang.GetString(77), [SaveDialog.FileName]));
