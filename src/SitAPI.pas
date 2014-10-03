@@ -597,12 +597,23 @@ begin
 
   OEMIcon := GetOEMIcon();
 
-  // Copy logo only if paths differ
-  if (FIcon <> OEMIcon) then
-    if CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
-      FIcon := OEMIcon
+  // Delete current icon when new icon is empty and old still exists
+  if ((FIcon = '') and FileExists(OEMIcon)) then
+  begin
+    if DeleteFile(OEMIcon) then
+      FIcon := ''
     else
-      raise Exception.Create('Error while copying icon!');
+      raise Exception.Create('Error while deleting icon!');
+  end  //of begin
+  else
+    begin
+      // Copy logo only if paths differ
+      if ((FIcon <> '') and (FIcon <> OEMIcon)) then
+        if CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
+          FIcon := OEMIcon
+        else
+          raise Exception.Create('Error while copying icon!');
+    end;  //of if
 end;
 
 { public TSupportInformationXP.Show

@@ -550,7 +550,7 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.0 [02.10.14]'
+          'Version 3.0 [03.10.14]'
           ''
           '- API Version 3.1'
           '- Neuer Icon'
