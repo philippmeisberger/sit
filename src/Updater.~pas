@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Updater v2.1                              }
+{ PM Code Works Cross Plattform Updater v2.2                              }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -40,7 +40,7 @@ type
     FRemoteDirName: string;
     FNewBuild: Cardinal;
     { TUpdateCheckThread events }
-    procedure OnCheckError(Sender: TObject);
+    procedure OnCheckError(Sender: TThread; AResponseCode: Integer);
     procedure OnNoUpdateAvailable(Sender: TObject);
     procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
   protected
@@ -78,9 +78,9 @@ type
     procedure OnDownloadStart(Sender: TThread; const AFileSize: Integer);
   public
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      AFormCaption: string = ''); overload;
+      AFormCaption: string = ''); reintroduce; overload;
     constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); overload;
+      ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); reintroduce; overload;
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
     procedure Download(ADownloadDirectory: string = ''); overload;
@@ -137,11 +137,12 @@ end;
   Event method that is called TUpdateCheckThread when error occurs while
   searching for update. }
 
-procedure TUpdateCheck.OnCheckError(Sender: TObject);
+procedure TUpdateCheck.OnCheckError(Sender: TThread; AResponseCode: Integer);
 begin
   if FUserUpdate then
     with FLang do
-      MessageBox(GetString(12) +^J+ GetString(13), mtError, True);
+      MessageBox(GetString(12) +^J+ GetString(13) +' '+ Format(GetString(19),
+        [AResponseCode]), mtError, True);
 end;
 
 { private TUpdateCheck.OnNoUpdateAvailable
@@ -304,7 +305,8 @@ end;
 procedure TUpdate.OnDownloadError(Sender: TThread; AResponseCode: Integer);
 begin
   with FLang do
-    MessageBox(Caption + GetString(18) +^J+^J+ GetString(19) + GetString(20), mtError, True);
+    MessageBox(Caption + GetString(18) +^J+ Format(GetString(19), [AResponseCode]),
+      mtError, True);
 
   Reset();
 end;

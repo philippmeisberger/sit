@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Operating System Utilities Unit v1.6                      }
+{ PM Code Works Operating System Utilities Unit v1.7                      }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -35,10 +35,10 @@ type
     class function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean; //not by me
   protected
     class function ChangeFSRedirection(AAccess: Boolean): Boolean;            //not by me
-    class function DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
    	class function IsWindows64(): Boolean;                                    //not by me
     class function SetKeyAccessMode(): Cardinal; deprecated;
   public
+    class function DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
     class function GetArchitecture(): string;
   end;
 
@@ -56,6 +56,7 @@ type
     class function GetTempDir(): string;
     class function GetWinDir(): string;
     class function GetWinVersion(AShowServicePack: Boolean = False): string;  //not by me
+    class function HexToInt(AHexValue: string): Integer;
     class function HKeyToStr(AHKey: HKey): string;
     class function MakeUACShieldButton(AButtonHandle: HWND): Integer;
     class function OpenUrl(const AUrl: string): Boolean;
@@ -70,6 +71,7 @@ type
   TOSUtils = class(TObject)
   public
     class function GetBuildNumber(): Cardinal;
+    class function HexToInt(AHexValue: string): Integer;
     class function OpenUrl(const AUrl: string): Boolean;
     class function PlaySound(AFileName: string; ASynchronized: Boolean = False): Boolean;
     class function Shutdown(): Boolean;
@@ -465,7 +467,18 @@ begin
   if (AShowServicePack and (Win32CSDVersion <> '')) then
       result := result +' '+ Win32CSDVersion;
 end;
+{$ENDIF}
 
+{ public TOSUtils.HexToInt
+
+  Converts a Hexadecimal value to integer. }
+
+class function TOSUtils.HexToInt(AHexValue: string): Integer;
+begin
+  result := StrToInt('$'+ AHexValue);
+end;
+
+{$IFDEF MSWINDOWS}
 { public TOSUtils.HKeyToStr
 
   Converts a HKEY into its string representation. }

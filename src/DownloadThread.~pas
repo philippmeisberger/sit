@@ -1,12 +1,14 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Update Thread v2.1                        }
+{ PM Code Works Cross Plattform Update Thread v2.2                        }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
 unit DownloadThread;
+
+{$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
 interface
 
@@ -16,11 +18,9 @@ uses
 type
   { Thread events }
   TOnDownloadStartEvent = procedure(Sender: TThread;
-    const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
+    {$IFDEF MSWINDOWS}const AFileSize: Integer{$ELSE}AFileSize: Int64{$ENDIF}) of object;
   TOnDownloadingEvent = procedure(Sender: TThread;
-    const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF}) of object;
-  TOnDownloadFinishEvent = procedure(Sender: TThread) of object;
-  TOnDownloadCancelEvent = procedure(Sender: TThread) of object;
+    {$IFDEF MSWINDOWS}const ADownloadSize: Integer{$ELSE}ADownloadSize: Int64{$ENDIF}) of object;
   TOnDownloadErrorEvent = procedure(Sender: TThread; AResponseCode: Integer) of object;
 
   { TDownloadThread }
@@ -29,11 +29,9 @@ type
     FHttp: TIdHTTP;
     FOnStart: TOnDownloadStartEvent;
     FOnDownloading: TOnDownloadingEvent;
-    FOnFinish: TOnDownloadFinishEvent;
+    FOnFinish, FOnCancel: TNotifyEvent;
     FOnError: TOnDownloadErrorEvent;
-    FOnCancel: TOnDownloadCancelEvent;
     FFileSize, FDownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF};
-    FResponseCode: Integer;
     FFileName, FUrl: string;
     { Synchronized events }
     procedure DoNotifyOnCancel;
@@ -48,16 +46,16 @@ type
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
     procedure Downloading(Sender: TObject; AWorkMode: TWorkMode;
-      const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+      {$IFDEF MSWINDOWS}const ADownloadSize: Integer{$ELSE}ADownloadSize: Int64{$ENDIF});
     procedure DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
-      const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+      {$IFDEF MSWINDOWS}const AFileSize: Integer{$ELSE}AFileSize: Int64{$ENDIF});
     function GetUniqueFileName(const AFileName: string): string;
     procedure OnUserCancel(Sender: TObject);
     { Externalized events }
-    property OnCancel: TOnDownloadCancelEvent read FOnCancel write FOnCancel;
+    property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
     property OnDownloading: TOnDownloadingEvent read FOnDownloading write FOnDownloading;
     property OnError: TOnDownloadErrorEvent read FOnError write FOnError;
-    property OnFinish: TOnDownloadFinishEvent read FOnFinish write FOnFinish;
+    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
     property OnStart: TOnDownloadStartEvent read FOnStart write FOnStart;
   end;
 
@@ -82,21 +80,21 @@ begin
      FFileName := GetUniqueFileName(AFileName);
 
   FUrl := AUrl;
-  FResponseCode := 0;
   
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
-  
-  // Link HTTP events
+
   with FHttp do
   begin
-  {$IFDEF MSWINDOWS}
+    // Link HTTP events
     OnWorkBegin := DownloadStart;
     OnWork := Downloading;
-  {$ELSE}
-    OnWorkBegin := @DownloadStart;
-    OnWork := @Downloading;
-  {$ENDIF}
+
+    // Set the user-agent because of some issues with default
+    //Request.UserAgent := 'Mozilla/5.0 (PM Code Works Update Utility)';
+
+    // Set the referer field to deny future issues with referer check
+    Request.Referer := 'http://www.pm-codeworks.de';
   end;  //of begin
 end;
 
@@ -129,38 +127,23 @@ begin
 
     finally
       FileStream.Free;
-      FResponseCode := FHttp.ResponseCode;
     end;  //of try
 
     // Check if download was successful?
-    if (FResponseCode = 200) then
-    {$IFDEF MSWINDOWS}
+    if (FHttp.ResponseCode = 200) then
       Synchronize(DoNotifyOnFinish);
-    {$ELSE}
-      Synchronize(@DoNotifyOnFinish);
-    {$ENDIF}       
 
   except
     on E: EAbort do
     begin
       DeleteFile(FFileName);
-
-    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnCancel);
-    {$ELSE}
-      Synchronize(@DoNotifyOnCancel);
-    {$ENDIF}
     end;  //of begin
 
     on E: Exception do
     begin
       DeleteFile(FFileName);
-
-    {$IFDEF MSWINDOWS}
       Synchronize(DoNotifyOnError);
-    {$ELSE}
-      Synchronize(@DoNotifyOnError);
-    {$ENDIF}
     end;  //of begin
   end;  //of try
 end;
@@ -170,16 +153,11 @@ end;
   Event that is called by TIdHttp when download starts. }
 
 procedure TDownloadThread.DownloadStart(Sender: TObject; AWorkMode: TWorkMode;
-  const AFileSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+  {$IFDEF MSWINDOWS}const AFileSize: Integer{$ELSE}AFileSize: Int64{$ENDIF});
 begin
   // Convert Byte into Kilobyte (KB = Byte/1024)
   FFileSize := AFileSize div 1024;
-
-  {$IFDEF MSWINDOWS}
-    Synchronize(DoNotifyOnStart);
-  {$ELSE}
-    Synchronize(@DoNotifyOnStart);
-  {$ENDIF}
+  Synchronize(DoNotifyOnStart);
 end;
 
 { public TDownloadThread.Downloading
@@ -187,18 +165,13 @@ end;
   Event that is called by TIdHttp while download is in progress. }
 
 procedure TDownloadThread.Downloading(Sender: TObject; AWorkMode: TWorkMode;
-  const ADownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF});
+  {$IFDEF MSWINDOWS}const ADownloadSize: Integer{$ELSE}ADownloadSize: Int64{$ENDIF});
 begin
   if (not Self.Terminated) then
   begin
     // Convert Byte into Kilobyte (KB = Byte/1024)
     FDownloadSize := ADownloadSize div 1024;
-
-  {$IFDEF MSWINDOWS}
     Synchronize(DoNotifyOnDownloading);
-  {$ELSE}
-    Synchronize(@DoNotifyOnDownloading);
-  {$ENDIF}
   end  //of begin
   else
     Abort;
@@ -268,7 +241,7 @@ end;
 procedure TDownloadThread.DoNotifyOnError;                  
 begin
   if Assigned(OnError) then
-    OnError(Self, FResponseCode);
+    OnError(Self, FHttp.ResponseCode);
 end;
 
 { private TDownloadThread.DoNotifyOnFinish

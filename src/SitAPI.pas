@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ SIT API Interface Unit v3.1                                             }
+{ SIT API Interface Unit v3.2                                             }
 {                                                                         }
 { Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
 {                                                                         }
@@ -11,7 +11,7 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, IniFiles, OSUtils, ShellAPI;
+  Windows, Classes, SysUtils, Registry, IniFileParser, OSUtils, ShellAPI;
 
 const
   { Ini-file section name constants }
@@ -125,6 +125,19 @@ begin
   FUrl := ASupportInformationBase.Url;
 end;
 
+{ protected TSupportInformationBase.AppendToFile
+
+  Appends or deletes a key-value-pair. }
+{
+procedure TSupportInformationBase.AppendToFile(const ASection, AName, AValue: string;
+  AFile: TIniFile);
+begin
+  if (AValue <> '') then
+    AFile.WriteString(ASection, AName, AValue)
+  else
+    AFile.Remove(ASection, AName);
+end;  }
+
 { public TSupportInformationBase.Clear
 
   Clears the entered support information. }
@@ -153,12 +166,12 @@ begin
   try
     with ini do
     begin
-      FIcon := ReadString(INFO_ICON, INFO_ICON, '');
-      FMan := ReadString(INI_GENERAL, INFO_MAN, '');
-      FModel := ReadString(INI_GENERAL, INFO_MODEL, '');
-      FUrl := ReadString(INI_GENERAL, INFO_URL, '');
-      FPhone := ReadString(INI_SUPPORT_INFO, INFO_PHONE, '');
-      FHours := ReadString(INI_SUPPORT_INFO, INFO_HOURS, '');
+      FIcon := ReadString(INFO_ICON, INFO_ICON);
+      FMan := ReadString(INI_GENERAL, INFO_MAN);
+      FModel := ReadString(INI_GENERAL, INFO_MODEL);
+      FUrl := ReadString(INI_GENERAL, INFO_URL);
+      FPhone := ReadString(INI_SUPPORT_INFO, INFO_PHONE);
+      FHours := ReadString(INI_SUPPORT_INFO, INFO_HOURS);
     end;  //of with
 
   finally
@@ -175,15 +188,6 @@ var
   ext: string;
   ini: TIniFile;
 
-  procedure AppendToFile(const ASection, AName, AValue: string);
-  begin
-    if (AValue <> '') then
-      ini.WriteString(ASection, AName, AValue)
-    else
-      if ini.ValueExists(ASection, AName) then
-        ini.DeleteKey(ASection, AName);
-  end;
-
 begin
   if (ExtractFileExt(AFileName) = '') then
     ext := '.ini'
@@ -193,12 +197,15 @@ begin
   ini := TIniFile.Create(AFileName + ext);
 
   try
-    AppendToFile(INFO_ICON, INFO_ICON, FIcon);
-    AppendToFile(INI_GENERAL, INFO_MAN, FMan);
-    AppendToFile(INI_GENERAL, INFO_MODEL, FModel);
-    AppendToFile(INI_GENERAL, INFO_URL, FUrl);
-    AppendToFile(INI_SUPPORT_INFO, INFO_PHONE, FPhone);
-    AppendToFile(INI_SUPPORT_INFO, INFO_HOURS, FHours);
+    ini.AddRemove(INFO_ICON, INFO_ICON, FIcon);
+    ini.AddRemove(INI_GENERAL, INFO_MAN, FMan);
+    ini.AddRemove(INI_GENERAL, INFO_MODEL, FModel);
+    ini.AddRemove(INI_GENERAL, INFO_URL, FUrl);
+    ini.AddRemove(INI_SUPPORT_INFO, INFO_PHONE, FPhone);
+    ini.AddRemove(INI_SUPPORT_INFO, INFO_HOURS, FHours);
+
+    // Save file
+    ini.Save();
 
   finally
     ini.Free;
@@ -207,6 +214,19 @@ end;
 
 
 { TSupportInformation }
+
+{ protected TSupportInformation.AppendToFile
+
+  Appends or deletes a key-value-pair. }
+{
+procedure TSupportInformation.AppendToFile(const ASection, AName, AValue: string;
+  AFile: TRegistryFile);
+begin
+  if (AValue <> '') then
+    AFile.WriteString(ASection, AName, AValue)
+  else
+    AFile.Remove(ASection, AName);
+end; }
 
 { public TSupportInformation.DeleteIcon
 
@@ -317,8 +337,8 @@ begin
     FMan := ReadValue(INFO_MAN);
     FModel := ReadValue(INFO_MODEL);
     FPhone := ReadValue(INFO_PHONE);
-    FUrl := ReadValue(INFO_URL);   
-    
+    FUrl := ReadValue(INFO_URL);
+
   finally
     reg.CloseKey();
     reg.Free;
@@ -331,26 +351,20 @@ end;
 
 procedure TSupportInformation.LoadFromReg(const AFilename: string);
 var
-  regFile: TStringList;
-  Icon: string;
-
-  function DelPathIndicator(AName: string): string;
-  begin
-    result := StringReplace(AName, '"', '', [rfReplaceAll]);
-  end;
+  RegFile: TRegistryFile;
+  RegSection: string;
 
 begin
-  regFile := TStringList.Create;
+  RegFile := TRegistryFile.Create(AFilename);
 
   try
-    regFile.LoadFromFile(AFilename);
-    Icon := StringReplace(regFile.Values['"'+INFO_ICON+'"'], '\\', '\', [rfReplaceAll]);
-    FIcon := DelPathIndicator(Icon);
-    FMan := DelPathIndicator(regFile.Values['"'+INFO_MAN+'"']);
-    FModel := DelPathIndicator(regFile.Values['"'+INFO_MODEL+'"']);
-    FPhone := DelPathIndicator(regFile.Values['"'+INFO_PHONE+'"']);
-    FHours := DelPathIndicator(regFile.Values['"'+INFO_HOURS+'"']);
-    FUrl := DelPathIndicator(regFile.Values['"'+INFO_URL+'"']);
+    RegSection := RegFile.GetSection(HKEY_LOCAL_MACHINE, OEMINFO_KEY);
+    FIcon := RegFile.ReadString(RegSection, INFO_ICON);
+    FMan := RegFile.ReadString(RegSection, INFO_MAN);
+    FModel := RegFile.ReadString(RegSection, INFO_MODEL);
+    FPhone := RegFile.ReadString(RegSection, INFO_PHONE);
+    FHours := RegFile.ReadString(RegSection, INFO_HOURS);
+    FUrl := RegFile.ReadString(RegSection, INFO_URL);
 
   finally
     regFile.Free;
@@ -421,45 +435,37 @@ end;
 
 { public TSupportInformation.SaveAsReg
 
-  Saves a TSupportInformation object as a *.reg file. }  
+  Saves a TSupportInformation object as a *.reg file. }
 
 procedure TSupportInformation.SaveAsReg(const AFilename: string);
 var
-  regFile: TStringList;
-  path, ext: string;
+  RegFile: TRegistryFile;
+  ext, Section: string;
 
-  procedure AppendToFile(AName, AValue: string);
-  begin
-    if (AValue <> '') then
-      regFile.Append('"'+ AName +'"="'+ AValue +'"');
-  end;
-  
 begin
+  if (ExtractFileExt(AFileName) = '') then
+    ext := '.reg'
+  else
+    ext := '';
+
   // init *.reg file
-  regFile := TStringList.Create;
-  regFile.Append('Windows Registry Editor Version 5.00');
-  regFile.Append('');
-  regFile.Append('[HKEY_LOCAL_MACHINE\'+ OEMINFO_KEY +']');
+  RegFile := TRegistryFile.Create(AFilename + ext);
 
   try
-    path := StringReplace(FIcon, '\', '\\', [rfReplaceAll]);
-    AppendToFile(INFO_ICON, path);
-    AppendToFile(INFO_MAN, FMan);
-    AppendToFile(INFO_MODEL, FModel);
-    AppendToFile(INFO_PHONE, FPhone);
-    AppendToFile(INFO_HOURS, FHours);
-    AppendToFile(INFO_URL, FUrl);
+    RegFile.MakeHeadline();
+    Section := RegFile.GetSection(HKEY_LOCAL_MACHINE, OEMINFO_KEY);
+    RegFile.AddRemove(Section, INFO_ICON, FIcon);
+    RegFile.AddRemove(Section, INFO_MAN, FMan);
+    RegFile.AddRemove(Section, INFO_MODEL, FModel);
+    RegFile.AddRemove(Section, INFO_PHONE, FPhone);
+    RegFile.AddRemove(Section, INFO_HOURS, FHours);
+    RegFile.AddRemove(Section, INFO_URL, FUrl);
 
-    if (ExtractFileExt(AFileName) = '') then
-      ext := '.reg'
-    else
-      ext := '';
-       
-    // Save *.reg file
-    regFile.SaveToFile(AFilename + ext);
+    // Save file
+    RegFile.Save();
 
   finally
-    regFile.Free;
+    RegFile.Free;
   end;  //of try
 end;
 
@@ -539,12 +545,12 @@ begin
   try
     with ini do
     begin
-      FMan := ReadString(INI_GENERAL, INFO_MAN, '');
-      FModel := ReadString(INI_GENERAL, INFO_MODEL, '');
-      FUrl := ReadString(INI_GENERAL, INFO_URL, '');
-      FPhone := ReadString(INI_SUPPORT_INFO, 'Line3', '');
-      FHours := ReadString(INI_SUPPORT_INFO, 'Line4', '');
-    end;  //of with
+      FMan := ReadString(INI_GENERAL, INFO_MAN);
+      FModel := ReadString(INI_GENERAL, INFO_MODEL);
+      FUrl := ReadString(INI_GENERAL, INFO_URL);
+      FPhone := ReadString(INI_SUPPORT_INFO, 'Line3');
+      FHours := ReadString(INI_SUPPORT_INFO, 'Line4');
+    end;  //of wit
 
   finally
     ini.Free;
@@ -590,6 +596,9 @@ begin
       WriteString(INI_SUPPORT_INFO, 'Line4', FHours);
       WriteString(INI_SUPPORT_INFO, 'Line5', FUrl);
     end;  //of with
+  
+    // Save file
+    ini.Save();
 
   finally
     ini.Free;

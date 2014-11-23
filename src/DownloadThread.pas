@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Update Thread v2.1                        }
+{ PM Code Works Cross Plattform Update Thread v2.2                        }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -32,7 +32,6 @@ type
     FOnFinish, FOnCancel: TNotifyEvent;
     FOnError: TOnDownloadErrorEvent;
     FFileSize, FDownloadSize: {$IFDEF MSWINDOWS}Integer{$ELSE}Int64{$ENDIF};
-    FResponseCode: Integer;
     FFileName, FUrl: string;
     { Synchronized events }
     procedure DoNotifyOnCancel;
@@ -81,16 +80,21 @@ begin
      FFileName := GetUniqueFileName(AFileName);
 
   FUrl := AUrl;
-  FResponseCode := 0;
   
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
-  
-  // Link HTTP events
+
   with FHttp do
   begin
+    // Link HTTP events
     OnWorkBegin := DownloadStart;
     OnWork := Downloading;
+
+    // Set the user-agent because of some issues with default
+    Request.UserAgent := 'Mozilla/5.0 (PM Code Works Update Utility)';
+
+    // Set the referer field to deny future issues with referer check
+    Request.Referer := 'http://www.pm-codeworks.de';
   end;  //of begin
 end;
 
@@ -123,11 +127,10 @@ begin
 
     finally
       FileStream.Free;
-      FResponseCode := FHttp.ResponseCode;
     end;  //of try
 
     // Check if download was successful?
-    if (FResponseCode = 200) then
+    if (FHttp.ResponseCode = 200) then
       Synchronize(DoNotifyOnFinish);
 
   except
@@ -238,7 +241,7 @@ end;
 procedure TDownloadThread.DoNotifyOnError;                  
 begin
   if Assigned(OnError) then
-    OnError(Self, FResponseCode);
+    OnError(Self, FHttp.ResponseCode);
 end;
 
 { private TDownloadThread.DoNotifyOnFinish

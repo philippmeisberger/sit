@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Update Check Thread v2.1                  }
+{ PM Code Works Cross Plattform Update Check Thread v2.2                  }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -21,13 +21,15 @@ const
 type
   { Thread event }
   TOnUpdateAvailableEvent = procedure(Sender: TThread; const ANewBuild: Cardinal) of object;
+  TOnUpdateCheckErrorEvent = procedure(Sender: TThread; AResponseCode: Integer) of object;
 
   { TUpdateCheckThread }
   TUpdateCheckThread = class(TThread)
   private
     FHttp: TIdHTTP;
     FOnUpdate: TOnUpdateAvailableEvent;
-    FOnNoUpdate, FOnError: TNotifyEvent;
+    FOnError: TOnUpdateCheckErrorEvent;
+    FOnNoUpdate: TNotifyEvent;
     FCurBuild, FNewBuild: Cardinal;
     FRemoteDirName: string;
     { Synchronizable events }
@@ -41,7 +43,7 @@ type
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
     { Externalized events }
-    property OnError: TNotifyEvent read FOnError write FOnError;
+    property OnError: TOnUpdateCheckErrorEvent read FOnError write FOnError;
     property OnNoUpdate: TNotifyEvent read FOnNoUpdate write FOnNoUpdate;
     property OnUpdate: TOnUpdateAvailableEvent read FOnUpdate write FOnUpdate;
   end;
@@ -67,6 +69,12 @@ begin
   
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
+
+  // Set the user-agent because of some issues with default 
+  FHttp.Request.UserAgent := 'Mozilla/5.0 (PM Code Works Update Utility)';
+
+  // Set the referer field to deny future issues with referer check
+  FHttp.Request.Referer := 'http://www.pm-codeworks.de';
 end;
 
 { public TUpdateCheckThread.Destroy
@@ -75,7 +83,7 @@ end;
 
 destructor TUpdateCheckThread.Destroy;
 begin
-  FHttp.Free;
+  FHttp.Free; 
   inherited Destroy;
 end;
 
@@ -114,7 +122,7 @@ end;
 procedure TUpdateCheckThread.DoNotifyOnError;
 begin
   if Assigned(OnError) then
-    OnError(Self);
+    OnError(Self, FHttp.ResponseCode);
 end;
 
 { private TDownloadThread.DoNotifyOnNoUpdate
