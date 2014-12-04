@@ -23,7 +23,7 @@ uses
 
 const
   URL_DOWNLOAD = URL_DIR + 'downloader.php?file=';
-  
+
 type
   { IUpdateListener }
   IUpdateListener = interface
@@ -63,10 +63,11 @@ type
     lSize: TLabel;
     procedure bFinishedClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure FormShow(Sender: TObject);
   private
     FOnUserCancel: TNotifyEvent;
     FThreadRuns: Boolean;
-    FRemoteFileName, FLocalFileName, FFileName: string;
+    FDownloadDirectory, FTitle, FRemoteFileName, FLocalFileName, FFileName: string;
     FLang: TLanguageFile;
     FListeners: TInterfaceList;
     procedure Reset();
@@ -77,10 +78,7 @@ type
     procedure OnDownloading(Sender: TThread; const ADownloadSize: Integer);
     procedure OnDownloadStart(Sender: TThread; const AFileSize: Integer);
   public
-    constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      AFormCaption: string = ''); reintroduce; overload;
-    constructor Create(AOwner: TComponent; ALangFile: TLanguageFile;
-      ARemoteFileName, ALocalFileName: string; AFormCaption: string = ''); reintroduce; overload;
+    constructor Create(AOwner: TComponent; ALang: TLanguageFile); reintroduce;
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
     procedure Download(ADownloadDirectory: string = ''); overload;
@@ -88,7 +86,11 @@ type
       ADownloadDirectory: string = ''); overload;
     procedure DownloadCertificate();
     procedure RemoveListener(AListener: IUpdateListener);
-  end; 
+    { external }
+    property LanguageFile: TLanguageFile read FLang write FLang;
+    property DownloadDirectory: string read FDownloadDirectory write FDownloadDirectory;
+    property Title: string read FTitle write FTitle;
+  end;
 {$ENDIF}
 
 implementation
@@ -141,8 +143,7 @@ procedure TUpdateCheck.OnCheckError(Sender: TThread; AResponseCode: Integer);
 begin
   if FUserUpdate then
     with FLang do
-      MessageBox(GetString(12) +^J+ GetString(13) +' '+ Format(GetString(19),
-        [AResponseCode]), mtError, True);
+      MessageBox(Format([12, NEW_LINE, 13, 19], [AResponseCode]), mtError, True);
 end;
 
 { private TUpdateCheck.OnNoUpdateAvailable
@@ -233,15 +234,11 @@ end;
 
   Constructor for creating an TUpdate instance. }
 
-constructor TUpdate.Create(AOwner: TComponent; ALangFile: TLanguageFile;
-  AFormCaption: string = '');
+constructor TUpdate.Create(AOwner: TComponent; ALang: TLanguageFile);
 begin
   inherited Create(AOwner);
-  FLang := ALangFile;
+  FLang := ALang;
   FThreadRuns := False;
-
-  if (AFormCaption <> '') then
-    Self.Caption := AFormCaption;
 
   // Init list of listeners
   FListeners := TInterfaceList.Create;
@@ -249,18 +246,6 @@ begin
   // Add owner to list to receive events
   if Assigned(AOwner) then
     FListeners.Add(AOwner);
-end;
-
-{ public TUpdate.Create
-
-  Constructor for creating an TUpdate instance. }
-
-constructor TUpdate.Create(AOwner: TComponent; ALangFile: TLanguageFile;
-  ARemoteFileName, ALocalFileName: string; AFormCaption: string = '');
-begin
-  Create(AOwner, ALangFile, AFormCaption);
-  FRemoteFileName := ARemoteFileName;
-  FLocalFileName := ALocalFileName;
 end;
 
 { public TUpdate.Destroy
@@ -271,6 +256,15 @@ destructor TUpdate.Destroy;
 begin
   FreeAndNil(FListeners);
   inherited Destroy;
+end;
+
+{ private TUpdate.FormShow
+
+  Event that is called when form is shown. }
+
+procedure TUpdate.FormShow(Sender: TObject);
+begin
+  Caption := FTitle;
 end;
 
 { private TUpdate.Reset
@@ -290,7 +284,7 @@ end;
 { private TUpdate.OnDownloadCancel
 
   Event method that is called by TDownloadThread when user canceled downlad. }
-  
+
 procedure TUpdate.OnDownloadCancel(Sender: TObject);
 begin
   Reset();
@@ -305,8 +299,7 @@ end;
 procedure TUpdate.OnDownloadError(Sender: TThread; AResponseCode: Integer);
 begin
   with FLang do
-    MessageBox(Caption + GetString(18) +' '+ Format(GetString(19), [AResponseCode]),
-      mtError, True);
+    MessageBox(Caption + GetString(18) + Format(19, [AResponseCode]), mtError, True);
 
   Reset();
 end;
@@ -383,7 +376,7 @@ end;
 
   Starts downloading a file. }
 
-procedure TUpdate.Download(ARemoteFileName, ALocalFileName: string; 
+procedure TUpdate.Download(ARemoteFileName, ALocalFileName: string;
   ADownloadDirectory: string = '');
 var
   Url: string;
@@ -392,7 +385,7 @@ var
 begin
   FRemoteFileName := ARemoteFileName;
   FLocalFileName := ALocalFileName;
-  
+
   // Download folder still set?
   if (ADownloadDirectory <> '') then
     Continue := True
@@ -418,7 +411,7 @@ begin
         OnStart := OnDownloadStart;
         OnFinish := OnDownloadFinished;
         OnError := OnDownloadError;
-        Resume;      
+        Resume;
       end;  //of with
 
       // Caption "cancel"
@@ -432,6 +425,8 @@ begin
   else
     // Cancel clicked
     Reset();
+
+  ShowModal;
 end;
 
 { TUpdate.DownloadCertificate
@@ -477,7 +472,8 @@ begin
   else
     // Close form
     CanClose := True;
+
 end;
 {$ENDIF}
 
-end.
+end.

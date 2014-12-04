@@ -26,20 +26,19 @@ const
 
 type
   { Exception class }
-  EOSUtilsException = class(Exception);
+  EInvalidArgument = class(Exception);
 
 {$IFDEF MSWINDOWS}  
   { TWinWOW64 }
   TWinWOW64 = class(TObject)
-  private
-    class function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean; //not by me
   protected
-    class function ChangeFSRedirection(AAccess: Boolean): Boolean;            //not by me
-   	class function IsWindows64(): Boolean;                                    //not by me
     class function SetKeyAccessMode(): Cardinal; deprecated;
   public
     class function DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
+    class function DisableWow64FsRedirection(): Boolean;
     class function GetArchitecture(): string;
+    class function IsWindows64(): Boolean;
+    class function RevertWow64FsRedirection(): Boolean;
   end;
 
   { TOSUtils }
@@ -64,7 +63,7 @@ type
     class function PMCertExists(): Boolean;
     class function ShowAddRegistryDialog(const ARegFilePath: string): Boolean;
     class function Shutdown(): Boolean;
-   	class function StrToHKey(AMainKey: string): HKEY;
+   	class function StrToHKey(const AMainKey: string): HKEY;
   end;
 {$ELSE}
   { TOSUtils }
@@ -83,17 +82,18 @@ implementation
 {$IFDEF MSWINDOWS}
 { TWinWOW64 }
 
-{ private TWinWOW64.GetNativeSystemInfo
+{ protected TWinWOW64.DisableWow64FsRedirection
 
-  Returns basic system information of current used Windows. }
+  Disables the WOW64 redirection on 64bit Windows. }
 
-class function TWinWOW64.GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean;
+class function TWinWOW64.DisableWow64FsRedirection(): Boolean;
 type
-  TGetNativeSystemInfo = procedure (var SystemInfo: TSystemInfo) stdcall;
+  TWow64DisableWow64FsRedirection = function(out OldValue: Pointer): BOOL; stdcall;
 
 var
   LibraryHandle: HMODULE;
-  GetNativeSystemInfo: TGetNativeSystemInfo;
+  Wow64DisableWow64FsRedirection: TWow64DisableWow64FsRedirection;
+  OldValue: Pointer;
 
 begin
   result := False;
@@ -101,91 +101,68 @@ begin
 
   if (LibraryHandle <> 0) then
   begin
-    GetNativeSystemInfo := GetProcAddress(LibraryHandle, 'GetNativeSystemInfo');
+    Wow64DisableWow64FsRedirection := GetProcAddress(LibraryHandle, 'Wow64DisableWow64FsRedirection');
 
-    if Assigned(GetNativeSystemInfo) then
-    begin
-      GetNativeSystemInfo(SystemInfo);
-      result := True;
-    end  //of begin
-    else
-      GetSystemInfo(SystemInfo);
-  end  //of begin
-  else
-    GetSystemInfo(SystemInfo);
+    // Loading of Wow64DisableWow64FsRedirection successful?
+    if Assigned(Wow64DisableWow64FsRedirection) then
+      result := Wow64DisableWow64FsRedirection(OldValue);
+  end;  //of begin
 end;
 
-{ protected TWinWOW64.ChangeFSRedirection
+{ protected TWinWOW64.RevertWow64FsRedirection
 
-  Forces enabling or disabling WOW64 redirection on 64bit Windows. }
+  Restores the WOW64 redirection on 64bit Windows. }
 
-class function TWinWOW64.ChangeFSRedirection(AAccess: Boolean): Boolean;
+class function TWinWOW64.RevertWow64FsRedirection(): Boolean;
 type
-  TWow64DisableWow64FsRedirection = function(var Wow64FsEnableRedirection: LongBool): LongBool; stdCall;
-  TWow64EnableWow64FsRedirection = function(var Wow64FsEnableRedirection: LongBool): LongBool; stdCall;
+  TWow64RevertWow64FsRedirection = function(out OldValue: Pointer): BOOL; stdcall;
 
 var
-  hHandle: THandle;
-  Wow64DisableWow64FsRedirection: TWow64DisableWow64FsRedirection;
-  Wow64EnableWow64FsRedirection: TWow64EnableWow64FsRedirection;
-  Wow64FsEnableRedirection: LongBool;
+  LibraryHandle: HMODULE;
+  Wow64RevertWow64FsRedirection: TWow64RevertWow64FsRedirection;
+  OldValue: Pointer;
 
 begin
-  result := True;
+  result := False;
+  LibraryHandle := GetModuleHandle(kernel32);
 
-  // WOW64 only available on 64bit Windows
-  if not IsWindows64 then
-    Exit;
+  if (LibraryHandle <> 0) then
+  begin
+    Wow64RevertWow64FsRedirection := GetProcAddress(LibraryHandle, 'Wow64RevertWow64FsRedirection');
 
-  try
-    hHandle := GetModuleHandle('kernel32.dll');
-    @Wow64EnableWow64FsRedirection := GetProcAddress(hHandle, 'Wow64EnableWow64FsRedirection');
-    @Wow64DisableWow64FsRedirection := GetProcAddress(hHandle, 'Wow64DisableWow64FsRedirection');
-
-    if AAccess then
-    begin
-      if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
-        (@Wow64DisableWow64FsRedirection <> nil)) then
-        Wow64DisableWow64FsRedirection(Wow64FsEnableRedirection);
-    end
-    else
-      if ((hHandle <> 0) and (@Wow64EnableWow64FsRedirection <> nil) and
-        (@Wow64DisableWow64FsRedirection <> nil)) then
-        Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection);
-
-  except
-    result := False;
-  end;  //of try
+    // Loading of Wow64RevertWow64FsRedirection successful?
+    if Assigned(Wow64RevertWow64FsRedirection) then
+      result := Wow64RevertWow64FsRedirection(OldValue);
+  end;  //of begin
 end;
 
-{ protected TWinWOW64.IsWindows64
+{ public TWinWOW64.IsWindows64
 
   Returns if current Windows is a 32 or 64bit OS. }
 
 class function TWinWOW64.IsWindows64(): Boolean;
-var                                                     
-  SystemInfo: TSystemInfo;
+type
+  TIsWow64Process = function(AHandle: THandle; var AIsWow64: BOOL): BOOL; stdcall;
 
-const
-  PROCESSOR_ARCHITECTURE_INTEL = 0;
-  PROCESSOR_ARCHITECTURE_IA64 = 6;
-  PROCESSOR_ARCHITECTURE_AMD64 = 9;
+var
+  LibraryHandle: HMODULE;
+  IsWow64: BOOL;
+  IsWow64Process: TIsWow64Process;
 
 begin
-  GetNativeSystemInfo(SystemInfo);
-  result := SystemInfo.wProcessorArchitecture in [PROCESSOR_ARCHITECTURE_IA64,PROCESSOR_ARCHITECTURE_AMD64];
-end;
+  result := False;
+  LibraryHandle := GetModuleHandle(kernel32);
 
-{ public TWinWOW64.GetArchitecture
+  if (LibraryHandle <> 0) then
+  begin
+    IsWow64Process := GetProcAddress(LibraryHandle, 'IsWow64Process');
 
-  Returns formatted string indicating if current Windows is a 32 or 64bit OS. }
-
-class function TWinWOW64.GetArchitecture(): string;
-begin
-  if IsWindows64() then
-    result := ' [64bit]'
-  else
-    result := ' [32bit]';
+    // Loading of IsWow64Process successful?
+    if Assigned(IsWow64Process) then
+      // Execute IsWow64Process against process
+      if IsWow64Process(GetCurrentProcess(), IsWow64) then
+        result := IsWow64;
+  end;  //of begin
 end;
 
 { protected TWinWOW64.SetKeyAccessMode
@@ -202,10 +179,10 @@ begin
     // Deny WOW64 redirection
     result := KEY_ALL_ACCESS or KEY_WOW64_64KEY
   else
-    result := KEY_ALL_ACCESS or KEY_WRITE;
+    result := KEY_ALL_ACCESS;
 end;
 
-{ protected TWinWOW64.DenyWOW64Redirection
+{ public TWinWOW64.DenyWOW64Redirection
 
   Disables the WOW64 Registry redirection temporary under 64bit systems that
   a 32 bit application can get access to the 64 bit Registry. }
@@ -223,6 +200,19 @@ begin
     // Ignore redirection
     result := AAccessRight;
 end;
+
+{ public TWinWOW64.GetArchitecture
+
+  Returns formatted string indicating if current Windows is a 32 or 64bit OS. }
+
+class function TWinWOW64.GetArchitecture(): string;
+begin
+  if IsWindows64() then
+    result := ' [64bit]'
+  else
+    result := ' [32bit]';
+end;
+
 
 { TOSUtils }
 
@@ -267,9 +257,9 @@ end;
 
   Returns if current Windows version is newer than Windows XP. }
 
-class function TOSUtils.CheckWindows: Boolean;
+class function TOSUtils.CheckWindows(): Boolean;
 begin
-  result := GetWinVersion()[1] in ['V','7','8'];
+  result := ((Win32Platform = 2) and (Win32MajorVersion >= 6));
 end;
 
 { public TOSUtils.CreateTempDir
@@ -308,23 +298,23 @@ var
 
 begin
   if (AAction <> EWX_LOGOFF) and (Win32Platform = VER_PLATFORM_WIN32_NT) then
-     begin
-     tpResult := OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES or TOKEN_QUERY, TTokenHd);
+  begin
+    tpResult := OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES or TOKEN_QUERY, TTokenHd);
 
-     if tpResult then
-        begin
-        tpResult := LookupPrivilegeValue(nil, SE_SHUTDOWN_NAME, TTokenPvg.Privileges[0].Luid);
-        TTokenPvg.PrivilegeCount := 1;
-        TTokenPvg.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED;
-        cbtpPrevious := SizeOf(rTTokenPvg);
-        pcbtpPreviousRequired := 0;
+    if tpResult then
+    begin
+      tpResult := LookupPrivilegeValue(nil, SE_SHUTDOWN_NAME, TTokenPvg.Privileges[0].Luid);
+      TTokenPvg.PrivilegeCount := 1;
+      TTokenPvg.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED;
+      cbtpPrevious := SizeOf(rTTokenPvg);
+      pcbtpPreviousRequired := 0;
 
-        if tpResult then
-           Windows.AdjustTokenPrivileges(TTokenHd, False, TTokenPvg, cbtpPrevious, rTTokenPvg, pcbtpPreviousRequired);
-        end;  //of begin
-     end;  //begin
+      if tpResult then
+        Windows.AdjustTokenPrivileges(TTokenHd, False, TTokenPvg, cbtpPrevious, rTTokenPvg, pcbtpPreviousRequired);
+      end;  //of begin
+    end;  //begin
 
-  result := ExitWindowsEx(AAction, 0);     //EWX_SHUTDOWN, EWX_POWEROFF, (EWX_FORCE, EWX_FORCEIFHUNG)
+  result := ExitWindowsEx(AAction, 0);   //EWX_SHUTDOWN, EWX_POWEROFF, (EWX_FORCE, EWX_FORCEIFHUNG)
 end;
 
 { public TOSUtils.ExplorerReboot
@@ -435,19 +425,19 @@ begin
 
     // Windows 9x
     1: if (Win32MajorVersion = 4) then
-          case Win32MinorVersion of
+         case Win32MinorVersion of
             0: result := '95';
            10: result := '98';
            90: result := 'Me';
-          end;  //of case
+         end;  //of case
 
     // Windows NT
-    2: case Win32MajorVersion of            
+    2: case Win32MajorVersion of
          3: if (Win32MinorVersion = 51) then
-               result := 'NT 3.51';
+              result := 'NT 3.51';
 
          4: if (Win32MinorVersion = 0) then
-               result := 'NT 4';
+              result := 'NT 4';
 
          5: case Win32MinorVersion of
               0: result := '2000';
@@ -465,7 +455,7 @@ begin
 
   // Add information about service packs?
   if (AShowServicePack and (Win32CSDVersion <> '')) then
-      result := result +' '+ Win32CSDVersion;
+    result := result +' '+ Win32CSDVersion;
 end;
 {$ENDIF}
 
@@ -485,16 +475,15 @@ end;
 
 class function TOSUtils.HKeyToStr(AHKey: HKey): string;
 begin
-  if (AHKey = HKEY_CURRENT_USER) then
-    result := 'HKEY_CURRENT_USER'
-  else
-    if (AHKey = HKEY_LOCAL_MACHINE) then
-      result := 'HKEY_LOCAL_MACHINE'
+  case AHKey of
+    HKEY_CLASSES_ROOT:   result := 'HKEY_CLASSES_ROOT';
+    HKEY_CURRENT_USER:   result := 'HKEY_CURRENT_USER';
+    HKEY_LOCAL_MACHINE:  result := 'HKEY_LOCAL_MACHINE';
+    HKEY_USERS:          result := 'HKEY_USERS';
+    HKEY_CURRENT_CONFIG: result := 'HKEY_CURRENT_CONFIG';
     else
-      if (AHKey = HKEY_CLASSES_ROOT) then
-        result := 'HKEY_CLASSES_ROOT'
-      else
-        raise EOSUtilsException.Create('Bad format error! Unknown HKEY!');
+      raise EInvalidArgument.Create('HKeyToStr: Bad format error! Unknown HKEY!');
+  end;  //of case
 end;
 
 { public TOSUtils.MakeUACShieldButton
@@ -612,7 +601,7 @@ begin
   
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    Exists := reg.OpenKeyReadOnly(CERT_KEY) and reg.KeyExists(PM_CERT_ID);
+    Exists := (reg.OpenKeyReadOnly(CERT_KEY) and reg.KeyExists(PM_CERT_ID));
 
   finally
     reg.Free;
@@ -631,7 +620,8 @@ var
 begin
   FileName := PChar(ExtractFileName(ARegFilePath));
   FilePath := PChar(ExtractFilePath(ARegFilePath));
-  result := (ShellExecute(0, nil, PChar('regedit'), FileName, FilePath, SW_SHOWNORMAL) >= 32); 
+  result := (ShellExecute(0, nil, PChar('regedit'), FileName, FilePath,
+    SW_SHOWNORMAL) >= 32);
 end;
 {$ENDIF}
 
@@ -681,18 +671,25 @@ end;
 
   Converts short HKEY string into real HKEY type. } 
 
-class function TOSUtils.StrToHKey(AMainKey: string): HKEY;
+class function TOSUtils.StrToHKey(const AMainKey: string): HKEY;
 begin
-  if (AMainKey = 'HKCU') then
-    result := HKEY_CURRENT_USER
+  if (AMainKey = 'HKCR') then
+    result := HKEY_CLASSES_ROOT
   else
-    if (AMainKey = 'HKLM') then
-      result := HKEY_LOCAL_MACHINE
+    if (AMainKey = 'HKCU') then
+      result := HKEY_CURRENT_USER
     else
-      if (AMainKey = 'HKCR') then
-        result := HKEY_CLASSES_ROOT
+      if (AMainKey = 'HKLM') then
+        result := HKEY_LOCAL_MACHINE
       else
-        raise EOSUtilsException.Create('Bad format error! Unknown rootkey!');
+        if (AMainKey = 'HKU') then
+          result := HKEY_USERS
+        else
+          if (AMainKey = 'HKCC') then
+            result := HKEY_CURRENT_CONFIG
+          else
+            raise EInvalidArgument.Create('StrToHKey: Bad format error! '
+              +'Unknown HKEY: "'+ AMainKey +'"!');
 end;
 {$ENDIF}
 

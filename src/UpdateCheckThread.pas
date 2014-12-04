@@ -17,7 +17,7 @@ uses
 
 const
   URL_DIR = 'http://www.pm-codeworks.de/media/';
-  
+
 type
   { Thread event }
   TOnUpdateAvailableEvent = procedure(Sender: TThread; const ANewBuild: Cardinal) of object;
@@ -60,21 +60,25 @@ constructor TUpdateCheckThread.Create(ACurrentBuild: Cardinal;
   ARemoteDirName: string; ACreateSuspended: Boolean = True);
 begin
   inherited Create(ACreateSuspended);
-  
+
   // Thread deallocates his memory
   FreeOnTerminate := True;
 
   FCurBuild := ACurrentBuild;
   FRemoteDirName := ARemoteDirName;
-  
+
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
 
-  // Set the user-agent because of some issues with default 
-  FHttp.Request.UserAgent := 'Mozilla/5.0 (PM Code Works Update Utility)';
+  // Setup some HTTP options
+  with FHttp.Request do
+  begin
+    // Set the user-agent because of some issues with default
+    UserAgent := 'Updater/2.2 (PM Code Works Update Utility)';
 
-  // Set the referer field to deny future issues with referer check
-  FHttp.Request.Referer := 'http://www.pm-codeworks.de';
+    // Close connection after completion of the response
+    Connection := 'close';
+  end;  //of with
 end;
 
 { public TUpdateCheckThread.Destroy
@@ -83,18 +87,18 @@ end;
 
 destructor TUpdateCheckThread.Destroy;
 begin
-  FHttp.Free; 
+  FHttp.Free;
   inherited Destroy;
 end;
 
 { protected TDownloadThread.Execute
 
   Thread main method that checks for update on an HTTP source. }
-  
+
 procedure TUpdateCheckThread.Execute;
 var
   VersionUrl: string;
-  
+
 begin
   try
     // Download version file for application
@@ -128,7 +132,7 @@ end;
 { private TDownloadThread.DoNotifyOnNoUpdate
 
   Synchronizable event method that is called when search returns no update. }
-  
+
 procedure TUpdateCheckThread.DoNotifyOnNoUpdate;
 begin
   if Assigned(OnNoUpdate) then
@@ -146,4 +150,4 @@ begin
     OnUpdate(Self, FNewBuild);
 end;
 
-end.
+end.

@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Initialization file parser Unit                                         }
+{ Initialization file parser Unit v1.0                                    }
 {                                                                         }
 { Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -8,14 +8,19 @@
 
 unit IniFileParser;
 
+{$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
+
 interface
 
 uses
-  Windows, Classes, Registry, SysUtils, StrUtils, OSUtils;
+{$IFDEF MSWINDOWS}
+  Windows, Registry,
+{$ENDIF}
+  Classes, SysUtils, StrUtils, OSUtils;
 
 type
   { Exception class }
-  ERegistryFileException = class(Exception);
+  EInvalidIniFormat = class(Exception);
 
   { TIniFile }
   TIniFile = class(TObject)
@@ -34,7 +39,8 @@ type
     function ExtractKey(const AKeyValuePair: string): string;
     function ExtractValue(const AKeyValuePair: string): string;
   public
-    constructor Create(const AFileName: string; ASaveOnDestroy: Boolean = False);
+    constructor Create(const AFileName: string; AOverwriteIfExists: Boolean = False;
+      ASaveOnDestroy: Boolean = False);
     destructor Destroy; override;
     procedure AddRemove(ASectionName, AKey, AValue: string);
     function AddSection(ASectionName: string): Boolean; overload;
@@ -63,6 +69,7 @@ type
     property Values[AIndex: Integer]: string read GetValue;
   end;
 
+{$IFDEF MSWINDOWS}
   { TRegistryFile }
   TRegistryFile = class(TIniFile)
   private
@@ -70,23 +77,25 @@ type
     FReg: TRegistry;
     function GetKey(AIndex: Integer): string;
     function GetValue(AIndex: Integer): string;
-  protected
-    procedure ExportKey(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean);
   public
-    constructor Create(const AFileName: string);
+    constructor Create(const AFileName: string; AOverwriteIfExists: Boolean = False;
+      ASaveOnDestroy: Boolean = False);
     destructor Destroy; override;
     procedure AddRemove(ASectionName, AKey, AValue: string);
     function AddSection(AHKey: HKEY; AKeyPath: string): Boolean; reintroduce;
-    function DeletePathDelimiter(AText: string): string;
+    procedure Clear();
+    function DeletePathDelimiter(APath: string): string;
     function DeleteQuoteChars(AText: string): string;
-    function EscapePathDelimiter(AText: string): string;
+    function EscapePathDelimiter(APath: string): string;
+    procedure ExportKey(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean);
+    procedure ExportReg(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean = True); overload;
+    procedure ExportReg(AHKey: HKEY; AKeyPath, AValueName: string); overload;
     function GetSection(AHKey: HKEY; AKeyPath: string): string;
     procedure MakeHeadline();
     function ReadBoolean(ASection, AIdent: string): Boolean;
     function ReadInteger(ASection, AIdent: string): Integer;
     function ReadString(ASection, AIdent: string): string;
     function Remove(ASection, AIdent: string): Boolean;
-    procedure ExportReg(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean = True);
     procedure WriteBoolean(ASection, AIdent: string; AValue: Boolean);
     procedure WriteInteger(ASection, AIdent: string; AValue: Integer);
     procedure WriteString(ASection, AIdent, AValue: string);
@@ -96,7 +105,7 @@ type
     property OnExportBegin: TNotifyEvent read FOnExportBegin write FOnExportBegin;
     property OnExportEnd: TNotifyEvent read FOnExportEnd write FOnExportEnd;
   end;
-
+{$ENDIF}
 
 implementation
 
@@ -107,18 +116,18 @@ implementation
   General constructor for creating a TIniFile instance. }
 
 constructor TIniFile.Create(const AFileName: string;
-  ASaveOnDestroy: Boolean = False);
+  AOverwriteIfExists: Boolean = False; ASaveOnDestroy: Boolean = False);
 begin
   inherited Create;
 
   if (AFileName = '') then
-    raise ERegistryFileException.Create('File name must not be empty!');
+    raise EInvalidArgument.Create('File name must not be empty!');
 
   FFileName := AFileName;
   FSaveOnDestroy := ASaveOnDestroy;
   FFile := TStringList.Create;
 
-  if FileExists(AFileName) then
+  if ((not AOverwriteIfExists) and FileExists(AFileName)) then
     FFile.LoadFromFile(AFileName);
 end;
 
@@ -312,16 +321,20 @@ end;
 
 { public TIniFile.AddSection
 
-  Adds a new section if non existing. }
+  Adds a new section if not exist. }
 
 function TIniFile.AddSection(ASectionName: string): Boolean;
 var
   Exists: Boolean;
 
 begin
+  // Check for invalid section name
+  if (ASectionName = '') then
+    raise EInvalidIniFormat.Create('Section name must not be empty!');
+
   Exists := not SectionExists(ASectionName);
 
-  if (Exists and (ASectionName <> '')) then
+  if Exists then
   begin
     // No new line in first line!
     if (FFile.Count <> 0) then
@@ -620,6 +633,10 @@ var
   Index, EndIndex: Integer;
 
 begin
+  // Check for invalid key
+  if (AKey = '') then
+    raise EInvalidIniFormat.Create('Key must not be empty!');
+
   // Search for key
   Index := IndexOfKey(ASectionName, AKey);
 
@@ -635,10 +652,10 @@ begin
   else
     begin
       // Append item at the end of section
-      EndIndex := GetEndOfSection(ASectionName) - 1;
+      EndIndex := GetEndOfSection(ASectionName);
 
       // Add section if not exists
-      if (EndIndex = -2) then
+      if (EndIndex = -1) then
       begin
         AddSection(ASectionName);
         EndIndex := FFile.Count;
@@ -655,12 +672,13 @@ end;
 
   General constructor for creating a TRegistryFile instance. }
 
-constructor TRegistryFile.Create(const AFileName: string);
+constructor TRegistryFile.Create(const AFileName: string;
+  AOverwriteIfExists: Boolean = False; ASaveOnDestroy: Boolean = False);
 begin
   if (ExtractFileExt(AFileName) <> '.reg') then
-    raise ERegistryFileException.Create('The specified file is no .reg file!');
+    raise EInvalidArgument.Create('The specified file is no .reg file!');
 
-  inherited Create(AFileName);
+  inherited Create(AFileName, AOverwriteIfExists, ASaveOnDestroy);
   MakeHeadline();
   FReg := TRegistry.Create(TOSUtils.DenyWOW64Redirection(KEY_READ));
 end;
@@ -693,53 +711,6 @@ begin
   result := DeleteQuoteChars(inherited GetValue(AIndex));
 end;
 
-{ protected TRegistryFile.ExportKey
-
-  Collects data from a key path and writes it to .reg file. }
-
-procedure TRegistryFile.ExportKey(AHKey: HKEY; AKeyPath: string;
-  ARecursive: Boolean);
-var
-  Values, Keys: TStringList;
-  i: Cardinal;
-  Section: string;
-
-begin
-  // Init Registry access
-  FReg.RootKey := AHKey;
-  FReg.OpenKey(AKeyPath, False);
-
-  // Read all values from current key
-  Values := TStringList.Create;
-  FReg.GetValueNames(Values);
-
-  // Append section header
-  AddSection(AHKey, AKeyPath);
-  Section := GetSection(AHKey, AKeyPath);
-
-  if (Values.Count <> 0) then
-    // Append key-value pairs
-    for i := 0 to Values.Count -1 do
-      case FReg.GetDataType(Values[i]) of
-        rdString:  WriteString(Section, Values[i], FReg.ReadString(Values[i]));
-        rdInteger: WriteInteger(Section, Values[i], FReg.ReadInteger(Values[i]));
-      end;  //of case
-
-  // Include subkeys?
-  if (ARecursive and FReg.HasSubKeys()) then
-  begin
-    Keys := TStringList.Create;
-    FReg.GetKeyNames(Keys);
-
-    // Start recursion of subkeys
-    for i := 0 to Keys.Count -1 do
-    begin
-      FReg.CloseKey();
-      ExportKey(AHKey, AKeyPath +'\'+ Keys[i], True);
-    end;  //of for
-  end;  //of begin
-end;
-
 { public TRegistryFile.AddRemove
 
   Adds a new or changes an existing value. If the new value is empty the item
@@ -762,14 +733,32 @@ begin
   result := inherited AddSection(GetSection(AHKey, AKeyPath));
 end;
 
+{ public TRegistryFile.Clear
+
+  Empties the current file. }
+
+procedure TRegistryFile.Clear();
+begin
+  inherited Clear();
+  MakeHeadline();
+end;
+
 { public TRegistryFile.DeletePathDelimiter
 
  Deletes escape chars from a string. }
 
-function TRegistryFile.DeletePathDelimiter(AText: string): string;
+function TRegistryFile.DeletePathDelimiter(APath: string): string;
 begin
-  result := StringReplace(AText, '\\', '\', [rfReplaceAll]);
+  // Remove escape of path delimiter
+  APath := StringReplace(APath, '\\', '\', [rfReplaceAll]);
+
+  // Remove escape of quote chars
+  if ((Length(APath) > 0) and (APath[1] = '\')) then
+    APath := StringReplace(APath, '\"', '"', [rfReplaceAll]);
+
+  result := APath;
 end;
+
 { public TRegistryFile.DeleteQuoteChars
 
  Deletes all quote chars " from a string. }
@@ -783,14 +772,70 @@ end;
 
  Escapes all baskslashes in a string. }
 
-function TRegistryFile.EscapePathDelimiter(AText: string): string;
+function TRegistryFile.EscapePathDelimiter(APath: string): string;
 begin
-  result := StringReplace(AText, '\', '\\', [rfReplaceAll])
+  // Escape path delimiter
+  APath := StringReplace(APath, '\', '\\', [rfReplaceAll]);
+
+  // Escape quote chars
+  if ((Length(APath) > 0) and (APath[1] = '"')) then
+    APath := StringReplace(APath, '"', '\"', [rfReplaceAll]);
+
+  result := APath;
+end;
+
+{ public TRegistryFile.ExportKey
+
+  Collects data from a key path and writes it to .reg file. }
+
+procedure TRegistryFile.ExportKey(AHKey: HKEY; AKeyPath: string;
+  ARecursive: Boolean);
+var
+  Values, Keys: TStringList;
+  i: Cardinal;
+  Section: string;
+
+begin
+  // Init Registry access
+  FReg.RootKey := AHKey;
+  FReg.OpenKey(AKeyPath, False);
+
+  // Read all values from current key
+  Values := TStringList.Create;
+  FReg.GetValueNames(Values);
+
+  // Build and append section header
+  Section := GetSection(AHKey, AKeyPath);
+  inherited AddSection(Section);
+
+  if (Values.Count > 0) then
+    // Append key-value pairs
+    for i := 0 to Values.Count -1 do
+      case FReg.GetDataType(Values[i]) of
+        rdString:  WriteString(Section, Values[i], FReg.ReadString(Values[i]));
+        rdInteger: WriteInteger(Section, Values[i], FReg.ReadInteger(Values[i]));
+      end;  //of case
+
+  // Include subkeys?
+  if (ARecursive and FReg.HasSubKeys()) then
+  begin
+    Keys := TStringList.Create;
+    FReg.GetKeyNames(Keys);
+
+    // Start recursion of subkeys
+    for i := 0 to Keys.Count -1 do
+    begin
+      FReg.CloseKey();
+      ExportKey(AHKey, AKeyPath +'\'+ Keys[i], True);
+    end;  //of for
+  end;  //of begin
+
+  FReg.CloseKey();
 end;
 
 { public TRegistryFile.ExportReg
 
- Saves the current .reg file. }
+  Exports an entire Registry key (opt. recursive) and saves it as .reg file. }
 
 procedure TRegistryFile.ExportReg(AHKey: HKEY; AKeyPath: string;
   ARecursive: Boolean = True);
@@ -804,6 +849,35 @@ begin
 
   if Assigned(FOnExportEnd) then
     FOnExportEnd(Self);
+end;
+
+{ public TRegistryFile.ExportReg
+
+  Exports a single Registry value and saves it as .reg file. }
+
+procedure TRegistryFile.ExportReg(AHKey: HKEY; AKeyPath, AValueName: string);
+var
+  Section: string;
+
+begin
+  // Init Registry access
+  FReg.RootKey := AHKey;
+  FReg.OpenKey(AKeyPath, False);
+
+  MakeHeadline();
+
+  // Build and append section header
+  Section := GetSection(AHKey, AKeyPath);
+  inherited AddSection(Section);
+
+  // Append key-value pair
+  case FReg.GetDataType(AValueName) of
+    rdString:  WriteString(Section, AValueName, FReg.ReadString(AValueName));
+    rdInteger: WriteInteger(Section, AValueName, FReg.ReadInteger(AValueName));
+  end;  //of case
+
+  FReg.CloseKey();
+  Save();
 end;
 
 { public TRegistryFile.GetSection
@@ -909,7 +983,10 @@ end;
 
 procedure TRegistryFile.WriteString(ASection, AIdent, AValue: string);
 begin
-  inherited WriteString(ASection, '"'+ AIdent +'"', '"'+ EscapePathDelimiter(AValue) +'"');
+  if (AIdent = '') then
+    inherited WriteString(ASection, '@', '"'+ EscapePathDelimiter(AValue) +'"')
+  else
+    inherited WriteString(ASection, '"'+ AIdent +'"', '"'+ EscapePathDelimiter(AValue) +'"');
 end;
 
 end.

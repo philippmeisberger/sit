@@ -75,15 +75,16 @@ begin
 
   // Rename file if already exists?
   if AAllowOverwrite then
-     FFileName := AFileName
+    FFileName := AFileName
   else
-     FFileName := GetUniqueFileName(AFileName);
+    FFileName := GetUniqueFileName(AFileName);
 
   FUrl := AUrl;
   
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
 
+  // Setup some HTTP options
   with FHttp do
   begin
     // Link HTTP events
@@ -91,10 +92,10 @@ begin
     OnWork := Downloading;
 
     // Set the user-agent because of some issues with default
-    Request.UserAgent := 'Mozilla/5.0 (PM Code Works Update Utility)';
+    Request.UserAgent := 'Updater/2.2 (PM Code Works Update Utility)';
 
-    // Set the referer field to deny future issues with referer check
-    Request.Referer := 'http://www.pm-codeworks.de';
+    // Close connection after completion of the response
+    Request.Connection := 'close';
   end;  //of begin
 end;
 

@@ -158,7 +158,7 @@ begin
   // Check for incompatibility
   if not (newWindows or (windows[1] in ['X','2'])) then
   begin
-    Flang.MessageBox(FLang.GetString(74) + windows + FLang.GetString(75), mtError);
+    Flang.MessageBox(FLang.Format([74, 75], [windows]), mtError);
     bAccept.Enabled := False;
     mmFile.Enabled := False;
     mmEdit.Enabled := False;
@@ -200,15 +200,29 @@ end;
   Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
 
 procedure TMain.BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+var
+  Updater: TUpdate;
+
 begin
-  // Show dialog: Ask for permitting download
-  with FLang do
-    if (MessageBox(Format(GetString(21) +^J+ GetString(22), [ANewBuild]),
-      mtQuestion, True) = IDYES) then
-      with TUpdate.Create(Self, FLang, FLang.GetString(24)) do
-        Download('sit.exe', 'SIT.exe')
-    else
-      mmUpdate.Caption := FLang.GetString(24);
+  // Ask user to permit download
+  if (FLang.MessageBox([21, NEW_LINE, 22], [ANewBuild], mtQuestion, True) = IDYES) then
+  begin
+    // init TUpdate instance
+    Updater := TUpdate.Create(Self, FLang);
+
+    try
+      with Updater do
+      begin
+        Title := FLang.GetString(24);
+        Download('clearas.exe', 'Clearas.exe');
+      end;  //of begin
+
+    finally
+      Updater.Free;
+    end;  //of try
+  end  //of begin
+  else
+    mmUpdate.Caption := FLang.GetString(24);
 end;
 
 { private TMain.CheckIcon
@@ -337,7 +351,7 @@ begin
       // Copy valid icon
       if CopyFile(PChar(AFile), PChar(SaveDialog.FileName), False) then
       begin
-        FLang.MessageBox(Format(FLang.GetString(77), [SaveDialog.FileName]));
+        FLang.MessageBox(FLang.Format(77, [SaveDialog.FileName]));
         result := SaveDialog.FileName;
       end  //of begin
       else
@@ -548,8 +562,8 @@ begin
       // Check square format of image and warn user
       if (Image.Height <> Image.Width) then
       begin
-        FLang.MessageBox(Format(FLang.GetString(58), [Image.Height, Image.Width]) +
-          FLang.GetString(59), mtWarning);
+        FLang.MessageBox(FLang.Format([58, 59], [Image.Height, Image.Width]),
+          mtWarning);
       end;  //of begin
 
       eLogo.Text := OpenLogoDialog.FileName;
@@ -770,13 +784,29 @@ end;
   MainMenu entry that allows to download the PM Code Works certificate. }
 
 procedure TMain.mmDownloadCertClick(Sender: TObject);
+var
+  Updater: TUpdate;
+
 begin
   // Certificate already installed?
-  if (TOSUtils.PMCertExists() and (FLang.MessageBox(FLang.GetString(27) +^J+
-    FLang.GetString(28), mtQuestion) = IDYES)) then
+  if (TOSUtils.PMCertExists() and (FLang.MessageBox([27, NEW_LINE, 28],
+    mtQuestion) = IDYES)) then
+  begin
+    // Init downloader
+    Updater := TUpdate.Create(Self, FLang);
+
     // Download certificate
-    with TUpdate.Create(Self, FLang, FLang.GetString(16)) do
-      DownloadCertificate();
+    try
+      with Updater do
+      begin
+        Title := FLang.GetString(16);
+        DownloadCertificate();
+      end;  //of begin
+
+    finally
+      Updater.Free;
+    end;  //of try
+  end;  //of begin
 end;
 
 { TMain.mmUpdateClick
