@@ -51,7 +51,7 @@ object Main: TMain
     Width = 21
     Height = 14
     Anchors = [akTop, akRight]
-    Caption = 'v3.0'
+    Caption = 'v3.1'
     Transparent = True
   end
   object Image: TImage

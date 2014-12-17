@@ -444,7 +444,7 @@ object Info: TInfo
         Top = 84
         Width = 21
         Height = 14
-        Caption = 'v3.0'
+        Caption = 'v3.1'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -494,7 +494,7 @@ object Info: TInfo
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '10/2014')
+          '12/2014')
         ReadOnly = True
         TabOrder = 0
       end
@@ -549,6 +549,13 @@ object Info: TInfo
           ''
           'History'
           '--------'
+          ''
+          'Version 3.1 [XX.12.14]'
+          ''
+          '- Eigener INI Datei Parser f'#252'r .reg Datei Export'
+          '- Update-Funktion v2.2'
+          ''
+          '----------------------------------------'
           ''
           'Version 3.0 [03.10.14]'
           ''
@@ -713,7 +720,7 @@ object Info: TInfo
             'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
             '.'
           ''
-          '10/2014')
+          '12/2014')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0

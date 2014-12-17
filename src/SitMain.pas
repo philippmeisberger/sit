@@ -282,6 +282,7 @@ begin
     mmExport.Caption := GetString(33);
     mmExportEdit.Caption := GetString(34);
 
+    // "Edit" menu
     mmEdit.Caption := GetString(35);
     mmShowValues.Caption := GetString(36);
     mmDeleteValues.Caption := GetString(37);
@@ -289,9 +290,11 @@ begin
     mmCopyIcon.Caption := GetString(40);
     mmDeleteIcon.Caption := GetString(39);
 
-    mmView.Caption := GetString(42);
+    // "View" menu
+    mmView.Caption := GetString(20);
     mmLang.Caption := GetString(25);
 
+    // "Help" menu
     mmHelp.Caption := GetString(14);
     mmUpdate.Caption := GetString(15);
     mmDownloadCert.Caption := GetString(16);
