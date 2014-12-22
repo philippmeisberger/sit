@@ -14,7 +14,6 @@ object Update: TUpdate
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
-  Visible = True
   OnCloseQuery = FormCloseQuery
   PixelsPerInch = 96
   TextHeight = 14
