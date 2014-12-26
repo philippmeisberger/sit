@@ -476,8 +476,8 @@ object Info: TInfo
         Caption = '(Build: )'
       end
       object mInfos: TMemo
-        Left = 112
-        Top = 16
+        Left = 120
+        Top = 24
         Width = 313
         Height = 193
         Anchors = [akLeft, akTop, akRight, akBottom]
@@ -550,7 +550,7 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.1 [23.12.14]'
+          'Version 3.1 [30.12.14]'
           ''
           '- Eigener INI Datei Parser f'#252'r .reg Datei Export'
           '- Update-Funktion v2.2'
