@@ -124,7 +124,7 @@ begin
   FUpdateCheck.CheckForUpdate(False);
 
   // Init support information instance
-  if TOSUtils.CheckWindows() then
+  if TOSUtils.WindowsVistaOrLater() then
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
@@ -152,11 +152,11 @@ var
 
 begin
   windows := TOSUtils.GetWinVersion();
-  newWindows := TOSUtils.CheckWindows();
+  newWindows := TOSUtils.WindowsVistaOrLater();
   cbCopyIcon.Enabled := newWindows;
   
   // Check for incompatibility
-  if not (newWindows or (windows[1] in ['X','2'])) then
+  if not (newWindows or (windows <> '')) then
   begin
     Flang.MessageBox(FLang.Format([74, 75], [windows]), mtError);
     bAccept.Enabled := False;
@@ -388,7 +388,7 @@ begin
       Options := Options + [ofOverwritePrompt];
 
       // Set OS dependend filter
-      if TOSUtils.CheckWindows() then
+      if TOSUtils.WindowsVistaOrLater() then
       begin
         // Windows >= Vista: Export as *.ini and *.reg
         Filter := FLang.GetString(55);
@@ -599,7 +599,7 @@ begin
       Options := Options + [ofFileMustExist];
 
       // Windows >= Vista: Import *.ini and *.reg files
-      if TOSUtils.CheckWindows() then
+      if TOSUtils.WindowsVistaOrLater() then
       begin
         Filter := FLang.GetString(55);
         FilterIndex := 2;
