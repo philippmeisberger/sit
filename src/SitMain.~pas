@@ -214,7 +214,7 @@ begin
       with Updater do
       begin
         Title := FLang.GetString(24);
-        Download('clearas.exe', 'Clearas.exe');
+        Download('sit.exe', 'SIT.exe');
       end;  //of begin
 
     finally

@@ -459,7 +459,7 @@ object Info: TInfo
         Width = 112
         Height = 14
         Anchors = [akBottom]
-        Caption = #169' P.Meisberger 2014'
+        Caption = #169' P.Meisberger 2015'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -476,8 +476,8 @@ object Info: TInfo
         Caption = '(Build: )'
       end
       object mInfos: TMemo
-        Left = 120
-        Top = 24
+        Left = 112
+        Top = 16
         Width = 313
         Height = 193
         Anchors = [akLeft, akTop, akRight, akBottom]
@@ -494,7 +494,7 @@ object Info: TInfo
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '12/2014')
+          '01/2015')
         ReadOnly = True
         TabOrder = 0
       end
@@ -511,9 +511,9 @@ object Info: TInfo
         Font.Height = -11
         Font.Name = 'Arial'
         Font.Style = []
+        ModalResult = 1
         ParentFont = False
         TabOrder = 1
-        OnClick = bOkClick
       end
     end
     object ts_history: TTabSheet
@@ -528,7 +528,7 @@ object Info: TInfo
         Width = 112
         Height = 14
         Anchors = [akBottom]
-        Caption = #169' P.Meisberger 2014'
+        Caption = #169' P.Meisberger 2015'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -550,7 +550,7 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.1 [30.12.14]'
+          'Version 3.1 [04.01.15]'
           ''
           '- Eigener INI Datei Parser f'#252'r .reg Datei Export'
           '- Update-Funktion v2.2'
@@ -721,7 +721,7 @@ object Info: TInfo
             'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
             '.'
           ''
-          '12/2014')
+          '01/2015')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0
@@ -739,9 +739,9 @@ object Info: TInfo
         Font.Height = -11
         Font.Name = 'Arial'
         Font.Style = []
+        ModalResult = 1
         ParentFont = False
         TabOrder = 1
-        OnClick = bOkClick
       end
     end
   end
