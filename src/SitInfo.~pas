@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT Info Pages                                                          }
 {                                                                         }
-{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2015 P.Meisberger (PM Code Works)                    }
 {                                                                         }
 { *********************************************************************** }
 
@@ -30,11 +30,6 @@ type
     lCopy: TLabel;
     lBuild: TLabel;
     procedure FormCreate(Sender: TObject);
-    procedure bOkClick(Sender: TObject);
-  private
-    { Private declarations }
-  public
-    { Public declarations }
   end;
 
 
@@ -45,12 +40,6 @@ implementation
 procedure TInfo.FormCreate(Sender: TObject);
 begin
   lBuild.Caption := '(Build: '+ IntToStr(TOSUtils.GetBuildNumber) +')';
-end;
-
-
-procedure TInfo.bOkClick(Sender: TObject);
-begin
-  Close;
 end;
 
 end.

@@ -91,7 +91,7 @@ ImageBase=4194304
 ExeDescription=
 [Directories]
 OutputDir=..\bin
-UnitOutputDir=
+UnitOutputDir=lib\
 PackageDLLOutputDir=
 PackageDCPOutputDir=
 SearchPath=
@@ -115,7 +115,7 @@ AutoIncBuild=1
 MajorVer=3
 MinorVer=1
 Release=0
-Build=283
+Build=286
 Debug=0
 PreRelease=0
 Special=0
@@ -126,7 +126,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=PM Code Works
 FileDescription=Support Information Tool
-FileVersion=3.1.0.283
+FileVersion=3.1.0.286
 InternalName=
 LegalCopyright=P. Meisberger 2015
 LegalTrademarks=PM Code Works
@@ -134,3 +134,12 @@ OriginalFilename=
 ProductName=SIT
 ProductVersion=3.1
 Comments=
+[HistoryLists\hlUnitAliases]
+Count=1
+Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+[HistoryLists\hlUnitOutputDirectory]
+Count=1
+Item0=lib\
+[HistoryLists\hlOutputDirectorry]
+Count=1
+Item0=..\bin
