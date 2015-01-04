@@ -867,8 +867,8 @@ begin
   begin
     // Try to open URL
     if not TOSUtils.OpenUrl(eUrl.Text) then
-      FLang.MessageBox(80, mtError)
-  end
+      FLang.MessageBox(80, mtError);
+  end  //of begin
   else
     eUrl.SelectAll;
 end;
