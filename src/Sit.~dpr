@@ -4,7 +4,8 @@ uses
   Forms,
   SitMain in 'SitMain.pas' {Main},
   SitInfo in 'SitInfo.pas' {Info},
-  SitAPI in 'SitAPI.pas';
+  SitAPI in 'SitAPI.pas',
+  Mutex in 'Mutex.pas';
 
 {$R *.res}
 

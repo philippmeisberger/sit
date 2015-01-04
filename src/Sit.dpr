@@ -5,7 +5,8 @@ uses
   SitMain in 'SitMain.pas' {Main},
   SitInfo in 'SitInfo.pas' {Info},
   SitAPI in 'SitAPI.pas',
-  Mutex in 'Mutex.pas';
+  Mutex in 'Mutex.pas',
+  AdminManifest in 'AdminManifest.pas';
 
 {$R *.res}
 

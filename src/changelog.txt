@@ -9,11 +9,12 @@ Firmenstempel auf dem Kunden PC hinterlassen."
 History
 --------
 
-Version 3.1 [04.01.15]
+Version 3.1 [07.01.15]
 
 - Eigener INI Datei Parser für .reg Datei Import/Export
+- Neues Manifest
 - Update-Funktion v2.2
-- OSUtils v1.7
+- OSUtils v2.0
 
 ----------------------------------------
 
