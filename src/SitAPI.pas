@@ -125,19 +125,6 @@ begin
   FUrl := ASupportInformationBase.Url;
 end;
 
-{ protected TSupportInformationBase.AppendToFile
-
-  Appends or deletes a key-value-pair. }
-{
-procedure TSupportInformationBase.AppendToFile(const ASection, AName, AValue: string;
-  AFile: TIniFile);
-begin
-  if (AValue <> '') then
-    AFile.WriteString(ASection, AName, AValue)
-  else
-    AFile.Remove(ASection, AName);
-end;  }
-
 { public TSupportInformationBase.Clear
 
   Clears the entered support information. }
@@ -194,7 +181,7 @@ begin
   else
     ext := '';
 
-  ini := TIniFile.Create(AFileName + ext);
+  ini := TIniFile.Create(AFileName + ext, True);
 
   try
     ini.AddRemove(INFO_ICON, INFO_ICON, FIcon);
@@ -214,19 +201,6 @@ end;
 
 
 { TSupportInformation }
-
-{ protected TSupportInformation.AppendToFile
-
-  Appends or deletes a key-value-pair. }
-{
-procedure TSupportInformation.AppendToFile(const ASection, AName, AValue: string;
-  AFile: TRegistryFile);
-begin
-  if (AValue <> '') then
-    AFile.WriteString(ASection, AName, AValue)
-  else
-    AFile.Remove(ASection, AName);
-end; }
 
 { public TSupportInformation.DeleteIcon
 

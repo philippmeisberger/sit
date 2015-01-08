@@ -38,9 +38,6 @@ type
   TSupportInformationBase = class(TWinWOW64)
   private
     FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
-  protected
-    //procedure AppendToFile(const ASection, AName, AValue: string;
-    //  AFile: TIniFile);
   public
     constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
     constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
@@ -65,9 +62,6 @@ type
 
   { Support information class >= Windows Vista }
   TSupportInformation = class(TSupportInformationBase)
-  protected
-    //procedure AppendToFile(const ASection, AName, AValue: string;
-    //  AFile: TRegistryFile); reintroduce;
   public
     function DeleteOEMIcon(): Boolean; override;
     function Exists(): Boolean; override;
