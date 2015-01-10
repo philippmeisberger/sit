@@ -22,7 +22,7 @@ object Info: TInfo
     Top = 0
     Width = 457
     Height = 273
-    ActivePage = ts_infos
+    ActivePage = ts_history
     TabOrder = 0
     object ts_infos: TTabSheet
       Caption = 'Infos'
@@ -550,7 +550,7 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.1 [07.01.15]'
+          'Version 3.1 [10.01.15]'
           ''
           '- Eigener INI Datei Parser f'#252'r .reg Datei Export'
           '- Neues Manifest'

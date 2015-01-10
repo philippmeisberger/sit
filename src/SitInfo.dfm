@@ -22,7 +22,7 @@ object Info: TInfo
     Top = 0
     Width = 457
     Height = 273
-    ActivePage = ts_history
+    ActivePage = ts_infos
     TabOrder = 0
     object ts_infos: TTabSheet
       Caption = 'Infos'
