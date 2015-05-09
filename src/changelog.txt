@@ -1,8 +1,8 @@
-SIT (alias "Supportinfo-Tool")
+ï»¿SIT (alias "Supportinfo-Tool")
 Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 
 "SIT ist ein Tool zum einfachen Eintragen von System-Herstellerinformationen in den 
-Systemsteuerungszweig System. IT-Firmen können so mit wenigen Klicks ihren (virtuellen) 
+Systemsteuerungszweig System. IT-Firmen kÃ¶nnen so mit wenigen Klicks ihren (virtuellen) 
 Firmenstempel auf dem Kunden PC hinterlassen."
 
 
@@ -11,7 +11,7 @@ History
 
 Version 3.1 [10.01.15]
 
-- Eigener INI Datei Parser für .reg Datei Import/Export
+- Eigener INI Datei Parser fÃ¼r .reg Datei Import/Export
 - Neues Manifest
 - Update-Funktion v2.2
 - OSUtils v2.0
@@ -22,12 +22,12 @@ Version 3.0 [03.10.14]
 
 - API Version 3.1
 - Neuer Icon
-- Oranges Hintergrund-Bild entfernt und durch Einfärben der Form ersetzt
-- Doppelklick auf URL-Textfeld öffnet URL im Webbrowser
-- "Logo auswählen"-Dialog startet im Bilder-Verzeichnis des Benutzers
-  - Ausgewähltes Logo muss keine bestimmten Maße mehr haben
+- Oranges Hintergrund-Bild entfernt und durch EinfÃ¤rben der Form ersetzt
+- Doppelklick auf URL-Textfeld Ã¶ffnet URL im Webbrowser
+- "Logo auswÃ¤hlen"-Dialog startet im Bilder-Verzeichnis des Benutzers
+  - AusgewÃ¤hltes Logo muss keine bestimmten MaÃŸe mehr haben
 - "Logo kopieren"-Funktion verwendet nun "Speichern unter"-Dialog
-- Mutex hinzugefügt
+- Mutex hinzugefÃ¼gt
 - Update-Funktion v2.1
 - "Speichern unter"-Dialog beim Herunterladen des Zertifikats entfernt
 - Sonstige kleinere Verbesserungen
@@ -37,8 +37,8 @@ Version 3.0 [03.10.14]
 Version 2.1 [24.07.13]
 
 - API Version 3
-- Änderungen im GUI
-- Button "Anzeigen" hinzugefügt
+- Ã„nderungen im GUI
+- Button "Anzeigen" hinzugefÃ¼gt
   - zeigt die Herstellerinformationen
 - neue Funktion: "Logo kopieren"
 - kleinere Bug fixes
@@ -47,39 +47,39 @@ Version 2.1 [24.07.13]
 
 Version 2.0.1 [25.04.13]
 
-- Sprachunterstützung für Englisch und Französisch hinzugefügt
-- Support für Windows 8
+- SprachunterstÃ¼tzung fÃ¼r Englisch und FranzÃ¶sisch hinzugefÃ¼gt
+- Support fÃ¼r Windows 8
 - Update-Funktion verbessert
-- Änderungen im Fenstermanagement
+- Ã„nderungen im Fenstermanagement
 
 ----------------------------------------
 
 Version 2.0 (NT) [19.10.12]
 
-- SIT NT: Source Code größtenteils neugeschrieben
+- SIT NT: Source Code grÃ¶ÃŸtenteils neugeschrieben
   - weiterhin Lite Version 
   - API Version 2
-- Menü um einige Funktionen erweitert
+- MenÃ¼ um einige Funktionen erweitert
   - "Datei": 
-    - Eingaben und Einträge können getrennt exportiert werden
+    - Eingaben und EintrÃ¤ge kÃ¶nnen getrennt exportiert werden
   - "Bearbeiten": 
-    - Eingaben und Einträge können getrennt gelöscht werden
-    - Funktion "Logo löschen" erscheint ab Win2000
+    - Eingaben und EintrÃ¤ge kÃ¶nnen getrennt gelÃ¶scht werden
+    - Funktion "Logo lÃ¶schen" erscheint ab Win2000
   - "Hilfe" erweitert:
-    - automatische und manuelle Updatefunktion verfügbar
+    - automatische und manuelle Updatefunktion verfÃ¼gbar
     - Zertifikat kann heruntergeladen werden
-- Shortcuts geändert
+- Shortcuts geÃ¤ndert
 - Mutex entfernt
-- Manifest-Skript überarbeitet
+- Manifest-Skript Ã¼berarbeitet
 - kleinere Bug Fixes
 
 ----------------------------------------
 
 Version 1.3.42 Lite [09.09.11]
 
-- vollständige Optimierung für tragbare Laufwerke (Sticks, etc.) 
-- SIT benötigt keine eigenen Registry-Einträge mehr
-  - Farbe ändern wurde entfernt
+- vollstÃ¤ndige Optimierung fÃ¼r tragbare Laufwerke (Sticks, etc.) 
+- SIT benÃ¶tigt keine eigenen Registry-EintrÃ¤ge mehr
+  - Farbe Ã¤ndern wurde entfernt
 
 ----------------------------------------
 
@@ -92,7 +92,7 @@ Version 1.3.4 [10.08.11]
 Version 1.3.3 [08.07.11]
 
 - SIT gibts jetzt in Farbe (orange)
-  - Farbe kann aber geändert werden (Doppelklick auf Hintergrund)
+  - Farbe kann aber geÃ¤ndert werden (Doppelklick auf Hintergrund)
 - Programmfunktion unter neuem Reiter "Hilfe" nachlesbar
 - mehrere Bugfixes beim Eintragen der Infos auf Windows XP, 2000 und ME
 - sonstige Bugfixes
@@ -101,37 +101,37 @@ Version 1.3.3 [08.07.11]
 
 Version 1.3.2 [19.04.11]
 
-- volle Kompatibilität für Windows XP, 2000 und ME
-- Shortcuts hinzugefügt
-- weniger Resourcen benötigt
+- volle KompatibilitÃ¤t fÃ¼r Windows XP, 2000 und ME
+- Shortcuts hinzugefÃ¼gt
+- weniger Resourcen benÃ¶tigt
 - kleinere Bugfixes
 
 ----------------------------------------
 
 Version 1.3.1 [14.04.11]
 
-- volle Kompatibilität für Windows Vista und Windows 7
+- volle KompatibilitÃ¤t fÃ¼r Windows Vista und Windows 7
 - kleinere Bugfixes
 
 ----------------------------------------
 
 Version 1.3 [11.04.11]
 
-- Im-/Export von *.REG-Dateien möglich
+- Im-/Export von *.REG-Dateien mÃ¶glich
 
 ----------------------------------------
 
 Version 1.2.1 [10.04.11]
 
-- Bug beim Hinzufügen eines Logos aus verstecktem Systemordner behoben
-- Bilder können nicht mehr größer als 120x120 Px sein
+- Bug beim HinzufÃ¼gen eines Logos aus verstecktem Systemordner behoben
+- Bilder kÃ¶nnen nicht mehr grÃ¶ÃŸer als 120x120 Px sein
 - kleinere Bugfixes
 
 ----------------------------------------
 
 Version 1.2 [31.03.11]
 
-- Mutex hinzugefügt
+- Mutex hinzugefÃ¼gt
 - mehrere Bugfixes
 
 ----------------------------------------
@@ -148,11 +148,11 @@ Version 1.0 [01.02.11]
 Erste Version von SIT (alias "Supportinfo-Tool")
 
 -----------------------------------------------------------------------
-SIT wurde unter der BSD-Lizenz veröffentlicht und ist somit 
+SIT wurde unter der BSD-Lizenz verÃ¶ffentlicht und ist somit 
 Open-Source. Der Quelltext kann auf der Website heruntergeladen 
 werden.
 Soll SIT auf eine kommerzielle CD-ROM (mit Magazin) gepresst wer-
-den, wäre es nett, mir eine Ausgabe dieser CD-ROM (mit Magazin) zu
+den, wÃ¤re es nett, mir eine Ausgabe dieser CD-ROM (mit Magazin) zu
 schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de .
 
 01/2015
