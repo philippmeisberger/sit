@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Windows Mutex Unit v1.1                                   }
+{ PM Code Works Windows Mutex Unit v1.2                                   }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -11,7 +11,7 @@ unit Mutex;
 interface
 
 uses
-  Windows, Forms, SysUtils;
+  Windows, Forms;
 
 implementation
 
@@ -27,7 +27,7 @@ initialization
   if (GetLastError() = ERROR_ALREADY_EXISTS) then
   begin
     Application.MessageBox(PChar('Another instance of '+ FileName
-       +' already exists!'), PChar(FileName), MB_ICONERROR);
+       +' already exists!'), PChar(FileName), MB_ICONWARNING);
     Application.Terminate;
   end;  //of begin
 

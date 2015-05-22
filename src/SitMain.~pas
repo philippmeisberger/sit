@@ -2,7 +2,7 @@
 {                                                                         }
 { Support Information Tool Main Unit                                      }
 {                                                                         }
-{ Copyright (c) 2011-2015 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,8 +11,9 @@ unit SitMain;
 interface
 
 uses
-  Windows, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, Menus, ExtDlgs, LanguageFile, OSUtils, Updater, SitAPI, SitInfo;
+  Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls,
+  Menus, Dialogs, AddDialogs, AddCommCtrl, LanguageFile, OSUtils, Updater,
+  SitAPI, SitInfo;
 
 type
   { TMain }
@@ -27,13 +28,11 @@ type
     mmImport: TMenuItem;
     mmExport: TMenuItem;
     mmEdit: TMenuItem;
-    mmShowValues: TMenuItem;
     mmDeleteValues: TMenuItem;
     mmHelp: TMenuItem;
     mmInfo: TMenuItem;
     mmExportEdit: TMenuItem;
     N1: TMenuItem;
-    N2: TMenuItem;
     mmDeleteEdits: TMenuItem;
     mmDeleteIcon: TMenuItem;
     mmDownloadCert: TMenuItem;
@@ -58,6 +57,8 @@ type
     bAdd: TButton;
     cbCopyIcon: TCheckBox;
     eLogo: TLabeledEdit;
+    mmShow: TMenuItem;
+    N6: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -68,7 +69,7 @@ type
     procedure mmCopyIconClick(Sender: TObject);
     procedure mmExportClick(Sender: TObject);
     procedure mmExportEditClick(Sender: TObject);
-    procedure mmShowValuesClick(Sender: TObject);
+    procedure mmShowClick(Sender: TObject);
     procedure mmDeleteValuesClick(Sender: TObject);
     procedure mmDeleteEditsClick(Sender: TObject);
     procedure mmDeleteIconClick(Sender: TObject);
@@ -95,7 +96,7 @@ type
     procedure SetLanguage(Sender: TObject);
     function ShowCopyIconDialog(AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
-    procedure ShowValues(AReload: Boolean);
+    procedure ShowValues(AReload: Boolean = True);
   end;
 
 var
@@ -146,18 +147,18 @@ end;
 
 procedure TMain.FormShow(Sender: TObject);
 var
-  windows: string;
-  newWindows: Boolean;
+  Windows: string;
+  NewWindows: Boolean;
 
 begin
-  windows := TOSUtils.GetWinVersion();
-  newWindows := TOSUtils.WindowsVistaOrLater();
+  Windows := TOSUtils.GetWinVersion();
+  NewWindows := TOSUtils.WindowsVistaOrLater();
   cbCopyIcon.Enabled := newWindows;
   
   // Check for incompatibility
-  if not (newWindows or (windows <> '')) then
+  if not (NewWindows or (Windows <> '')) then
   begin
-    Flang.MessageBox(FLang.Format([74, 75], [windows]), mtError);
+    Flang.MessageBox(FLang.Format([74, 75], [Windows]), mtError);
     bAccept.Enabled := False;
     mmFile.Enabled := False;
     mmEdit.Enabled := False;
@@ -172,10 +173,10 @@ begin
   end;  //of begin
 
   // Show support information
-  ShowValues(True);
+  ShowValues();
 
   // Make UAC-Shield button
-  TOSUtils.MakeUACShieldButton(bAccept.Handle);
+  Button_SetElevationRequiredState(bAccept.Handle);
 end;
 
 { private TMain.AfterUpdate
@@ -283,7 +284,7 @@ begin
 
     // "Edit" menu
     mmEdit.Caption := GetString(35);
-    mmShowValues.Caption := GetString(36);
+    mmShow.Caption := GetString(36);
     mmDeleteValues.Caption := GetString(37);
     mmDeleteEdits.Caption := GetString(38);
     mmCopyIcon.Caption := GetString(40);
@@ -325,13 +326,13 @@ end;
 
 function TMain.ShowCopyIconDialog(AFile: string): string;
 var
-  SaveDialog : TSaveDialog;
+  SaveDialog : TFileSaveDialog;
 
 begin
   result := '';
 
   // init dialog
-  SaveDialog := TSaveDialog.Create(Self);
+  SaveDialog := TFileSaveDialog.Create(Self);
 
   try
     with SaveDialog do
@@ -371,12 +372,12 @@ end;
   
 procedure TMain.ShowExportDialog(AExportEdits: Boolean);
 var
-  SaveDialog : TSaveDialog;
+  SaveDialog : TFileSaveDialog;
   SupportInfo: TSupportInformationBase;
 
 begin
   // init dialog
-  SaveDialog := TSaveDialog.Create(Self);
+  SaveDialog := TFileSaveDialog.Create(Self);
 
   try
     // Set dialog options
@@ -431,7 +432,7 @@ end;
 
   Allows users to show support information. }
 
-procedure TMain.ShowValues(AReload: Boolean);
+procedure TMain.ShowValues(AReload: Boolean = True);
 begin
   // Set title
   Caption := Application.Title + TOSUtils.GetArchitecture();
@@ -530,15 +531,15 @@ end;
 
 procedure TMain.bAddClick(Sender: TObject);
 var
-  OpenLogoDialog : TOpenPictureDialog;
+  OpenDialog : TFileOpenDialog;
 
 begin
   // init dialog
-  OpenLogoDialog := TOpenPictureDialog.Create(Self);
+  OpenDialog := TFileOpenDialog.Create(Self);
 
   try
     // Set dialog options
-    with OpenLogoDialog do
+    with OpenDialog do
     begin
       Options := Options + [ofFileMustExist];
       Filter := FLang.GetString(57);
@@ -557,9 +558,9 @@ begin
     end;  //of with
 
     // "Open" clicked
-    if OpenLogoDialog.Execute then
+    if OpenDialog.Execute then
     begin
-      Image.Picture.LoadFromFile(OpenLogoDialog.FileName);
+      Image.Picture.LoadFromFile(OpenDialog.FileName);
 
       // Check square format of image and warn user
       if (Image.Height <> Image.Width) then
@@ -568,13 +569,13 @@ begin
           mtWarning);
       end;  //of begin
 
-      eLogo.Text := OpenLogoDialog.FileName;
+      eLogo.Text := OpenDialog.FileName;
     end; //of if
 
   finally
-    OpenLogoDialog.Free;
+    OpenDialog.Free;
     eLogo.SetFocus;
-  end;  //of finally
+  end;  //of try
 end;
 
 { TMain.mmImportClick
@@ -583,12 +584,12 @@ end;
 
 procedure TMain.mmImportClick(Sender: TObject);
 var
-  OpenDialog : TOpenDialog;
+  OpenDialog : TFileOpenDialog;
   SupportInfo: TSupportInformationBase;
 
 begin
   // init dialog
-  OpenDialog := TOpenDialog.Create(Self);
+  OpenDialog := TFileOpenDialog.Create(Self);
 
   try
     // Set dialog options
@@ -659,13 +660,13 @@ begin
     ShowExportDialog(True);
 end;
 
-{ TMain.mmShowValuesClick
+{ TMain.mmShowClick
 
   Allows users to show support information. }
 
-procedure TMain.mmShowValuesClick(Sender: TObject);
+procedure TMain.mmShowClick(Sender: TObject);
 begin
-  ShowValues(True);
+  ShowValues();
 end;
 
 { TMain.mmDelValuesClick

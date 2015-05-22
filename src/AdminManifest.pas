@@ -2,7 +2,7 @@
 {                                                                         }
 { PM Code Works Windows Administrator access rights manifest              }
 {                                                                         }
-{ Copyright (c) 2011-2015 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 

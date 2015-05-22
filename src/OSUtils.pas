@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Operating System Utilities Unit v2.0                      }
+{ PM Code Works Operating System Utilities Unit v2.1                      }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -25,6 +25,11 @@ const
   URL_BASE = 'http://www.pm-codeworks.de/';
   URL_CONTACT = URL_BASE +'kontakt.html';
 
+{$IFDEF MSWINDOWS}
+  { Flag to deny WOW64 redirection in Windows Registry }
+  KEY_WOW64_64KEY = $0100;
+{$ENDIF}
+
 type
   { Exception class }
   EInvalidArgument = class(Exception);
@@ -39,29 +44,30 @@ type
     class function IsWindows64(): Boolean;
   end;
 
+  { TRootKey }
+  TRootKey = string[4];
+
   { TOSUtils }
   TOSUtils = class(TWinWOW64)
-  protected
-    class function KillProcess(AExeName: string): Boolean;
   public
     class function CreateTempDir(const AFolderName: string): Boolean;
     class function ExecuteProgram(const AProgram: string;
       AArguments: string = ''; ARunAsAdmin: Boolean = False): Boolean;
-    class function ExitWindows(AAction: Word): Boolean;
+    class function ExitWindows(AAction: UINT): Boolean;
     class function ExplorerReboot(): Boolean;
+    class function ExpandEnvironmentVar(var AVariable: string): Boolean;
     class function GetBuildNumber(): Cardinal;
     class function GetTempDir(): string;
     class function GetWinDir(): string;
     class function GetWinVersion(AShowServicePack: Boolean = False): string;
     class function HexToInt(AHexValue: string): Integer;
-    class function HKeyToStr(AHKey: HKey): string;
-    class function MakeUACShieldButton(AButtonHandle: HWND): Integer;
+    class function HKeyToStr(AHKey: HKey; ALongFormat: Boolean = True): string;
+    class function KillProcess(AExeName: string): Boolean;
     class function OpenUrl(const AUrl: string): Boolean;
     class function PlaySound(AFileName: string; ASynchronized: Boolean = False): Boolean;
     class function PMCertExists(): Boolean;
-    class function ShowAddRegistryDialog(ARegFilePath: string): Boolean;
     class function Shutdown(): Boolean;
-    class function StrToHKey(const AMainKey: string): HKEY;
+    class function StrToHKey(ARootKey: TRootKey): HKEY;
     class function WindowsVistaOrLater(): Boolean;
   end;
 {$ELSE}
@@ -98,7 +104,7 @@ var
   Wow64RevertWow64FsRedirection: TWow64RevertWow64FsRedirection;
 
 begin
-  result := False;
+  Result := False;
 
   // Init handle
   LibraryHandle := GetModuleHandle(kernel32);
@@ -107,19 +113,21 @@ begin
   begin
     if ADisable then
     begin
-      Wow64DisableWow64FsRedirection := GetProcAddress(LibraryHandle, 'Wow64DisableWow64FsRedirection');
+      Wow64DisableWow64FsRedirection := GetProcAddress(LibraryHandle,
+        'Wow64DisableWow64FsRedirection');
 
       // Loading of Wow64DisableWow64FsRedirection successful?
       if Assigned(Wow64DisableWow64FsRedirection) then
-        result := Wow64DisableWow64FsRedirection(nil);
+        Result := Wow64DisableWow64FsRedirection(nil);
     end  //of begin
     else
        begin
-         Wow64RevertWow64FsRedirection := GetProcAddress(LibraryHandle, 'Wow64RevertWow64FsRedirection');
+         Wow64RevertWow64FsRedirection := GetProcAddress(LibraryHandle,
+           'Wow64RevertWow64FsRedirection');
 
          // Loading of Wow64RevertWow64FsRedirection successful?
          if Assigned(Wow64RevertWow64FsRedirection) then
-           result := Wow64RevertWow64FsRedirection(nil);
+           Result := Wow64RevertWow64FsRedirection(nil);
        end;  //of begin
   end;  //of begin
 end;
@@ -134,11 +142,11 @@ type
 
 var
   LibraryHandle: HMODULE;
-  IsWow64: BOOL;
+  IsWow64: LongBool;
   IsWow64Process: TIsWow64Process;
 
 begin
-  result := False;
+  Result := False;
   LibraryHandle := GetModuleHandle(kernel32);
 
   if (LibraryHandle <> 0) then
@@ -149,7 +157,7 @@ begin
     if Assigned(IsWow64Process) then
       // Execute IsWow64Process against process
       if IsWow64Process(GetCurrentProcess(), IsWow64) then
-        result := IsWow64;
+        Result := IsWow64;
   end;  //of begin
 end;
 
@@ -159,17 +167,14 @@ end;
   a 32 bit application can get access to the 64 bit Registry. }
 
 class function TWinWOW64.DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
-const
-  KEY_WOW64_64KEY = $0100;
-
 begin
   // Used Windows is a 64bit OS?
-  if IsWindows64() then
+  if TOSUtils.IsWindows64() then
     // Deny WOW64 redirection
-    result := KEY_WOW64_64KEY or AAccessRight
+    Result := KEY_WOW64_64KEY or AAccessRight
   else
     // Ignore redirection
-    result := AAccessRight;
+    Result := AAccessRight;
 end;
 
 { public TWinWOW64.GetArchitecture
@@ -178,51 +183,14 @@ end;
 
 class function TWinWOW64.GetArchitecture(): string;
 begin
-  if IsWindows64() then
-    result := ' [64bit]'
+  if TOSUtils.IsWindows64() then
+    Result := ' [64bit]'
   else
-    result := ' [32bit]';
+    Result := ' [32bit]';
 end;
 
 
 { TOSUtils }
-
-{ public TOSUtils.KillProcess
-
-  Terminates a given process. }
-  
-class function TOSUtils.KillProcess(AExeName: string): Boolean;
-var
-  Continue: Boolean;
-  snapshotHandle: THandle;
-  processentry32: TProcessEntry32;
-  ProcessID: string;
-  Ph: THandle;
-
-begin
-  // Read out all running processes
-  snapshotHandle := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  processentry32.dwSize := SizeOf(processentry32);
-  Continue := Process32First(snapshotHandle, processentry32);
-
-  // Try to search for given process name
-  try
-    while ((ExtractFileName(processentry32.szExeFile) <> AExeName) and Continue) do
-      Continue := Process32Next(snapshotHandle, processentry32);
-
-    // Save process ID for found process
-    ProcessID := IntToHex(processentry32.th32ProcessID, 4);
-
-    // Get handle of found process 
-    Ph := OpenProcess($0001, BOOL(0), StrToInt('$'+ ProcessID));
-
-    // Terminate found process
-    result := (Integer(TerminateProcess(Ph, 0)) = 1);
-
-  finally
-    CloseHandle(snapshotHandle);
-  end;  //of try
-end;
 
 { public TOSUtils.CreateTempDir
 
@@ -230,7 +198,7 @@ end;
 
 class function TOSUtils.CreateTempDir(const AFolderName: string): Boolean;
 begin
-  result := ForceDirectories(GetTempDir() + AFolderName);
+  Result := ForceDirectories(GetTempDir() + AFolderName);
 end;
 
 { public TOSUtils.ExecuteProgram
@@ -249,7 +217,7 @@ begin
   else
     Operation := 'open';
 
-  result := (ShellExecute(0, Operation, PChar(AProgram), PChar(AArguments), nil,
+  Result := (ShellExecute(0, Operation, PChar(AProgram), PChar(AArguments), nil,
     SW_SHOWNORMAL) > 32);
 end;
 
@@ -257,37 +225,74 @@ end;
 
   Tells Windows to shutdown, reboot or log off. }
 
-class function TOSUtils.ExitWindows(AAction: Word): Boolean;
+class function TOSUtils.ExitWindows(AAction: UINT): Boolean;
 const
   SE_SHUTDOWN_NAME = 'SeShutdownPrivilege';
+  SHTDN_REASON_MAJOR_APPLICATION = $00040000;
+  SHTDN_REASON_MINOR_MAINTENANCE = 1;
 
 var
-  TTokenHd : THandle;
-  TTokenPvg : TTokenPrivileges;
-  cbtpPrevious : DWORD;
-  rTTokenPvg : TTokenPrivileges;
-  pcbtpPreviousRequired : DWORD;
-  tpResult : Boolean;
+  TokenHandle: THandle;
+  NewState, PreviousState: TTokenPrivileges;
+  BufferLength, ReturnLength: Cardinal;
+  Luid: Int64;
 
 begin
-  if (AAction <> EWX_LOGOFF) and (Win32Platform = VER_PLATFORM_WIN32_NT) then
+  if ((AAction <> EWX_LOGOFF) and (Win32Platform = VER_PLATFORM_WIN32_NT)) then
+  try
+    if not OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES or
+      TOKEN_QUERY, TokenHandle) then
+      raise Exception.Create(SysErrorMessage(GetLastError()));
+
+    // Get LUID of shutdown privilege
+    if not LookupPrivilegeValue(nil, SE_SHUTDOWN_NAME, Luid) then
+      raise Exception.Create(SysErrorMessage(GetLastError()));
+
+    // Create new shutdown privilege
+    NewState.PrivilegeCount := 1;
+    NewState.Privileges[0].Luid := Luid;
+    NewState.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED;
+    BufferLength := SizeOf(PreviousState);
+    ReturnLength := 0;
+
+    // Set the shutdown privilege
+    if not AdjustTokenPrivileges(TokenHandle, False, NewState, BufferLength,
+      PreviousState, ReturnLength) then
+      raise Exception.Create(SysErrorMessage(GetLastError()));
+
+  finally
+    CloseHandle(TokenHandle);
+  end;  //of try
+
+  Result := ExitWindowsEx(AAction, SHTDN_REASON_MAJOR_APPLICATION or
+    SHTDN_REASON_MINOR_MAINTENANCE);   //EWX_SHUTDOWN, EWX_POWEROFF, (EWX_FORCE, EWX_FORCEIFHUNG)
+end;
+
+{ public TOSUtils.ExpandEnvironmentVar
+
+  Expands an environment variable. }
+
+class function TOSUtils.ExpandEnvironmentVar(var AVariable: string): Boolean;
+var
+  BufferSize: Integer;
+  Buffer: array of Char;
+
+begin
+  Result := False;
+
+  // Get required buffer size
+  BufferSize := ExpandEnvironmentStrings(PChar(AVariable), nil, 0);
+
+  if (BufferSize > 0) then
   begin
-    tpResult := OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES or TOKEN_QUERY, TTokenHd);
+    SetLength(Buffer, BufferSize);
 
-    if tpResult then
+    if (ExpandEnvironmentStrings(PChar(AVariable), PChar(Buffer), BufferSize) <> 0) then
     begin
-      tpResult := LookupPrivilegeValue(nil, SE_SHUTDOWN_NAME, TTokenPvg.Privileges[0].Luid);
-      TTokenPvg.PrivilegeCount := 1;
-      TTokenPvg.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED;
-      cbtpPrevious := SizeOf(rTTokenPvg);
-      pcbtpPreviousRequired := 0;
-
-      if tpResult then
-        Windows.AdjustTokenPrivileges(TTokenHd, False, TTokenPvg, cbtpPrevious, rTTokenPvg, pcbtpPreviousRequired);
+      AVariable := StrPas(PChar(Buffer));
+      Result := True;
     end;  //of begin
-  end;  //begin
-
-  result := ExitWindowsEx(AAction, 0);   //EWX_SHUTDOWN, EWX_POWEROFF, (EWX_FORCE, EWX_FORCEIFHUNG)
+  end;  //of begin
 end;
 
 { public TOSUtils.ExplorerReboot
@@ -296,7 +301,7 @@ end;
 
 class function TOSUtils.ExplorerReboot(): Boolean;
 begin
-  result := KillProcess('explorer.exe');
+  Result := TOSUtils.KillProcess('explorer.exe');
 end;
 
 { public TOSUtils.GetBuildNumber
@@ -321,16 +326,16 @@ begin
 
       if VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize) then
         with VerValue^ do
-          result := (dwFileVersionLS and $FFFF)
+          Result := (dwFileVersionLS and $FFFF)
       else
-        result := 0;
+        Result := 0;
 
     finally
       FreeMem(VerInfo, VerInfoSize);
     end;   //of try
   end  //of begin
   else
-    result := 0;
+    Result := 0;
 end;
 {$ELSE}
 class function TOSUtils.GetBuildNumber(): Cardinal;
@@ -358,7 +363,7 @@ begin
     end;  //of while
 
     if Assigned(VR) then
-      result := VR.FixedInfo.FileVersion[3];
+      Result := VR.FixedInfo.FileVersion[3];
 
   finally
     RS.FRee;
@@ -373,7 +378,7 @@ end;
 
 class function TOSUtils.GetTempDir(): string;
 begin
-  result := SysUtils.GetEnvironmentVariable('temp');
+  Result := SysUtils.GetEnvironmentVariable('temp');
 end;
 
 { public TOSUtils.GetWinDir
@@ -382,7 +387,7 @@ end;
 
 class function TOSUtils.GetWinDir(): string;
 begin
-  result := SysUtils.GetEnvironmentVariable('windir');
+  Result := SysUtils.GetEnvironmentVariable('windir');
 end;
 
 { public TOSUtils.GetWinVersion
@@ -392,28 +397,29 @@ end;
 
 class function TOSUtils.GetWinVersion(AShowServicePack: Boolean = False): string;
 begin
-  result := '';
+  Result := '';
   
   // Windows NT platform
   if (Win32Platform = VER_PLATFORM_WIN32_NT) then
     case Win32MajorVersion of
       5: case Win32MinorVersion of
-           0: result := '2000';
-           1: result := 'XP';
-           2: result := 'XP 64-Bit Edition';
+           0: Result := '2000';
+           1: Result := 'XP';
+           2: Result := 'XP 64-Bit Edition';
          end; //of case
 
       6: case Win32MinorVersion of
-           0: result := 'Vista';
-           1: result := '7';
-           2: result := '8';
-           3: result := '8.1';
+           0: Result := 'Vista';
+           1: Result := '7';
+           2: Result := '8';
+           3: Result := '8.1';
+           4: Result := '10';
          end; //of case
     end; //of case
 
   // Add information about service packs?
-  if ((result <> '') and AShowServicePack and (Win32CSDVersion <> '')) then
-    result := result +' '+ Win32CSDVersion;
+  if ((Result <> '') and AShowServicePack and (Win32CSDVersion <> '')) then
+    Result := Result +' '+ Win32CSDVersion;
 end;
 {$ENDIF}
 
@@ -423,7 +429,7 @@ end;
 
 class function TOSUtils.HexToInt(AHexValue: string): Integer;
 begin
-  result := StrToInt('$'+ AHexValue);
+  Result := StrToInt('$'+ AHexValue);
 end;
 
 {$IFDEF MSWINDOWS}
@@ -431,30 +437,78 @@ end;
 
   Converts a HKEY into its string representation. }
 
-class function TOSUtils.HKeyToStr(AHKey: HKey): string;
+class function TOSUtils.HKeyToStr(AHKey: HKey; ALongFormat: Boolean = True): string;
 begin
   case AHKey of
-    HKEY_CLASSES_ROOT:   result := 'HKEY_CLASSES_ROOT';
-    HKEY_CURRENT_USER:   result := 'HKEY_CURRENT_USER';
-    HKEY_LOCAL_MACHINE:  result := 'HKEY_LOCAL_MACHINE';
-    HKEY_USERS:          result := 'HKEY_USERS';
-    HKEY_CURRENT_CONFIG: result := 'HKEY_CURRENT_CONFIG';
-    else
-      raise EInvalidArgument.Create('HKeyToStr: Bad format error! Unknown HKEY!');
+    HKEY_CLASSES_ROOT:     if ALongFormat then
+                             Result := 'HKEY_CLASSES_ROOT'
+                           else
+                             Result := 'HKCR';
+
+    HKEY_CURRENT_USER:     if ALongFormat then
+                             Result := 'HKEY_CURRENT_USER'
+                           else
+                             Result := 'HKCU';
+
+    HKEY_LOCAL_MACHINE:    if ALongFormat then
+                             Result := 'HKEY_LOCAL_MACHINE'
+                           else
+                             Result := 'HKLM';
+
+    HKEY_USERS:            if ALongFormat then
+                             Result := 'HKEY_USERS'
+                           else
+                             Result := 'HKU';
+
+    HKEY_PERFORMANCE_DATA: if ALongFormat then
+                             Result := 'HKEY_PERFORMANCE_DATA'
+                           else
+                             Result := 'HKPD';
+
+    HKEY_CURRENT_CONFIG:   if ALongFormat then
+                             Result := 'HKEY_CURRENT_CONFIG'
+                           else
+                             Result := 'HKCC';
+
+    else                   raise EInvalidArgument.Create('Unknown HKEY!');
   end;  //of case
 end;
 
-{ public TOSUtils.MakeUACShieldButton
+{ public TOSUtils.KillProcess
 
-  Adds the Windows UAC shield to a button. }
+  Terminates a given process. }
 
-class function TOSUtils.MakeUACShieldButton(AButtonHandle: HWND): Integer;
-const
-  BCM_FIRST = $1600;
-  BCM_SETSHIELD = BCM_FIRST + $000C;
+class function TOSUtils.KillProcess(AExeName: string): Boolean;
+var
+  Continue: Boolean;
+  snapshotHandle: THandle;
+  processentry32: TProcessEntry32;
+  ProcessID: string;
+  Ph: THandle;
 
 begin
-  result := SendMessage(AButtonHandle, BCM_SETSHIELD, 0, Integer(True));
+  // Read out all running processes
+  snapshotHandle := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  processentry32.dwSize := SizeOf(processentry32);
+  Continue := Process32First(snapshotHandle, processentry32);
+
+  // Try to search for given process name
+  try
+    while ((ExtractFileName(processentry32.szExeFile) <> AExeName) and Continue) do
+      Continue := Process32Next(snapshotHandle, processentry32);
+
+    // Save process ID for found process
+    ProcessID := IntToHex(processentry32.th32ProcessID, 4);
+
+    // Get handle of found process
+    Ph := OpenProcess($0001, BOOL(0), StrToInt('$'+ ProcessID));
+
+    // Terminate found process
+    Result := (Integer(TerminateProcess(Ph, 0)) = 1);
+
+  finally
+    CloseHandle(snapshotHandle);
+  end;  //of try
 end;
 {$ENDIF}
 
@@ -470,7 +524,7 @@ var
 begin
   if not (AnsiStartsText('http://', AUrl) or AnsiStartsText('https://', AUrl)) then
   begin
-    result := False;
+    Result := False;
     Exit;
   end;  //of begin
 
@@ -483,19 +537,19 @@ begin
         Process.Executable := '/usr/bin/xdg-open';
         Process.Parameters.Append(AUrl);
         Process.Execute;
-        result := True;
+        Result := True;
 
       finally
         Process.Free;
       end;  //of try
 
     except
-      result := False;
+      Result := False;
     end  //of try
   else
-    result := False;
+    Result := False;
 {$ELSE}
-  result := TOSUtils.ExecuteProgram(AUrl);
+  Result := TOSUtils.ExecuteProgram(AUrl);
 {$ENDIF}
 end;
 
@@ -514,7 +568,7 @@ begin
 
   if ((ExtractFileExt(AFileName) <> '.wav') or (not FileExists(AFileName))) then
   begin
-    result := False;
+    Result := False;
     SysUtils.Beep;
     Exit;
   end;  //of begin
@@ -525,7 +579,7 @@ begin
   else
     SndPlaySound(PChar(AFileName), SND_ASYNC);
 
-  result := True;
+  Result := True;
 {$ELSE}
   Process := TProcess.Create(nil);
 
@@ -537,7 +591,7 @@ begin
       Process.Options := Process.Options + [poWaitOnExit];
 
    Process.Execute;
-   result := True;
+   Result := True;
 
   finally
     Process.Free;
@@ -552,38 +606,23 @@ end;
   
 class function TOSUtils.PMCertExists(): Boolean;
 var
-  reg: TRegistry;
+  Reg: TRegistry;
 
 const
   CERT_KEY = 'SOFTWARE\Microsoft\SystemCertificates\ROOT\Certificates\';
   PM_CERT_THUMBPRINT = '1350A832ED8A6A8FE8B95D2E674495021EB93A4D';
 
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
+  Reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
   
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    result := (reg.OpenKeyReadOnly(CERT_KEY) and reg.KeyExists(PM_CERT_THUMBPRINT));
-    reg.CloseKey;
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
+    Result := (Reg.OpenKeyReadOnly(CERT_KEY) and Reg.KeyExists(PM_CERT_THUMBPRINT));
 
   finally
-    reg.Free;
+    Reg.CloseKey;
+    Reg.Free;
   end;  //of try
-end;
-
-{ public TOSUtils.ShowAddRegistryDialog
-
-  Shows an dialog where user has the choice to add a *.reg file.  }
-
-class function TOSUtils.ShowAddRegistryDialog(ARegFilePath: string): Boolean;
-begin
-  if (ARegFilePath = '') then
-    raise EInvalidArgument.Create('Missing parameter with a .reg file!');
-
-  if (ARegFilePath[1] <> '"') then
-    ARegFilePath := '"'+ ARegFilePath +'"';
-
-  result := TOSUtils.ExecuteProgram('regedit.exe', ARegFilePath);
 end;
 {$ENDIF}
 
@@ -614,46 +653,48 @@ begin
         end;  //of with
 
         Process.Execute;
-        result := True;
+        Result := True;
 
       finally
         Process.Free;
       end;  //of try
 
     except
-      result := False;
+      Result := False;
     end  //of try
   else
-    result := False;
+    Result := False;
 end;
 {$ELSE}
 begin
-  result := TOSUtils.ExitWindows(EWX_SHUTDOWN or EWX_FORCE);
+  Result := TOSUtils.ExitWindows(EWX_SHUTDOWN or EWX_FORCE);
 end;
 
 { public TOSUtils.StrToHKey
 
   Converts short HKEY string into real HKEY type. } 
 
-class function TOSUtils.StrToHKey(const AMainKey: string): HKEY;
+class function TOSUtils.StrToHKey(ARootKey: TRootKey): HKEY;
 begin
-  if (AMainKey = 'HKCR') then
-    result := HKEY_CLASSES_ROOT
+  if (ARootKey = 'HKCR') then
+    Result := HKEY_CLASSES_ROOT
   else
-    if (AMainKey = 'HKCU') then
-      result := HKEY_CURRENT_USER
+    if (ARootKey = 'HKCU') then
+      Result := HKEY_CURRENT_USER
     else
-      if (AMainKey = 'HKLM') then
-        result := HKEY_LOCAL_MACHINE
+      if (ARootKey = 'HKLM') then
+        Result := HKEY_LOCAL_MACHINE
       else
-        if (AMainKey = 'HKU') then
-          result := HKEY_USERS
+        if (ARootKey = 'HKU') then
+          Result := HKEY_USERS
         else
-          if (AMainKey = 'HKCC') then
-            result := HKEY_CURRENT_CONFIG
+          if (ARootKey = 'HKPD') then
+            Result := HKEY_PERFORMANCE_DATA
           else
-            raise EInvalidArgument.Create('StrToHKey: Bad format error! '
-              +'Unknown HKEY: "'+ AMainKey +'"!');
+            if (ARootKey = 'HKCC') then
+              Result := HKEY_CURRENT_CONFIG
+            else
+              raise EInvalidArgument.Create('Unknown HKEY: "'+ ARootKey +'"!');
 end;
 
 { public TOSUtils.WindowsVistaOrLater
@@ -662,7 +703,7 @@ end;
 
 class function TOSUtils.WindowsVistaOrLater(): Boolean;
 begin
-  result := ((Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 6));
+  Result := ((Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 6));
 end;
 {$ENDIF}
 

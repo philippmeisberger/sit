@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT Info Pages                                                          }
 {                                                                         }
-{ Copyright (c) 2011-2015 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -32,14 +32,13 @@ type
     procedure FormCreate(Sender: TObject);
   end;
 
-
 implementation
 
 {$R *.dfm}
 
 procedure TInfo.FormCreate(Sender: TObject);
 begin
-  lBuild.Caption := '(Build: '+ IntToStr(TOSUtils.GetBuildNumber) +')';
+  lBuild.Caption := '(Build: '+ IntToStr(TOSUtils.GetBuildNumber()) +')';
 end;
 
 end.

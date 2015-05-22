@@ -51,7 +51,7 @@ object Main: TMain
     Width = 21
     Height = 14
     Anchors = [akTop, akRight]
-    Caption = 'v3.1'
+    Caption = 'v3.2'
     Transparent = True
   end
   object Image: TImage
@@ -219,14 +219,6 @@ object Main: TMain
     end
     object mmEdit: TMenuItem
       Caption = 'Bearbeiten'
-      object mmShowValues: TMenuItem
-        Caption = 'Eintr'#228'ge anzeigen'
-        ShortCut = 116
-        OnClick = mmShowValuesClick
-      end
-      object N2: TMenuItem
-        Caption = '-'
-      end
       object mmDeleteValues: TMenuItem
         Caption = 'Eintr'#228'ge l'#246'schen'
         ShortCut = 117
@@ -253,6 +245,14 @@ object Main: TMain
     end
     object mmView: TMenuItem
       Caption = 'Ansicht'
+      object mmShow: TMenuItem
+        Caption = 'Eintr'#228'ge anzeigen'
+        ShortCut = 116
+        OnClick = mmShowClick
+      end
+      object N6: TMenuItem
+        Caption = '-'
+      end
       object mmLang: TMenuItem
         Caption = 'Sprache w'#228'hlen'
         object mmGer: TMenuItem

@@ -6,7 +6,8 @@ uses
   SitInfo in 'SitInfo.pas' {Info},
   SitAPI in 'SitAPI.pas',
   Mutex in 'Mutex.pas',
-  AdminManifest in 'AdminManifest.pas';
+  AdminManifest in 'AdminManifest.pas',
+  NewExtDialogs in 'NewExtDialogs.pas';
 
 {$R *.res}
 

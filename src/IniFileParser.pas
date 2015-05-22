@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Initialization file parser Unit v1.0                                    }
+{ Initialization file parser Unit v1.1                                    }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -18,6 +18,13 @@ uses
 {$ENDIF}
   Classes, SysUtils, StrUtils, OSUtils;
 
+{$IFDEF MSWINDOWS}
+const
+  REG_BINARY = 'hex:';
+  REG_INTEGER = 'dword:';
+  REG_EXPANDSTRING = 'hex(2):';
+{$ENDIF}
+
 type
   { Exception classes }
   EInvalidIniFormat = class(Exception);
@@ -29,12 +36,18 @@ type
     FFile: TStringList;
     FFileName: string;
     FSaveOnDestroy: Boolean;
-    function FindNextItem(AStartIndex: Integer = 0): Integer;
+    function Add(AIndex: Integer; AString: string): Integer;
+    function FindNextItem(AStartIndex: Integer = 0; AEndIndex: Integer = -1): Integer;
     function FindNextSection(AStartIndex: Integer = 0): Integer;
-    function GetEndOfSection(ASectionName: string): Integer;
+    function FindNextSectionItem(AStartIndex: Integer = 0): Integer;
+    function GetEndOfItem(AIndex: Integer): Integer; overload;
+    function GetEndOfItem(ASectionName, AKey: string): Integer; overload;
+    function GetEndOfSection(AIndex: Integer): Integer; overload;
+    function GetEndOfSection(ASectionName: string): Integer; overload;
     function GetKey(AIndex: Integer): string;
     function GetLength(): Integer;
     function GetValue(AIndex: Integer): string;
+    function Remove(AStartIndex, AEndIndex: Integer): Boolean; overload;
   protected
     function AddRaw(ALine: string): Integer;
     function ExtractKey(const AKeyValuePair: string): string;
@@ -47,21 +60,23 @@ type
     function AddSection(ASectionName: string): Boolean; overload;
     function AddSection(ASectionName: string; AHashMap: TStrings): Boolean; overload;
     procedure Clear();
+    procedure GetKeys(ASectionName: string; AKeys: TStrings);
     procedure GetSections(ASections: TStrings);
     function IndexOfKey(ASectionName, AKey: string): Integer;
     function IndexOfSection(ASectionName: string): Integer;
+    function IsSection(AIndex: Integer): Boolean;
     function KeyExists(ASectionName, AKey: string): Boolean;
-    procedure ReadSection(ASectionName: string; ASection: TStrings);
     function ReadBoolean(ASectionName, AKey: string): Boolean;
-    function ReadInteger(ASectionName, AKey: string): Integer;
-    function ReadString(ASectionName, AKey: string): string;
-    function Remove(ASectionName, AKey: string): Boolean;
+    function ReadInteger(ASectionName, AKey: string; ADefault: Integer = -1): Integer;
+    function ReadString(ASectionName, AKey: string; ADefault: string = ''): string;
+    function Remove(ASectionName, AKey: string): Boolean; overload;
     function RemoveSection(ASectionName: string): Boolean;
     procedure Save();
     function SectionExists(ASectionName: string): Boolean;
-    procedure WriteBoolean(ASectionName, AKey: string; AValue: Boolean);
-    procedure WriteInteger(ASectionName, AKey: string; AValue: Integer);
-    procedure WriteString(ASectionName, AKey, AValue: string);
+    function WriteBoolean(ASectionName, AKey: string; AValue: Boolean): Integer;
+    function WriteInteger(ASectionName, AKey: string; AValue: Integer): Integer;
+    function WriteString(ASectionName, AKey, AValue: string): Integer;
+    function WriteStrings(ASectionName, AKey: string; AValues: TStrings): Integer;
     { external }
     property FileName: string read FFileName;
     property Lines: Integer read GetLength;
@@ -71,33 +86,48 @@ type
   end;
 
 {$IFDEF MSWINDOWS}
+  { Filter set }
+  TFilterDataTypes = set of TRegDataType;
+
+  { Array data type }
+  TByteArray = array of Byte;
+
   { TRegistryFile }
   TRegistryFile = class(TIniFile)
   private
     FOnExportBegin, FOnExportEnd: TNotifyEvent;
     FReg: TRegistry;
+    function EscapeIdentifier(const AIdent: string): string;
     function GetKey(AIndex: Integer): string;
     function GetValue(AIndex: Integer): string;
+    procedure WriteBinary(ASection, AIdent: string; ARegBinary: Boolean;
+      ABytes: array of Byte); overload;
   public
     constructor Create(const AFileName: string; AOverwriteIfExists: Boolean = False;
       ASaveOnDestroy: Boolean = False);
     destructor Destroy; override;
-    procedure AddRemove(ASectionName, AKey, AValue: string);
+    procedure AddRemove(ASection, AIdent, AValue: string);
     function AddSection(AHKey: HKEY; AKeyPath: string): Boolean; reintroduce;
     procedure Clear();
-    function DeletePathDelimiter(APath: string): string;
-    function DeleteQuoteChars(AText: string): string;
-    function EscapePathDelimiter(APath: string): string;
-    procedure ExportKey(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean);
-    procedure ExportReg(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean = True); overload;
+    function DeleteQuoteChars(const AText: string): string;
+    function EscapePathDelimiter(const APath: string): string;
+    procedure ExportKey(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean;
+      AFilter: TFilterDataTypes = []);
+    procedure ExportReg(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean = True;
+      AFilter: TFilterDataTypes = []); overload;
     procedure ExportReg(AHKey: HKEY; AKeyPath, AValueName: string); overload;
     function GetSection(AHKey: HKEY; AKeyPath: string): string;
     procedure MakeHeadline();
+    function ReadBinary(ASection, AIdent: string): TByteArray;
     function ReadBoolean(ASection, AIdent: string): Boolean;
+    function ReadExpandString(ASection, AIdent: string): string;
     function ReadInteger(ASection, AIdent: string): Integer;
     function ReadString(ASection, AIdent: string): string;
     function Remove(ASection, AIdent: string): Boolean;
+    function UnescapePathDelimiter(const APath: string): string;
+    procedure WriteBinary(ASection, AIdent: string; AValue: TByteArray); overload;
     procedure WriteBoolean(ASection, AIdent: string; AValue: Boolean);
+    procedure WriteExpandString(ASection, AIdent, AValue: string);
     procedure WriteInteger(ASection, AIdent: string; AValue: Integer);
     procedure WriteString(ASection, AIdent, AValue: string);
     { external }
@@ -122,7 +152,7 @@ begin
   inherited Create;
 
   if (AFileName = '') then
-    raise EInvalidArgument.Create('File name must not be empty!');
+    raise EInvalidArgument.Create('Missing parameter file name!');
 
   FFileName := AFileName;
   FSaveOnDestroy := ASaveOnDestroy;
@@ -146,29 +176,50 @@ begin
   inherited Destroy;
 end;
 
+{ private TIniFile.Add
+
+  Inserts or adds a key/value pair to file. }
+
+function TIniFile.Add(AIndex: Integer; AString: string): Integer;
+begin
+  if (AIndex + 1 < FFile.Count) then
+  begin
+    // Insert inside file
+    FFile.Insert(AIndex, AString);
+    Result := AIndex;
+  end  //of if
+  else
+    // Append at the end
+    Result := FFile.Add(AString);
+end;
+
 { private TIniFile.FindNextItem
 
   Returns the next index of an item beginning the search from AStartIndex. }
 
-function TIniFile.FindNextItem(AStartIndex: Integer = 0): Integer;
+function TIniFile.FindNextItem(AStartIndex: Integer = 0; AEndIndex: Integer = -1): Integer;
 var
   i: Integer;
   Line: string;
 
 begin
-  result := -1;
+  Result := -1;
+
+  // Search until file ends?
+  if (AEndIndex = -1) then
+    AEndIndex := FFile.Count;
 
   // Index valid?
-  if (AStartIndex >= 0) then
-    for i := AStartIndex to FFile.Count -1 do
+  if (AStartIndex >= 0) and (AEndIndex <= FFile.Count) then
+    for i := AStartIndex + 1 to AEndIndex - 1 do
     begin
       // Remove spaces from line
       Line := Trim(FFile[i]);
 
-      // Current line is neither empty, a comment nor a section
-      if ((Line <> '') and not (Line[1] in ['#', ';', '['])) then
+      // Current line is neither empty nor a comment or a section and contains "="
+      if ((Line <> '') and not (Line[1] in ['#', ';', '[']) and AnsiContainsStr(Line, '=')) then
       begin
-        result := i;
+        Result := i;
         Break;
       end;  //of begin
     end;  //of for
@@ -181,29 +232,93 @@ end;
 function TIniFile.FindNextSection(AStartIndex: Integer = 0): Integer;
 var
   i: Integer;
-  Line: string;
 
 begin
-  result := -1;
+  Result := -1;
 
   // Index valid and file not empty?
   if ((AStartIndex >= 0) and (FFile.Count > 0)) then
-    for i := AStartIndex to FFile.Count -1 do
-    begin
-      // Remove spaces from line
-      Line := Trim(FFile[i]);
-
-      // "[" is the start tag of a section
-      if ((Line <> '') and (Line[1] = '[')) then
+    for i := AStartIndex + 1 to FFile.Count - 1 do
+      if IsSection(i) then
       begin
-        // Find end tag "]" of a section
-        if (AnsiPos(']', Line) > 0) then
-        begin
-          result := i;
-          Break;
-        end;  //of begin
+        Result := i;
+        Break;
       end;  //of begin
-    end;  //of for
+end;
+
+{ private TIniFile.FindNextSectionItem
+
+  Returns the next index of an item in section beginning the search from
+  AStartIndex until section ends. }
+
+function TIniFile.FindNextSectionItem(AStartIndex: Integer = 0): Integer;
+begin
+  Result := FindNextItem(AStartIndex, FindNextSection(AStartIndex));
+end;
+
+{ private TIniFile.GetEndOfItem
+
+  Returns the last line index of an item for appending text. }
+
+function TIniFile.GetEndOfItem(AIndex: Integer): Integer;
+var
+  NextItemIndex: Integer;
+
+begin
+  // Item index valid?
+  if (AIndex > 0) then
+  begin
+    // Find next item
+    NextItemIndex := FindNextSectionItem(AIndex);
+
+    // Maybe only one item or last item
+    if (NextItemIndex = -1) then
+      NextItemIndex := GetEndOfSection(AIndex) - 1
+    else
+      // Return end of current item (not of next)
+      Dec(NextItemIndex);
+
+    Result := NextItemIndex;
+  end  //of begin
+  else
+    Result := -1;
+end;
+
+{ private TIniFile.GetEndOfItem
+
+  Returns the last line index of an item for appending text. }
+
+function TIniFile.GetEndOfItem(ASectionName, AKey: string): Integer;
+begin
+  Result := GetEndOfItem(IndexOfKey(ASectionName, AKey));
+end;
+
+{ private TIniFile.GetEndOfSection
+
+  Returns the last line index of a section for appending text. }
+
+function TIniFile.GetEndOfSection(AIndex: Integer): Integer;
+var
+  NextSectionIndex: Integer;
+
+begin
+  // Index valid?
+  if (AIndex > 0) then
+  begin
+    // Find next section
+    NextSectionIndex := FindNextSection(AIndex);
+
+    // Maybe only one section or last section
+    if (NextSectionIndex = -1) then
+      NextSectionIndex := FFile.Count
+    else
+      // Return end of current section (not of next)
+      Dec(NextSectionIndex);
+
+    Result := NextSectionIndex;
+  end  //of begin
+  else
+    Result := -1;
 end;
 
 { private TIniFile.GetEndOfSection
@@ -211,26 +326,8 @@ end;
   Returns the last line index of a section for appending text. }
 
 function TIniFile.GetEndOfSection(ASectionName: string): Integer;
-var
-  SectionIndex, NextSectionIndex: Integer;
-
 begin
-  SectionIndex := IndexOfSection(ASectionName);
-
-  // Section found?
-  if (SectionIndex <> -1) then
-  begin
-    // Find next section
-    NextSectionIndex := FindNextSection(SectionIndex);
-
-    // Maybe only one section
-    if (NextSectionIndex = -1) then
-      NextSectionIndex := FFile.Count;
-
-    result := NextSectionIndex;
-  end  //of begin
-  else
-    result := -1;
+  Result := GetEndOfSection(IndexOfSection(ASectionName));
 end;
 
 { private TIniFile.GetKey
@@ -239,7 +336,7 @@ end;
 
 function TIniFile.GetKey(AIndex: Integer): string;
 begin
-  result := ExtractKey(FFile[AIndex]);
+  Result := ExtractKey(FFile[AIndex]);
 end;
 
 { private TIniFile.GetLength
@@ -248,7 +345,7 @@ end;
 
 function TIniFile.GetLength(): Integer;
 begin
-  result := FFile.Count;
+  Result := FFile.Count;
 end;
 
 { private TIniFile.GetValue
@@ -256,8 +353,54 @@ end;
   Returns the value of an item at index. }
 
 function TIniFile.GetValue(AIndex: Integer): string;
+var
+  Lines: TStringList;
+  EndIndex, i: Integer;
+  Line: string;
+
 begin
-  result := ExtractValue(FFile[AIndex]);
+  Lines := TStringList.Create;
+
+  try
+    EndIndex := GetEndOfItem(AIndex);
+
+    // Multi-line value?
+    if (EndIndex > AIndex) then
+    begin
+      // Concatenate lines without backslash at the end
+      for i := AIndex to EndIndex do
+        Line := Line + TrimLeft(Copy(FFile[i], 0, Length(FFile[i]) - 1));
+    end  //of begin
+    else
+      // Single line value
+      Line := FFile[AIndex];
+
+    Result := ExtractValue(Line);
+
+  finally
+    Lines.Free;
+  end;  //of try
+end;
+
+{ private TIniFile.Remove
+
+  Removes lines from start to end index. }
+
+function TIniFile.Remove(AStartIndex, AEndIndex: Integer): Boolean;
+var
+  i: Integer;
+
+begin
+  // Section found?
+  if ((AStartIndex <> -1) and (AEndIndex <> -1)) then
+  begin
+    for i := AEndIndex downto AStartIndex do
+      FFile.Delete(i);
+
+    Result := True;
+  end  //of begin
+  else
+    Result := False;
 end;
 
 { protected TIniFile.AddRaw
@@ -266,7 +409,7 @@ end;
 
 function TIniFile.AddRaw(ALine: string): Integer;
 begin
-  result := FFile.Add(ALine);
+  Result := FFile.Add(ALine);
 end;
 
 { protected TIniFile.ExtractKey
@@ -283,9 +426,9 @@ begin
   DelimiterPos := AnsiPos('=', Line);
 
   if (DelimiterPos <> -1) then
-    result := TrimRight(Copy(Line, 0, DelimiterPos - 1))
+    Result := TrimRight(Copy(Line, 0, DelimiterPos - 1))
   else
-    result := '';
+    Result := '';
 end;
 
 { protected TIniFile.ExtractValue
@@ -302,9 +445,9 @@ begin
   DelimiterPos := AnsiPos('=', Line);
 
   if (DelimiterPos <> -1) then
-    result := TrimLeft(Copy(Line, DelimiterPos + 1, Length(Line) - DelimiterPos))
+    Result := TrimLeft(Copy(Line, DelimiterPos + 1, Length(Line) - DelimiterPos))
   else
-    result := '';
+    Result := '';
 end;
 
 { public TIniFile.AddRemove
@@ -344,7 +487,7 @@ begin
     FFile.Append('['+ ASectionName +']');
   end;  //of begin
 
-  result := Exists;
+  Result := Exists;
 end;
 
 { public TIniFile.AddSection
@@ -367,12 +510,12 @@ begin
   begin
     // Write section content
     for i := 0 to AHashMap.Count -1 do
-      FFile.Insert(InsertPos + i, AHashMap[i]);
+      Add(InsertPos + i, AHashMap[i]);
 
-    result := True;
+    Result := True;
   end  //of begin
   else
-    result := False;
+    Result := False;
 end;
 
 { public TIniFile.Clear
@@ -382,6 +525,34 @@ end;
 procedure TIniFile.Clear();
 begin
   FFile.Clear;
+end;
+
+{ public TIniFile.GetKeys
+
+  Reads the keys of a section. }
+
+procedure TIniFile.GetKeys(ASectionName: string; AKeys: TStrings);
+var
+  Index, EndIndex, i: Integer;
+  Key: string;
+
+begin
+  // Find section
+  Index := IndexOfSection(ASectionName);
+
+  // Find first item in section
+  EndIndex := GetEndOfSection(Index);
+
+  if ((Index <> -1) and (EndIndex <> -1)) then
+    // Collect keys of section
+    for i := Index + 1 to EndIndex do
+    begin
+      Key := GetKey(i);
+
+      // Multi-line item?
+      if (Key <> '') then
+        AKeys.Append(Key);
+    end;  //of for
 end;
 
 { public TIniFile.GetSections
@@ -425,14 +596,10 @@ begin
     if (FFile[Index] = '['+ ASectionName +']') then
       Break;
 
-    Index := FindNextSection(Index + 1);
+    Index := FindNextSection(Index);
   end;  //of while
 
-  // File index starts with 1
-  if (Index <> -1) then
-    Inc(Index);
-
-  result := Index;
+  Result := Index;
 end;
 
 { public TIniFile.IndexOfKey
@@ -448,7 +615,7 @@ begin
   Index := IndexOfSection(ASectionName);
 
   // Find first item in section
-  Index := FindNextItem(Index);
+  Index := FindNextSectionItem(Index);
 
   // Section got items?
   while (Index <> -1) do
@@ -457,14 +624,28 @@ begin
     if (ExtractKey(FFile[Index]) = AKey) then
       Break;
 
-    Index := FindNextItem(Index + 1);
+    // Find next item in section
+    Index := FindNextSectionItem(Index);
   end;  //of while
 
-  // File index starts with 1
-  if (Index <> -1) then
-    Inc(Index);
+  Result := Index;
+end;
 
-  result := Index;
+{ public TIniFile.IsSection
+
+  Checks if a line contains a section. }
+
+function TIniFile.IsSection(AIndex: Integer): Boolean;
+var
+  Line: string;
+
+begin
+  if ((AIndex > 0) and (FFile.Count > AIndex)) then
+    // Remove spaces from line
+    Line := Trim(FFile[AIndex]);
+
+  // Section starts with "[" and ends with "]"
+  result := ((Line <> '') and (Line[1] = '[') and (Line[Length(Line)] = ']'));
 end;
 
 { public TIniFile.KeyExists
@@ -473,36 +654,7 @@ end;
 
 function TIniFile.KeyExists(ASectionName, AKey: string): Boolean;
 begin
-  result := (IndexOfKey(ASectionName, AKey) <> -1);
-end;
-
-{ public TIniFile.ReadSection
-
-  Reads the content of a section. }
-
-procedure TIniFile.ReadSection(ASectionName: string; ASection: TStrings);
-var
-  Index: Integer;
-  Line: string;
-
-begin
-  // Find section
-  Index := IndexOfSection(ASectionName);
-
-  // Find first item in section
-  Index := FindNextItem(Index);
-
-  // Section got items?
-  while (Index <> -1) do
-  begin
-    Line := FFile[Index];
-
-    // Line contains =
-    if (AnsiPos('=', Line) > 0) then
-      ASection.Append(Line);
-
-    Index := FindNextItem(Index + 1);
-  end;  //of while
+  Result := (IndexOfKey(ASectionName, AKey) <> -1);
 end;
 
 { public TIniFile.ReadBoolean
@@ -511,31 +663,24 @@ end;
 
 function TIniFile.ReadBoolean(ASectionName, AKey: string): Boolean;
 begin
-  result := (ReadInteger(ASectionName, AKey) = 1);
+  Result := (ReadInteger(ASectionName, AKey) = 1);
 end;
 
 { public TIniFile.ReadInteger
 
   Returns an integer value of a key in section. }
 
-function TIniFile.ReadInteger(ASectionName, AKey: string): Integer;
-var
-  Value: string;
-
+function TIniFile.ReadInteger(ASectionName, AKey: string; ADefault: Integer = -1): Integer;
 begin
-  Value := ReadString(ASectionName, AKey);
-
-  if (Value = '') then
-    result := -1
-  else
-    result := StrToInt(Value);
+  Result := ADefault;
+  TryStrToInt(ReadString(ASectionName, AKey), Result);
 end;
 
 { public TIniFile.ReadString
 
   Returns a string value of a key in section. }
 
-function TIniFile.ReadString(ASectionName, AKey: string): string;
+function TIniFile.ReadString(ASectionName, AKey: string; ADefault: string = ''): string;
 var
   Index: Integer;
 
@@ -545,9 +690,9 @@ begin
 
   // Key found?
   if (Index > 0) then
-    result := GetValue(Index - 1)
+    Result := GetValue(Index)
   else
-    result := '';
+    Result := ADefault;
 end;
 
 { public TIniFile.Remove
@@ -556,20 +701,18 @@ end;
 
 function TIniFile.Remove(ASectionName, AKey: string): Boolean;
 var
-  Index: Integer;
+  StartIndex, EndIndex: Integer;
 
 begin
   // Search for key
-  Index := IndexOfKey(ASectionName, AKey);
+  StartIndex := IndexOfKey(ASectionName, AKey);
+  EndIndex := GetEndOfItem(StartIndex);
 
-  // Key found?
-  if (Index > 0) then
-  begin
-    FFile.Delete(Index - 1);
-    result := True;
-  end  //of begin
-  else
-    result := False;
+  // Item is last element in file?
+  if (EndIndex = -1) then
+    EndIndex := FFile.Count;
+
+  Result := Remove(StartIndex, EndIndex);
 end;
 
 { public TIniFile.RemoveSection
@@ -577,22 +720,8 @@ end;
   Removes an entire section with all items. }
 
 function TIniFile.RemoveSection(ASectionName: string): Boolean;
-var
-  StartIndex, EndIndex, i: Integer;
-
 begin
-  StartIndex := IndexOfSection(ASectionName);
-  EndIndex := GetEndOfSection(ASectionName);
-
-  if ((StartIndex <> -1) and (EndIndex <> -1)) then
-  begin
-    for i := EndIndex - 1 downto StartIndex -1 do
-      FFile.Delete(i);
-
-    result := True;
-  end  //of begin
-  else
-    result := False;
+  Result := Remove(IndexOfSection(ASectionName), GetEndOfSection(ASectionName));
 end;
 
 { public TIniFile.Save
@@ -610,34 +739,34 @@ end;
 
 function TIniFile.SectionExists(ASectionName: string): Boolean;
 begin
-  result := (IndexOfSection(ASectionName) <> -1);
+  Result := (IndexOfSection(ASectionName) <> -1);
 end;
 
 { public TIniFile.WriteBoolean
 
   Writes an boolean value to a a key in section. }
 
-procedure TIniFile.WriteBoolean(ASectionName, AKey: string; AValue: Boolean);
+function TIniFile.WriteBoolean(ASectionName, AKey: string; AValue: Boolean): Integer;
 begin
-  WriteInteger(ASectionName, AKey, Ord(AValue));
+  Result := WriteInteger(ASectionName, AKey, Ord(AValue));
 end;
 
 { public TIniFile.WriteInteger
 
   Writes an integer value to a key in section. }
 
-procedure TIniFile.WriteInteger(ASectionName, AKey: string; AValue: Integer);
+function TIniFile.WriteInteger(ASectionName, AKey: string; AValue: Integer): Integer;
 begin
-  WriteString(ASectionName, AKey, IntToStr(AValue));
+  Result := WriteString(ASectionName, AKey, IntToStr(AValue));
 end;
 
 { public TIniFile.WriteString
 
   Writes a string value to a key in section. }
 
-procedure TIniFile.WriteString(ASectionName, AKey, AValue: string);
+function TIniFile.WriteString(ASectionName, AKey, AValue: string): Integer;
 var
-  Index, EndIndex: Integer;
+  Index: Integer;
 
 begin
   // Check for invalid key
@@ -647,29 +776,51 @@ begin
   // Search for key
   Index := IndexOfKey(ASectionName, AKey);
 
-  // Key already exists?
-  if (Index <> -1) then
+  // Key does not exist?
+  if (Index = -1) then
   begin
-    // Delete current item
-    FFile.Delete(Index - 1);
+    // Append item at the end of section
+    Index := GetEndOfSection(ASectionName);
 
-    // Replace with new item
-    FFile.Insert(Index - 1, AKey +'='+ AValue);
+    // Add section if not exists
+    if (Index = -1) then
+    begin
+      AddSection(ASectionName);
+      Index := FFile.Count;
+    end;  //of begin
   end  //of begin
   else
-    begin
-      // Append item at the end of section
-      EndIndex := GetEndOfSection(ASectionName);
+    // Delete current item 
+    Remove(Index, GetEndOfItem(Index));
 
-      // Add section if not exists
-      if (EndIndex = -1) then
-      begin
-        AddSection(ASectionName);
-        EndIndex := FFile.Count;
-      end;  //of begin
+  // Add item
+  Result := Add(Index, AKey +'='+ AValue);
+end;
 
-      FFile.Insert(EndIndex, AKey +'='+ AValue)
-    end;  //of if
+{ public TIniFile.WriteStrings
+
+  Writes a multi-line string value to a key in section. }
+
+function TIniFile.WriteStrings(ASectionName, AKey: string; AValues: TStrings): Integer;
+var
+  Index, i: Integer;
+
+begin
+  // Insert key with first line
+  Index := WriteString(ASectionName, AKey, AValues[0]);
+
+  // Add other lines
+  for i := 1 to AValues.Count -1 do
+  begin
+    Inc(Index);
+    Add(Index, AValues[i]);
+  end;  //of for
+
+  // Insert empty line before another section
+  if IsSection(Index + 1) then
+    Add(Index + 1, '');
+
+  Result := Index;
 end;
 
 {$IFDEF MSWINDOWS}
@@ -700,13 +851,25 @@ begin
   inherited Destroy;
 end;
 
+{ private TRegistryFile.EscapeIdentifier
+
+  Returns the identifier quoted. }
+
+function TRegistryFile.EscapeIdentifier(const AIdent: string): string;
+begin
+  if ((AIdent = '') or (AIdent = '@')) then
+    Result := '@'
+  else
+    Result := '"'+ AIdent +'"';
+end;
+
 { private TRegistryFile.GetKey
 
   Returns the name of an item at index. }
 
 function TRegistryFile.GetKey(AIndex: Integer): string;
 begin
-  result := DeleteQuoteChars(inherited GetKey(AIndex));
+  Result := DeleteQuoteChars(inherited GetKey(AIndex));
 end;
 
 { private TRegistryFile.GetValue
@@ -715,7 +878,60 @@ end;
 
 function TRegistryFile.GetValue(AIndex: Integer): string;
 begin
-  result := DeleteQuoteChars(inherited GetValue(AIndex));
+  Result := DeleteQuoteChars(inherited GetValue(AIndex));
+end;
+
+{ private TRegistryFile.WriteBinary
+
+  Writes a little endian encoded binary value to a .reg file. }
+
+procedure TRegistryFile.WriteBinary(ASection, AIdent: string; ARegBinary: Boolean;
+  ABytes: array of Byte);
+var
+  i: Integer;
+  Line: string;
+  Lines: TStringList;
+
+begin
+  // rdBinary or rdExpandString?
+  if ARegBinary then
+    Line := REG_BINARY
+  else
+    Line := REG_EXPANDSTRING;
+
+  // Init line cache
+  Lines := TStringList.Create;
+
+  try
+    for i := 0 to Length(ABytes) - 1 do
+    begin
+      // Linebreaks after 80 characters
+      if (Length(Line) + 6 > 80) then
+      begin
+        Lines.Append(Line + '\');
+        Line := '  ';
+      end;  //of begin
+
+      // Convert Byte to Hex and separate 2 digits by comma
+      Line := Line + IntToHex(ABytes[i], 2) +',';
+    end;  //of while
+
+    // Append missing zero Byte without comma (only for rdExpandString)
+    if not ARegBinary then
+      Line := Line +'00'
+    else
+      // Delete last comma (only for rdBinary)
+      Delete(Line, Length(Line), 1);
+
+    // Append last line
+    Lines.Append(Line);
+
+    // Write lines
+    WriteStrings(ASection, EscapeIdentifier(AIdent), Lines);
+
+  finally
+    Lines.Free;
+  end;  //of try
 end;
 
 { public TRegistryFile.AddRemove
@@ -723,12 +939,12 @@ end;
   Adds a new or changes an existing value. If the new value is empty the item
   will be removed. }
 
-procedure TRegistryFile.AddRemove(ASectionName, AKey, AValue: string);
+procedure TRegistryFile.AddRemove(ASection, AIdent, AValue: string);
 begin
   if (AValue <> '') then
-    WriteString(ASectionName, AKey, AValue)
+    WriteString(ASection, AIdent, AValue)
   else
-    Remove(ASectionName, AKey);
+    Remove(ASection, AIdent);
 end;
 
 { public TRegistryFile.AddSection
@@ -737,7 +953,7 @@ end;
 
 function TRegistryFile.AddSection(AHKey: HKEY; AKeyPath: string): Boolean;
 begin
-  result := inherited AddSection(GetSection(AHKey, AKeyPath));
+  Result := inherited AddSection(GetSection(AHKey, AKeyPath));
 end;
 
 { public TRegistryFile.Clear
@@ -750,45 +966,26 @@ begin
   MakeHeadline();
 end;
 
-{ public TRegistryFile.DeletePathDelimiter
-
- Deletes escape chars from a string. }
-
-function TRegistryFile.DeletePathDelimiter(APath: string): string;
-begin
-  // Remove escape of path delimiter
-  APath := StringReplace(APath, '\\', '\', [rfReplaceAll]);
-
-  // Remove escape of quote chars
-  if ((Length(APath) > 0) and (APath[1] = '\')) then
-    APath := StringReplace(APath, '\"', '"', [rfReplaceAll]);
-
-  result := APath;
-end;
-
 { public TRegistryFile.DeleteQuoteChars
 
  Deletes all quote chars " from a string. }
 
-function TRegistryFile.DeleteQuoteChars(AText: string): string;
+function TRegistryFile.DeleteQuoteChars(const AText: string): string;
 begin
-  result := StringReplace(AText, '"', '', [rfReplaceAll]);
+  Result := StringReplace(AText, '"', '', [rfReplaceAll]);
 end;
 
 { public TRegistryFile.EscapePathDelimiter
 
  Escapes all baskslashes in a string. }
 
-function TRegistryFile.EscapePathDelimiter(APath: string): string;
+function TRegistryFile.EscapePathDelimiter(const APath: string): string;
 begin
   // Escape path delimiter
-  APath := StringReplace(APath, '\', '\\', [rfReplaceAll]);
+  Result := StringReplace(APath, '\', '\\', [rfReplaceAll]);
 
   // Escape quote chars
-  if ((Length(APath) > 0) and (APath[1] = '"')) then
-    APath := StringReplace(APath, '"', '\"', [rfReplaceAll]);
-
-  result := APath;
+  Result := StringReplace(Result, '"', '\"', [rfReplaceAll]);
 end;
 
 { public TRegistryFile.ExportKey
@@ -796,53 +993,77 @@ end;
   Collects data from a key path and writes it to .reg file. }
 
 procedure TRegistryFile.ExportKey(AHKey: HKEY; AKeyPath: string;
-  ARecursive: Boolean);
+  ARecursive: Boolean; AFilter: TFilterDataTypes = []);
 var
   Values, Keys: TStringList;
   i: Cardinal;
   Section: string;
+  Buffer: TByteArray;
 
 begin
-  // Init Registry access
-  FReg.RootKey := AHKey;
+  // Default: Filter nothing
+  if (AFilter = []) then
+    AFilter := [rdString, rdInteger, rdExpandString, rdBinary];
 
-  // Invalid key?
-  if not FReg.OpenKey(AKeyPath, False) then
-    raise EParserException.Create('Error while exporting key: Key does not exist!');
+  try
+    // Init Registry access
+    FReg.RootKey := AHKey;
 
-  // Read all values from current key
-  Values := TStringList.Create;
-  FReg.GetValueNames(Values);
+    // Key invalid?
+    if not FReg.OpenKey(AKeyPath, False) then
+      Exit;
 
-  // Build and append section header
-  Section := GetSection(AHKey, AKeyPath);
-  inherited AddSection(Section);
+    // Read all values from current key
+    Values := TStringList.Create;
+    FReg.GetValueNames(Values);
 
-  if (Values.Count > 0) then
-    // Append key-value pairs
-    for i := 0 to Values.Count -1 do
-      case FReg.GetDataType(Values[i]) of
-        rdString:  WriteString(Section, Values[i], FReg.ReadString(Values[i]));
-        rdInteger: WriteInteger(Section, Values[i], FReg.ReadInteger(Values[i]));
-        //rdBinary: TODO
-        //rdExpandString: TODO
-      end;  //of case
+    // Build and append section header
+    Section := GetSection(AHKey, AKeyPath);
+    inherited AddSection(Section);
 
-  // Include subkeys?
-  if (ARecursive and FReg.HasSubKeys()) then
-  begin
-    Keys := TStringList.Create;
-    FReg.GetKeyNames(Keys);
+    if (Values.Count > 0) then
+      // Append key-value pairs
+      for i := 0 to Values.Count -1 do
+        case FReg.GetDataType(Values[i]) of
+          rdString:
+            if (rdString in AFilter) then 
+              WriteString(Section, Values[i], FReg.ReadString(Values[i]));
 
-    // Start recursion of subkeys
-    for i := 0 to Keys.Count -1 do
+          rdInteger:
+            if (rdInteger in AFilter) then
+              WriteInteger(Section, Values[i], FReg.ReadInteger(Values[i]));
+
+          rdExpandString:
+            if (rdExpandString in AFilter) then
+              WriteExpandString(Section, Values[i], FReg.ReadString(Values[i]));
+
+          rdBinary:
+            if (rdBinary in AFilter) then
+            begin
+              SetLength(Buffer, FReg.GetDataSize(Values[i]));
+              FReg.ReadBinaryData(Values[i], Buffer[0], Length(Buffer));
+              WriteBinary(Section, Values[i], Buffer);
+            end;  //of begin
+        end;  //of case
+
+    // Include subkeys?
+    if (ARecursive and FReg.HasSubKeys()) then
     begin
-      FReg.CloseKey();
-      ExportKey(AHKey, AKeyPath +'\'+ Keys[i], True);
-    end;  //of for
-  end;  //of begin
+      Keys := TStringList.Create;
+      FReg.GetKeyNames(Keys);
 
-  FReg.CloseKey();
+      // Start recursion of subkeys
+      for i := 0 to Keys.Count -1 do
+      begin
+        FReg.CloseKey();
+        ExportKey(AHKey, AKeyPath +'\'+ Keys[i], True, AFilter);
+      end;  //of for
+    end;  //of begin
+
+  finally
+    FReg.CloseKey();
+    Buffer := nil;
+  end;  //of try
 end;
 
 { public TRegistryFile.ExportReg
@@ -850,13 +1071,13 @@ end;
   Exports an entire Registry key (opt. recursive) and saves it as .reg file. }
 
 procedure TRegistryFile.ExportReg(AHKey: HKEY; AKeyPath: string;
-  ARecursive: Boolean = True);
+  ARecursive: Boolean = True; AFilter: TFilterDataTypes = []);
 begin
   if Assigned(FOnExportBegin) then
-    FOnExportBegin(Self);
+    FOnExportBegin(Self); 
 
   MakeHeadline();
-  ExportKey(AHKey, AKeyPath, ARecursive);
+  ExportKey(AHKey, AKeyPath, ARecursive, AFilter);
   Save();
 
   if Assigned(FOnExportEnd) then
@@ -870,35 +1091,46 @@ end;
 procedure TRegistryFile.ExportReg(AHKey: HKEY; AKeyPath, AValueName: string);
 var
   Section: string;
+  Buffer: TByteArray;
 
 begin
-  // Init Registry access
-  FReg.RootKey := AHKey;
+  try
+    // Init Registry access
+    FReg.RootKey := AHKey;
 
-  // Invalid key?
-  if not FReg.OpenKey(AKeyPath, False) then
-    raise EParserException.Create('Error while exporting value: Key does not exist!');
+    // Invalid key?
+    if not FReg.OpenKey(AKeyPath, False) then
+      raise ERegistryException.Create('Error while exporting value: Key does not exist!');
 
-  // Invalid value?
-  if not FReg.ValueExists(AValueName) then
-    raise EParserException.Create('Error while exporting value: Value does not exist!');
+    // Invalid value?
+    if not FReg.ValueExists(AValueName) then
+      raise ERegistryException.Create('Error while exporting value: Value does not exist!');
 
-  MakeHeadline();
+    MakeHeadline();
 
-  // Build and append section header
-  Section := GetSection(AHKey, AKeyPath);
-  inherited AddSection(Section);
+    // Build and append section header
+    Section := GetSection(AHKey, AKeyPath);
+    inherited AddSection(Section);
 
-  // Append key-value pair
-  case FReg.GetDataType(AValueName) of
-    rdString:  WriteString(Section, AValueName, FReg.ReadString(AValueName));
-    rdInteger: WriteInteger(Section, AValueName, FReg.ReadInteger(AValueName));
-    //rdBinary: TODO
-    //rdExpandString: TODO
-  end;  //of case
+    // Append key-value pair
+    case FReg.GetDataType(AValueName) of
+      rdString:       WriteString(Section, AValueName, FReg.ReadString(AValueName));
+      rdInteger:      WriteInteger(Section, AValueName, FReg.ReadInteger(AValueName));
+      rdExpandString: WriteExpandString(Section, AValueName, FReg.ReadString(AValueName));
+      rdBinary:       begin
+                        SetLength(Buffer, FReg.GetDataSize(AValueName));
+                        FReg.ReadBinaryData(AValueName, Buffer[0], Length(Buffer));
+                        WriteBinary(Section, AValueName, Buffer);
+                      end;
+    end;  //of case
 
-  FReg.CloseKey();
-  Save();
+    // Save .reg file
+    Save();
+
+  finally
+    FReg.CloseKey();
+    Buffer := nil;
+  end;  //of try
 end;
 
 { public TRegistryFile.GetSection
@@ -907,7 +1139,7 @@ end;
 
 function TRegistryFile.GetSection(AHKey: HKEY; AKeyPath: string): string;
 begin
-  result := TOSUtils.HKeyToStr(AHKey) +'\'+ AKeyPath;
+  Result := TOSUtils.HKeyToStr(AHKey) +'\'+ AKeyPath;
 end;
 
 { public TRegistryFile.MakeHeadline
@@ -920,13 +1152,85 @@ begin
     AddRaw('Windows Registry Editor Version 5.00');
 end;
 
+{ public TRegistryFile.ReadBinary
+
+  Reads a little endian encoded binary value from a .reg file. }
+
+function TRegistryFile.ReadBinary(ASection, AIdent: string): TByteArray;
+var
+  StringValue: string;
+  StartIndex, EndIndex, i, j: Integer;
+
+begin
+  // Read full value
+  StringValue := ReadString(ASection, AIdent);
+
+  // No binary data?
+  if (not AnsiStartsStr(REG_BINARY, StringValue) and
+    not AnsiStartsStr(REG_EXPANDSTRING, StringValue)) then
+    Exit;
+
+  StartIndex := AnsiPos(':', StringValue);
+  EndIndex := Length(StringValue);
+
+  // Invalid indices?
+  if ((StartIndex = 0) or (EndIndex = 0)) then
+    Exit;
+
+  // 2 hex chars + 1 comma delimiter (rounded up)
+  SetLength(Result, ((EndIndex - StartIndex) div 3) + 1);
+
+  i := StartIndex + 1;
+  j := 0;
+
+  // Parse binary value
+  while (i <= EndIndex) do
+  begin
+    // Search for hex chars (skip comma delimiter)
+    if (StringValue[i] <> ',') then
+    begin
+      // Convert 2 hex chars to 1 Byte
+      Result[j] := StrToInt('$'+ StringValue[i] + StringValue[i+1]);
+
+      // Already read 2 hex chars!
+      i := i + 2;
+      Inc(j);
+    end //of begin
+    else
+      Inc(i);
+  end;  //of while
+end;
+
 { public TRegistryFile.ReadBoolean
 
   Returns a boolean value of a key in section. }
 
 function TRegistryFile.ReadBoolean(ASection, AIdent: string): Boolean;
 begin
-  result := (ReadInteger(ASection, AIdent) = 1);
+  Result := (ReadInteger(ASection, AIdent) = 1);
+end;
+
+{ public TRegistryFile.ReadExpandString
+
+  Returns a expand string value of a key in section. }
+
+function TRegistryFile.ReadExpandString(ASection, AIdent: string): string;
+var
+  i: Integer;
+  Bytes: TByteArray;
+
+begin
+  // Convert little endian encoded hex value to Byte array
+  Bytes := ReadBinary(ASection, AIdent);
+
+  // Convert Byte to Char
+  for i := 0 to Length(Bytes) - 1 do
+    // Skip zero Bytes
+    if (Bytes[i] <> 0) then
+      Result := Result + Chr(Bytes[i]);
+
+  // Mark array as removable
+  Bytes := nil;
 end;
 
 { public TRegistryFile.ReadInteger
@@ -938,17 +1242,13 @@ var
   StringVal: string;
 
 begin
-  result := -1;
+  Result := -1;
+  StringVal := inherited ReadString(ASection, EscapeIdentifier(AIdent));
 
-  if (AIdent <> '') then
+  if AnsiContainsStr(StringVal, REG_INTEGER) then
   begin
-    StringVal := inherited ReadString(ASection, '"'+ AIdent +'"');
-
-    if ((StringVal <> '') and AnsiContainsStr(StringVal, 'dword:')) then
-    begin
-      StringVal := Copy(StringVal, 7, Length(StringVal));
-      result := TOSUtils.HexToInt(StringVal);
-    end;  //of begin
+    StringVal := Copy(StringVal, 7, Length(StringVal));
+    Result := TOSUtils.HexToInt(StringVal);
   end;  //of begin
 end;
 
@@ -961,14 +1261,9 @@ var
   Value: string;
 
 begin
-  if (AIdent <> '') then
-  begin
-    Value := inherited ReadString(ASection, '"'+ AIdent +'"');
-    Value := DeletePathDelimiter(Value);
-    result := DeleteQuoteChars(Value);
-  end  //of begin
-  else
-    result := '';
+  Value := inherited ReadString(ASection, EscapeIdentifier(AIdent));
+  Value := UnescapePathDelimiter(Value);
+  Result := DeleteQuoteChars(Value);
 end;
 
 { public TRegistryFile.Remove
@@ -977,7 +1272,29 @@ end;
 
 function TRegistryFile.Remove(ASection, AIdent: string): Boolean;
 begin
-  result := inherited Remove(ASection, '"'+ AIdent +'"');
+  Result := inherited Remove(ASection, EscapeIdentifier(AIdent));
+end;
+
+{ public TRegistryFile.UnescapePathDelimiter
+
+ Deletes escape chars from a string. }
+
+function TRegistryFile.UnescapePathDelimiter(const APath: string): string;
+begin
+  // Remove escape of path delimiter
+  Result := StringReplace(APath, '\\', '\', [rfReplaceAll]);
+
+  // Remove escape of quote chars
+  Result := StringReplace(Result, '\"', '"', [rfReplaceAll]);
+end;
+
+{ public TRegistryFile.WriteBinary
+
+  Writes a little endian encoded binary value to a .reg file. }
+
+procedure TRegistryFile.WriteBinary(ASection, AIdent: string; AValue: TByteArray);
+begin
+  WriteBinary(ASection, AIdent, True, AValue);
 end;
 
 { public TRegistryFile.WriteBoolean
@@ -986,7 +1303,35 @@ end;
 
 procedure TRegistryFile.WriteBoolean(ASection, AIdent: string; AValue: Boolean);
 begin
-  WriteInteger(ASection, '"'+ AIdent +'"', Ord(AValue));
+  WriteInteger(ASection, AIdent, Ord(AValue));
+end;
+
+{ public TRegistryFile.WriteExpandString
+
+  Writes an expand string in little endian encoding to a .reg file. }
+
+procedure TRegistryFile.WriteExpandString(ASection, AIdent, AValue: string);
+var
+  i, j: Integer;
+  Bytes: array of Byte;
+
+begin
+  // Expand 1 Byte character to 2 Byte Hex characters
+  SetLength(Bytes, (Length(AValue) * 2) + 1);
+  i := 0;
+
+  // Convert char to Byte
+  for j := 1 to Length(AValue) do
+  begin
+    Bytes[i] := Ord(AValue[j]);
+    i := i + 2;
+  end;  //of while
+
+  // Write binary data with linebreaks to .reg file
+  WriteBinary(ASection, AIdent, False, Bytes);
+
+  // Mark array as removable
+  Bytes := nil;
 end;
 
 { public TRegistryFile.WriteInteger
@@ -995,7 +1340,7 @@ end;
 
 procedure TRegistryFile.WriteInteger(ASection, AIdent: string; AValue: Integer);
 begin
-  inherited WriteString(ASection, '"'+ AIdent +'"', 'dword:'+ IntToHex(AValue, 8));
+  inherited WriteString(ASection, EscapeIdentifier(AIdent), REG_INTEGER + IntToHex(AValue, 8));
 end;
 
 { public TRegistryFile.WriteString
@@ -1004,11 +1349,8 @@ end;
 
 procedure TRegistryFile.WriteString(ASection, AIdent, AValue: string);
 begin
-  if (AIdent = '') then
-    inherited WriteString(ASection, '@', '"'+ EscapePathDelimiter(AValue) +'"')
-  else
-    inherited WriteString(ASection, '"'+ AIdent +'"', '"'+ EscapePathDelimiter(AValue) +'"');
+  inherited WriteString(ASection, EscapeIdentifier(AIdent), '"'+ EscapePathDelimiter(AValue) +'"');
 end;
 {$ENDIF}
 
-end.
+end.

@@ -444,7 +444,7 @@ object Info: TInfo
         Top = 84
         Width = 21
         Height = 14
-        Caption = 'v3.1'
+        Caption = 'v3.2'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
@@ -476,7 +476,7 @@ object Info: TInfo
         Caption = '(Build: )'
       end
       object mInfos: TMemo
-        Left = 112
+        Left = 120
         Top = 16
         Width = 313
         Height = 193
@@ -494,7 +494,7 @@ object Info: TInfo
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '01/2015')
+          '05/2015')
         ReadOnly = True
         TabOrder = 0
       end
@@ -549,6 +549,18 @@ object Info: TInfo
           ''
           'History'
           '--------'
+          ''
+          'Version 3.2 [??.05.15]'
+          ''
+          '- Verwendung des TaskDialogs (ab Vista)'
+          
+            '- Men'#252'-Eintrag "Eintr'#228'ge anzeigen" von "Bearbeiten" nach "Ansich' +
+            't" '
+          '  verschoben'
+          '- .ini/.reg Datei Parser v1.1 mit Multi-Line support'
+          '- OSUtils v2.1'
+          ''
+          '----------------------------------------'
           ''
           'Version 3.1 [10.01.15]'
           ''
@@ -722,7 +734,7 @@ object Info: TInfo
             'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
             '.'
           ''
-          '01/2015')
+          '05/2015')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0

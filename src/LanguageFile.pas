@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Language Handler Unit v1.3                }
+{ PM Code Works Cross Plattform Language Handler Unit v1.4                }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -15,7 +15,7 @@ interface
 uses
   Classes, SysUtils, Forms,
 {$IFDEF MSWINDOWS}
-  Windows;
+  Windows, AddDialogs;
 {$ELSE}
   IniFileParser, LCLType;
 {$ENDIF}
@@ -76,12 +76,25 @@ type
     function GetString(const AIndexes: array of Word): string; overload;
     function MessageBox(AText: string; AType: TMessageType = mtInfo;
       AUpdate: Boolean = False): Integer; overload;
-    function MessageBox(TextID: Word; AType: TMessageType = mtInfo;
+    function MessageBox(AText: Word; AType: TMessageType = mtInfo;
       AUpdate: Boolean = False): Integer; overload;
-    function MessageBox(const AIndexes: array of Word; AType: TMessageType = mtInfo;
+    function MessageBox(AIndexes: array of Word; AType: TMessageType = mtInfo;
       AUpdate: Boolean = False): Integer; overload;
-    function MessageBox(const AIndexes: array of Word;
-      const AArgs: array of {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF};
+    function MessageBox(AIndexes: array of Word;
+      AArgs: array of {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF};
+      AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer; overload;
+    procedure ShowException(AContent, AInformation: string;
+      AOptions: TTaskDialogOptions = []);
+    function TaskDialog(AText: string; AType: TMessageType = mtInfo;
+      AUpdate: Boolean = False): Integer; overload;
+    function TaskDialog(APrompt, AText: string; AType: TMessageType = mtInfo;
+      AUpdate: Boolean = False): Integer; overload;
+    function TaskDialog(APrompt, AText: Word; AType: TMessageType = mtInfo;
+      AUpdate: Boolean = False): Integer; overload;
+    function TaskDialog(APrompt: Word; AIndexes: array of Word;
+      AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer; overload;
+    function TaskDialog(APrompt: Word; AIndexes: array of Word;
+      AArgs: array of {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF};
       AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer; overload;
     procedure RemoveListener(AListener: IChangeLanguageListener);
     { external }
@@ -149,9 +162,9 @@ end;
 
   Loads a string from a *.ini file based language file. }
 
-function TLanguageFile.GetString(const AIndex: Word) : string;
+function TLanguageFile.GetString(const AIndex: Word): string;
 begin
-  result := FIni.ReadString(FLang, IntToStr(AIndex + LANGUAGE_INTERVAL));
+  Result := FIni.ReadString(FLang, IntToStr(AIndex + LANGUAGE_INTERVAL));
 end;
 
 { public TLanguageFile.GetLanguages
@@ -172,15 +185,14 @@ end;
 
 function TLanguageFile.GetString(const AIndex: Word): string;
 var
-  Buffer : array[0..80] of char;
-  ls : Integer;
+  Buffer: array[0..80] of Char;
 
 begin
-  result := '';
-  ls := LoadString(hInstance, AIndex + FLang, Buffer, SizeOf(Buffer));
+  if (LoadString(HInstance, FLang + AIndex, Buffer, SizeOf(Buffer)) = 0) then
+    raise ELanguageException.Create(SysUtils.Format(SysErrorMessage(
+      ERROR_RESOURCE_LANG_NOT_FOUND) +'. ID %d', [AIndex]));
 
-  if (ls <> 0) then
-    result := Buffer;
+  Result := Buffer;
 end;
 {$ENDIF}
 
@@ -200,7 +212,7 @@ begin
     else
       Text := Text + GetString(AIndexes[i]);
 
-  result := Text;
+  Result := Text;
 end;
 
 { public TLanguageFile.AddListener
@@ -223,6 +235,10 @@ var
   Listener: IChangeLanguageListener;
 
 begin
+  // Only change language when it differs from current
+  if (FLang = ALangID) then
+    Exit;
+
 {$IFDEF MSWINDOWS}
   FLang := ALangID;
 {$ELSE}
@@ -230,7 +246,7 @@ begin
 {$ENDIF}
 
   // Notify all listeners
-  for i := 0 to FListeners.Count -1 do
+  for i := 0 to FListeners.Count - 1 do
     if Supports(FListeners[i], IChangeLanguageListener, Listener) then
       Listener.SetLanguage(Self);
 end;
@@ -242,7 +258,7 @@ end;
 function TLanguageFile.Format(const AIndex: Word; const AArgs: array of
   {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF}): string;
 begin
-  result := SysUtils.Format(GetString(AIndex), AArgs);
+  Result := SysUtils.Format(GetString(AIndex), AArgs);
 end;
 
 { public TLanguageFile.Format
@@ -262,7 +278,7 @@ begin
     else
       Text := Text + Format(AIndexes[i], AArgs);
 
-  result := Text;
+  Result := Text;
 end;
 
 { public TLanguageFile.MessageBox
@@ -295,18 +311,12 @@ begin
       begin
         Title := GetString(3);
         Flags := MB_ICONQUESTION or MB_YESNO or MB_DEFBUTTON1;
-      {$IFDEF MSWINDOWS}
-        MessageBeep(MB_ICONWARNING);
-      {$ENDIF}
       end;
 
     mtConfirm:
       begin
         Title := GetString(4);
         Flags := MB_ICONWARNING or MB_YESNO or MB_DEFBUTTON2;
-      {$IFDEF MSWINDOWS}
-        MessageBeep(MB_ICONWARNING);
-      {$ENDIF}
       end;
 
     mtError:
@@ -319,38 +329,220 @@ begin
   if AUpdate then
     Title := GetString(5);
 
-  result := FApplication.MessageBox(PChar(AText), PChar(Title), Flags);
+  Result := FApplication.MessageBox(PChar(AText), PChar(Title), Flags);
 end;
 
 { public TLanguageFile.MessageBox
 
   Shows a MessageBox with text and specific look. }
 
-function TLanguageFile.MessageBox(TextID: Word; AType: TMessageType = mtInfo;
+function TLanguageFile.MessageBox(AText: Word; AType: TMessageType = mtInfo;
   AUpdate: Boolean = False): Integer;
 begin
-  result := MessageBox(GetString(TextID), AType, AUpdate);
+  Result := MessageBox(GetString(AText), AType, AUpdate);
 end;
 
 { public TLanguageFile.MessageBox
 
   Shows a MessageBox with multiple string text and specific look. }
 
-function TLanguageFile.MessageBox(const AIndexes: array of Word;
+function TLanguageFile.MessageBox(AIndexes: array of Word;
   AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer;
 begin
-  result := MessageBox(GetString(AIndexes), AType, AUpdate);
+  Result := MessageBox(GetString(AIndexes), AType, AUpdate);
 end;
 
 { public TLanguageFile.MessageBox
 
   Shows a MessageBox with multiple formatted string text and specific look. }
 
-function TLanguageFile.MessageBox(const AIndexes: array of Word;
-  const AArgs: array of {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF};
+function TLanguageFile.MessageBox(AIndexes: array of Word;
+  AArgs: array of {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF};
   AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer;
 begin
-  result := MessageBox(Format(AIndexes, AArgs), AType, AUpdate);
+  Result := MessageBox(Format(AIndexes, AArgs), AType, AUpdate);
+end;
+
+{ public TLanguageFile.ShowException
+
+  Shows an exception with additional information. }
+
+procedure TLanguageFile.ShowException(AContent, AInformation: string;
+  AOptions: TTaskDialogOptions = []);
+{$IFDEF MSWINDOWS}
+
+  function EncodeUri(const AText: string): string;
+  begin
+    Result := StringReplace(AText, '!', '%21', [rfReplaceAll]);
+    Result := StringReplace(Result, ' ', '%20', [rfReplaceAll]);
+  end;
+
+var
+  TaskDialog: TTaskDialog;
+  MailSubject, MailBody: string;
+
+{$ENDIF}
+begin
+{$IFDEF MSWINDOWS}
+  // TaskDialogIndirect only possible for Windows >= Vista!
+  if not ((Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 6)) then
+  begin
+    MessageBox(GetString(31) +': '+ AContent + sLineBreak + AInformation, mtError);
+    Exit;
+  end;  //of begin
+
+  TaskDialog := TTaskDialog.Create(FApplication.MainForm);
+
+  try
+    with TaskDialog do
+    begin
+      Title := FApplication.Name;
+      Icon := tiError;
+      Instruction := GetString(31);
+      Content := AContent;
+      ExpandedInformation := AInformation;
+      ExpandedControlText := GetString(33);
+      CollapsedControlText := GetString(32);
+      MailSubject := EncodeUri('Bug Report '+ FApplication.Title);
+      MailBody := EncodeUri('Dear PM Code Works,%0A%0AI found a possible '+
+        'bug:%0A'+ AInformation);
+      Footer := '<a href="mailto:team@pm-codeworks.de?subject='+ MailSubject +
+        '&body='+ MailBody +'">'+ GetString(26) +'</a>';
+      Options := [doExpandFooter, doHyperlinks] + AOptions;
+      CommonButtons := [cbClose];
+    end;  //of with
+
+    MessageBeep(MB_ICONERROR);
+
+    if not TaskDialog.Execute() then
+      MessageBox(GetString(31) +': '+ AContent + sLineBreak + AInformation, mtError);
+    
+  finally
+    TaskDialog.Free;
+  end;  //of try
+{$ELSE}
+  Result := MessageBox(GetString(31) +': '+ AContent + sLineBreak + AInformation,
+    mtError);
+{$ENDIF}
+end;
+
+{ public TLanguageFile.TaskDialog
+
+  Shows a TaskDialog with text and specific look. }
+
+function TLanguageFile.TaskDialog(AText: string; AType: TMessageType = mtInfo;
+  AUpdate: Boolean = False): Integer;
+begin
+  Result := TaskDialog('', AText, AType, AUpdate);
+end;
+
+{ public TLanguageFile.TaskDialog
+
+  Shows a TaskDialog with text and specific look. }
+
+function TLanguageFile.TaskDialog(APrompt, AText: string; AType: TMessageType = mtInfo;
+  AUpdate: Boolean = False): Integer;
+{$IFDEF MSWINDOWS}
+var
+  Title: string;
+  Buttons: TCommonButtons;
+  Icon: TTaskDialogIcon;
+
+begin
+  // TaskDialog only possible for Windows >= Vista!
+  if not ((Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 6)) then
+  begin
+    Result := MessageBox(APrompt + sLineBreak + AText, AType, AUpdate);
+    Exit;
+  end;  //of begin
+
+  Buttons := [cbOk];
+  Icon := tiBlank;
+
+  case AType of
+    mtInfo:
+      begin
+        Title := GetString(0);
+        Icon := tiInformation;
+        MessageBeep(MB_ICONINFORMATION);
+      end;
+
+    mtWarning:
+      begin
+        Title := GetString(1);
+        Icon := tiWarning;
+        MessageBeep(MB_ICONWARNING);
+      end;
+
+    mtQuestion:
+      begin
+        Title := GetString(3);
+        Buttons := [cbYes, cbNo];
+        Icon := tiQuestion;
+        MessageBeep(MB_ICONQUESTION);
+      end;
+
+    mtConfirm:
+      begin
+        Title := GetString(4);
+        Buttons := [cbYes, cbNo];
+        Icon := tiWarning;
+        MessageBeep(MB_ICONWARNING);
+      end;
+
+    mtError:
+      begin
+        Title := GetString(2);
+        Buttons := [cbClose];
+        Icon := tiError;
+        MessageBeep(MB_ICONERROR);
+      end;
+  end;  //of case
+
+  if AUpdate then
+    Title := GetString(5);
+
+  try
+    Result := ShowTaskDialog(FApplication.MainForm, Title, APrompt, AText,
+      Buttons, Icon);
+
+  except
+    Result := MessageBox(APrompt + sLineBreak + AText, AType, AUpdate);
+  end;  //of try
+{$ELSE}
+  Result := MessageBox(APrompt + sLineBreak + AText, AType, AUpdate);
+{$ENDIF}
+end;
+
+{ public TLanguageFile.TaskDialog
+
+  Shows a TaskDialog with text and specific look. }
+
+function TLanguageFile.TaskDialog(APrompt, AText: Word; AType: TMessageType = mtInfo;
+  AUpdate: Boolean = False): Integer;
+begin
+  Result := TaskDialog(GetString(APrompt), GetString(AText), AType, AUpdate);
+end;
+
+{ public TLanguageFile.TaskDialog
+
+  Shows a TaskDialog with multiple string text and specific look. }
+
+function TLanguageFile.TaskDialog(APrompt: Word; AIndexes: array of Word;
+  AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer;
+begin
+  Result := TaskDialog(GetString(APrompt), GetString(AIndexes), AType, AUpdate);
+end;
+
+{ public TLanguageFile.TaskDialog
+
+  Shows a TaskDialog with multiple formatted string text and specific look. }
+
+function TLanguageFile.TaskDialog(APrompt: Word; AIndexes: array of Word;
+  AArgs: array of {$IFDEF MSWINDOWS}TVarRec{$ELSE}const{$ENDIF};
+  AType: TMessageType = mtInfo; AUpdate: Boolean = False): Integer;
+begin
+  Result := TaskDialog(GetString(APrompt), Format(AIndexes, AArgs), AType, AUpdate);
 end;
 
 { public TLanguageFile.RemoveListener
