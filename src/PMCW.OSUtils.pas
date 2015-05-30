@@ -6,7 +6,7 @@
 {                                                                         }
 { *********************************************************************** }
 
-unit OSUtils;
+unit PMCW.OSUtils;
 
 {$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
@@ -24,11 +24,6 @@ const
   { PMCW Website URLs }
   URL_BASE = 'http://www.pm-codeworks.de/';
   URL_CONTACT = URL_BASE +'kontakt.html';
-
-{$IFDEF MSWINDOWS}
-  { Flag to deny WOW64 redirection in Windows Registry }
-  KEY_WOW64_64KEY = $0100;
-{$ENDIF}
 
 type
   { Exception class }
@@ -68,7 +63,7 @@ type
     class function PMCertExists(): Boolean;
     class function Shutdown(): Boolean;
     class function StrToHKey(ARootKey: TRootKey): HKEY;
-    class function WindowsVistaOrLater(): Boolean;
+    class function WindowsVistaOrLater(): Boolean; deprecated;
   end;
 {$ELSE}
   { TOSUtils }
@@ -208,7 +203,7 @@ end;
 class function TOSUtils.ExecuteProgram(const AProgram: string;
   AArguments: string = ''; ARunAsAdmin: Boolean = False): Boolean;
 var
-  Operation: PAnsiChar;
+  Operation: PWideChar;
 
 begin
   // Run as administrator?

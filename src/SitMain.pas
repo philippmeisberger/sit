@@ -12,7 +12,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls,
-  Menus, Dialogs, AddDialogs, AddCommCtrl, LanguageFile, OSUtils, Updater,
+  CommCtrl, Menus, Dialogs, PMCW.Dialogs, PMCW.LanguageFile, PMCW.OSUtils, PMCW.Updater,
   SitAPI, SitInfo;
 
 type
@@ -113,9 +113,11 @@ implementation
 procedure TMain.FormCreate(Sender: TObject);
 begin
   // German language default
-  FLang := TLanguageFile.Create(100, Application);
-  FLang.AddListener(Self);
-  SetLanguage(Self);
+  FLang := TLanguageFile.Create(Self, Application);
+  FLang.AddLanguage(LANG_GERMAN, 100);
+  FLang.AddLanguage(LANG_ENGLISH, 200);
+  FLang.AddLanguage(LANG_FRENCH, 300);
+  FLang.ChangeLanguage(LANG_USER);
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create(Self, 'SIT', FLang);
@@ -158,7 +160,7 @@ begin
   // Check for incompatibility
   if not (NewWindows or (Windows <> '')) then
   begin
-    Flang.MessageBox(FLang.Format([74, 75], [Windows]), mtError);
+    FLang.ShowMessage(FLang.Format([74, 75], [Windows]), mtError);
     bAccept.Enabled := False;
     mmFile.Enabled := False;
     mmEdit.Enabled := False;
@@ -176,7 +178,7 @@ begin
   ShowValues();
 
   // Make UAC-Shield button
-  Button_SetElevationRequiredState(bAccept.Handle);
+  Button_SetElevationRequiredState(bAccept.Handle, True);
 end;
 
 { private TMain.AfterUpdate
@@ -205,7 +207,8 @@ var
 
 begin
   // Ask user to permit download
-  if (FLang.MessageBox([21, NEW_LINE, 22], [ANewBuild], mtQuestion, True) = IDYES) then
+  if (FLang.ShowMessage(FLang.Format(21, [ANewBuild]), FLang.GetString(22),
+    mtConfirmation) = IDYES) then
   begin
     // init TUpdate instance
     Updater := TUpdate.Create(Self, FLang);
@@ -214,7 +217,12 @@ begin
       with Updater do
       begin
         Title := FLang.GetString(24);
+
+      {$IFDEF DCC32}
         Download('sit.exe', 'SIT.exe');
+      {$ELSE}
+        Download('sit64.exe', 'SIT.exe');
+      {$ENDIF}
       end;  //of begin
 
     finally
@@ -264,7 +272,7 @@ begin
     end;  //of with
 
   except
-    FLang.MessageBox(68, mtError);
+    FLang.ShowMessage(FLang.GetString(68), mtError);
   end; //of try
 end;
 
@@ -326,13 +334,13 @@ end;
 
 function TMain.ShowCopyIconDialog(AFile: string): string;
 var
-  SaveDialog : TFileSaveDialog;
+  SaveDialog : TSaveDialog;
 
 begin
-  result := '';
+  Result := '';
 
   // init dialog
-  SaveDialog := TFileSaveDialog.Create(Self);
+  SaveDialog := TSaveDialog.Create(Self);
 
   try
     with SaveDialog do
@@ -354,11 +362,11 @@ begin
       // Copy valid icon
       if CopyFile(PChar(AFile), PChar(SaveDialog.FileName), False) then
       begin
-        FLang.MessageBox(FLang.Format(77, [SaveDialog.FileName]));
+        FLang.ShowMessage(FLang.Format(77, [SaveDialog.FileName]));
         result := SaveDialog.FileName;
       end  //of begin
       else
-        FLang.MessageBox(70, mtError);
+        FLang.ShowMessage(FLang.GetString(70), mtError);
     end;  //of begin
 
   finally
@@ -372,12 +380,12 @@ end;
   
 procedure TMain.ShowExportDialog(AExportEdits: Boolean);
 var
-  SaveDialog : TFileSaveDialog;
+  SaveDialog : TSaveDialog;
   SupportInfo: TSupportInformationBase;
 
 begin
   // init dialog
-  SaveDialog := TFileSaveDialog.Create(Self);
+  SaveDialog := TSaveDialog.Create(Self);
 
   try
     // Set dialog options
@@ -424,7 +432,7 @@ begin
     end;  //of try
 
   except
-    FLang.MessageBox(69, mtError);
+    FLang.ShowMessage(FLang.GetString(69), mtError);
   end;  //of try
 end;
 
@@ -461,7 +469,7 @@ var
 
 begin
   // Confirm save progress
-  if (FLang.MessageBox(60, mtQuestion) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(60), mtConfirmation) = IDYES) then
   try
     IconPath := eLogo.Text;
 
@@ -505,14 +513,14 @@ begin
     ShowValues(False);
 
     // Show success message in best case
-    Flang.MessageBox(65);
+    Flang.ShowMessage(FLang.GetString(65));
 
   except
     on E: EAbort do
-      FLang.MessageBox(E.Message, mtWarning);
+      FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.MessageBox(71, mtError);
+      FLang.ShowMessage(FLang.GetString(71), mtError);
   end;  //of try
 end;
 
@@ -531,11 +539,11 @@ end;
 
 procedure TMain.bAddClick(Sender: TObject);
 var
-  OpenDialog : TFileOpenDialog;
+  OpenDialog : TOpenDialog;
 
 begin
   // init dialog
-  OpenDialog := TFileOpenDialog.Create(Self);
+  OpenDialog := TOpenDialog.Create(Self);
 
   try
     // Set dialog options
@@ -565,7 +573,7 @@ begin
       // Check square format of image and warn user
       if (Image.Height <> Image.Width) then
       begin
-        FLang.MessageBox(FLang.Format([58, 59], [Image.Height, Image.Width]),
+        FLang.ShowMessage(FLang.Format([58, 59], [Image.Height, Image.Width]),
           mtWarning);
       end;  //of begin
 
@@ -584,12 +592,12 @@ end;
 
 procedure TMain.mmImportClick(Sender: TObject);
 var
-  OpenDialog : TFileOpenDialog;
+  OpenDialog : TOpenDialog;
   SupportInfo: TSupportInformationBase;
 
 begin
   // init dialog
-  OpenDialog := TFileOpenDialog.Create(Self);
+  OpenDialog := TOpenDialog.Create(Self);
 
   try
     // Set dialog options
@@ -634,7 +642,7 @@ begin
     end;  //of try
 
   except
-    FLang.MessageBox(72, mtError);
+    FLang.ShowMessage(FLang.GetString(72), mtError);
   end;  //of try
 end;
 
@@ -655,7 +663,7 @@ procedure TMain.mmExportEditClick(Sender: TObject);
 begin
   if ((eLogo.Text = '') and (eMan.Text = '') and (eModel.Text = '') and
     (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
-    FLang.MessageBox(73, mtWarning)
+    FLang.ShowMessage(FLang.GetString(73), mtWarning)
   else
     ShowExportDialog(True);
 end;
@@ -676,9 +684,9 @@ end;
 procedure TMain.mmDeleteValuesClick(Sender: TObject);
 begin
   // Show confirmation before deleting
-  if (FLang.MessageBox(61, mtConfirm) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(61), mtCustom) = IDYES) then
   begin
-    if (FLang.MessageBox(62, mtQuestion) = IDYES) then
+    if (FLang.ShowMessage(FLang.GetString(62), mtConfirmation) = IDYES) then
       ShowExportDialog(False);
 
     // Remove icon?
@@ -692,10 +700,10 @@ begin
       mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
       mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
       FSupportInfo.Clear;
-      FLang.MessageBox(64);
+      FLang.ShowMessage(FLang.GetString(64));
     end  //of begin
     else
-      FLang.MessageBox(66, mtError);
+      FLang.ShowMessage(FLang.GetString(66), mtError);
   end;  //of begin
 end;
 
@@ -730,10 +738,10 @@ begin
 
   except
     on E: EAbort do
-      FLang.MessageBox(E.Message, mtWarning);
+      FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.MessageBox(70, mtError);
+      FLang.ShowMessage(FLang.GetString(70), mtError);
   end;  //of try
 end;
 
@@ -744,7 +752,7 @@ end;
 procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
   // Show confirmation
-  if (FLang.MessageBox(63, mtQuestion) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(63), mtConfirmation) = IDYES) then
     if FSupportInfo.DeleteOEMIcon() then
     begin
       mmDeleteIcon.Enabled := False;
@@ -752,7 +760,7 @@ begin
       FSupportInfo.Icon := '';
     end  //of begin
     else
-      FLang.MessageBox(67, mtError);
+      FLang.ShowMessage(FLang.GetString(67), mtError);
 end;
 
 { TMain.mmGerClick
@@ -761,7 +769,7 @@ end;
 
 procedure TMain.mmGerClick(Sender: TObject);
 begin
-  FLang.ChangeLanguage(Sender, 100);
+  FLang.ChangeLanguage(LANG_GERMAN);
 end;
 
 { TMain.mmEngClick
@@ -770,7 +778,7 @@ end;
 
 procedure TMain.mmEngClick(Sender: TObject);
 begin
-  FLang.ChangeLanguage(Sender, 200);
+  FLang.ChangeLanguage(LANG_ENGLISH);
 end;
 
 { TMain.mmFraClick
@@ -779,7 +787,7 @@ end;
 
 procedure TMain.mmFraClick(Sender: TObject);
 begin
-  FLang.ChangeLanguage(Sender, 300);
+  FLang.ChangeLanguage(LANG_FRENCH);
 end;
 
 { TMain.mmDownloadCertClick
@@ -792,8 +800,7 @@ var
 
 begin
   // Certificate already installed?
-  if (TOSUtils.PMCertExists() and (FLang.MessageBox([27, NEW_LINE, 28],
-    mtQuestion) = IDNO)) then
+  if (TOSUtils.PMCertExists() and (FLang.ShowMessage(27, 28, mtConfirmation) = IDNO)) then
     Exit;
 
   // Init downloader
@@ -864,11 +871,11 @@ end;
 procedure TMain.eUrlDblClick(Sender: TObject);
 begin
   // Ask user to open URL
-  if ((eUrl.Text <> '') and (FLang.MessageBox(79, mtQuestion) = IDYES)) then
+  if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(79), mtConfirmation) = IDYES)) then
   begin
     // Try to open URL
     if not TOSUtils.OpenUrl(eUrl.Text) then
-      FLang.MessageBox(80, mtError);
+      FLang.ShowMessage(FLang.GetString(80), mtError);
   end  //of begin
   else
     eUrl.SelectAll;

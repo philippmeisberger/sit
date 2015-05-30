@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT API Interface Unit v3.2                                             }
 {                                                                         }
-{ Copyright (c) 2011-2014 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,7 +11,7 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, IniFileParser, OSUtils, ShellAPI;
+  Windows, Classes, SysUtils, Registry, IniFileParser, PMCW.OSUtils, ShellAPI;
 
 const
   { Ini-file section name constants }
@@ -97,7 +97,7 @@ implementation
 { public TSupportInformationBase.Create
 
   General constructor for creating a TSupportInformationBase instance. }
-  
+
 constructor TSupportInformationBase.Create(AIcon, AMan, AModel, AUrl, APhone,
   AHours: string);
 begin

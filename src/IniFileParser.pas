@@ -16,7 +16,7 @@ uses
 {$IFDEF MSWINDOWS}
   Windows, Registry,
 {$ENDIF}
-  Classes, SysUtils, StrUtils, OSUtils;
+  Classes, SysUtils, StrUtils, PMCW.OSUtils;
 
 {$IFDEF MSWINDOWS}
 const

@@ -1,1 +1,2 @@
-dcc32 src\Sit.dpr
+cd src\
+dcc32 Sit.dpr

@@ -1,7 +1,7 @@
 ﻿SIT (alias "Supportinfo-Tool")
 Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 
-"SIT ist ein Programm zum einfachen Eintragen von System-Herstellerinformationen in den 
+"SIT ist ein Programm zum einfachen Eintragen von Herstellerinformationen in den 
 Systemsteuerungszweig System. IT-Firmen können so mit wenigen Klicks ihren (virtuellen) 
 Firmenstempel auf dem Kunden PC hinterlassen."
 
@@ -15,6 +15,7 @@ Version 3.2 [??.05.15]
 - Menü-Eintrag "Einträge anzeigen" von "Bearbeiten" nach "Ansicht" verschoben
 - .ini/.reg Datei Parser v1.1 mit Multi-Line support
 - OSUtils v2.1
+- Updater v2.3
 
 ----------------------------------------
 
