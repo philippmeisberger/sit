@@ -243,7 +243,6 @@ procedure TLanguageFile.ChangeLanguage(APrimaryLanguage: Word);
 var
   Locale, i: Word;
   Listener: IChangeLanguageListener;
-  LCID:Integer;
 
 begin
   // Get user language
@@ -321,6 +320,8 @@ var
   DefaultButton: TMsgDlgBtn;
 
 begin
+  DefaultButton := mbOK;
+
   case AMessageType of
     mtInformation:
       begin

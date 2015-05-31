@@ -3,7 +3,7 @@
         <ProjectGuid>{AAFC56FD-021E-4621-BD28-F0CB9A42255F}</ProjectGuid>
         <MainSource>Sit.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
@@ -75,13 +75,15 @@
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <DCC_ExeOutput>..\bin\</DCC_ExeOutput>
+        <DCC_DcuOutput>lib\</DCC_DcuOutput>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>2</VerInfo_MinorVer>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Build>304</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.304;InternalName=SIT;LegalCopyright=Philipp Meisberger;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
+        <VerInfo_Build>309</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.309;InternalName=SIT;LegalCopyright=Philipp Meisberger;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
         <Icon_MainIcon>sit.ico</Icon_MainIcon>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -95,10 +97,10 @@
         <VerInfo_PreRelease>true</VerInfo_PreRelease>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>2</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.307;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.308;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
         <DCC_DcuOutput>lib\</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin\</DCC_ExeOutput>
-        <VerInfo_Build>307</VerInfo_Build>
+        <VerInfo_Build>308</VerInfo_Build>
         <Icon_MainIcon>sit.ico</Icon_MainIcon>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     </PropertyGroup>

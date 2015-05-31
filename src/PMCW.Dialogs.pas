@@ -74,7 +74,7 @@ begin
   Result := False;
 
   // Init TForm
-  Form := TForm.Create(Application);
+  Form := TForm.Create(AOwner);
 
   try
     with Form do

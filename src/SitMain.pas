@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls,
-  CommCtrl, Menus, Dialogs, PMCW.Dialogs, PMCW.LanguageFile, PMCW.OSUtils, PMCW.Updater,
-  SitAPI, SitInfo;
+  CommCtrl, Menus, Dialogs, SitAPI, SitInfo, PMCW.LanguageFile, PMCW.Dialogs,
+  PMCW.OSUtils, PMCW.Updater;
 
 type
   { TMain }
@@ -126,7 +126,7 @@ begin
   FUpdateCheck.CheckForUpdate(False);
 
   // Init support information instance
-  if TOSUtils.WindowsVistaOrLater() then
+  if (Win32MajorVersion >= 6) then
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
@@ -150,15 +150,15 @@ end;
 procedure TMain.FormShow(Sender: TObject);
 var
   Windows: string;
-  NewWindows: Boolean;
+  WindowsVistaMin: Boolean;
 
 begin
   Windows := TOSUtils.GetWinVersion();
-  NewWindows := TOSUtils.WindowsVistaOrLater();
-  cbCopyIcon.Enabled := newWindows;
+  WindowsVistaMin := (Win32MajorVersion >= 6);
+  cbCopyIcon.Enabled := WindowsVistaMin;
   
   // Check for incompatibility
-  if not (NewWindows or (Windows <> '')) then
+  if not (WindowsVistaMin or (Windows <> '')) then
   begin
     FLang.ShowMessage(FLang.Format([74, 75], [Windows]), mtError);
     bAccept.Enabled := False;
@@ -218,10 +218,10 @@ begin
       begin
         Title := FLang.GetString(24);
 
-      {$IFDEF DCC32}
-        Download('sit.exe', 'SIT.exe');
-      {$ELSE}
+      {$IFDEF WIN64}
         Download('sit64.exe', 'SIT.exe');
+      {$ELSE}
+        Download('sit.exe', 'SIT.exe');
       {$ENDIF}
       end;  //of begin
 
@@ -396,7 +396,7 @@ begin
       Options := Options + [ofOverwritePrompt];
 
       // Set OS dependend filter
-      if TOSUtils.WindowsVistaOrLater() then
+      if (Win32MajorVersion >= 6) then
       begin
         // Windows >= Vista: Export as *.ini and *.reg
         Filter := FLang.GetString(55);
@@ -607,7 +607,7 @@ begin
       Options := Options + [ofFileMustExist];
 
       // Windows >= Vista: Import *.ini and *.reg files
-      if TOSUtils.WindowsVistaOrLater() then
+      if (Win32MajorVersion >= 6) then
       begin
         Filter := FLang.GetString(55);
         FilterIndex := 2;

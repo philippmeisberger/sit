@@ -838,7 +838,7 @@ begin
 
   inherited Create(AFileName, AOverwriteIfExists, ASaveOnDestroy);
   MakeHeadline();
-  FReg := TRegistry.Create(TOSUtils.DenyWOW64Redirection(KEY_READ));
+  FReg := TRegistry.Create(TOSUtils.Wow64RegistryRedirection(KEY_READ));
 end;
 
 { public TRegistryFile.Destroy
@@ -1009,9 +1009,9 @@ begin
     // Init Registry access
     FReg.RootKey := AHKey;
 
-    // Key invalid?
+    // Invalid key?
     if not FReg.OpenKey(AKeyPath, False) then
-      Exit;
+      raise EParserException.Create('Error while exporting key: Key does not exist!');
 
     // Read all values from current key
     Values := TStringList.Create;
@@ -1100,11 +1100,11 @@ begin
 
     // Invalid key?
     if not FReg.OpenKey(AKeyPath, False) then
-      raise ERegistryException.Create('Error while exporting value: Key does not exist!');
+      raise EParserException.Create('Error while exporting value: Key does not exist!');
 
     // Invalid value?
     if not FReg.ValueExists(AValueName) then
-      raise ERegistryException.Create('Error while exporting value: Value does not exist!');
+      raise EParserException.Create('Error while exporting value: Value does not exist!');
 
     MakeHeadline();
 

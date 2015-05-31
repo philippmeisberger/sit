@@ -212,7 +212,7 @@ var
   Icon: string;
 
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_WRITE or KEY_READ));
+  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_WRITE or KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -241,7 +241,7 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
+  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -265,7 +265,7 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
+  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -299,7 +299,7 @@ var
   end;
   
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
+  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -354,7 +354,7 @@ var
   reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_WRITE));
+  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_WRITE));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -388,7 +388,7 @@ var
   end;
 
 begin
-  reg := TRegistry.Create(DenyWOW64Redirection(KEY_ALL_ACCESS));
+  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ or KEY_WRITE));
 
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
