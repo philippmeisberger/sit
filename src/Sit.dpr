@@ -1,7 +1,7 @@
 program Sit;
 
 uses
-  Forms,
+  Vcl.Forms,
   SitMain in 'SitMain.pas' {Main},
   SitInfo in 'SitInfo.pas' {Info},
   SitAPI in 'SitAPI.pas',

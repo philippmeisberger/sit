@@ -70,6 +70,7 @@ object Main: TMain
     Anchors = [akLeft, akBottom]
     Caption = #220'bernehmen'
     Default = True
+    ElevationRequired = True
     TabOrder = 0
     OnClick = bAcceptClick
   end

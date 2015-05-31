@@ -176,9 +176,6 @@ begin
 
   // Show support information
   ShowValues();
-
-  // Make UAC-Shield button
-  Button_SetElevationRequiredState(bAccept.Handle, True);
 end;
 
 { private TMain.AfterUpdate
@@ -875,7 +872,7 @@ begin
   begin
     // Try to open URL
     if not TOSUtils.OpenUrl(eUrl.Text) then
-      FLang.ShowMessage(FLang.GetString(80), mtError);
+      FLang.EditBalloonTip(eUrl.Handle, 2, 80, biError);
   end  //of begin
   else
     eUrl.SelectAll;
