@@ -26,10 +26,6 @@ object Info: TInfo
     TabOrder = 0
     object ts_infos: TTabSheet
       Caption = 'Infos'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         449
         244)
@@ -498,7 +494,7 @@ object Info: TInfo
           'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
           'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
           ''
-          '05/2015')
+          '06/2015')
         ReadOnly = True
         TabOrder = 0
       end
@@ -523,10 +519,6 @@ object Info: TInfo
     object ts_history: TTabSheet
       Caption = 'Versions History'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         449
         244)
@@ -558,15 +550,17 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.2 [??.05.15]'
+          'Version 3.2 [??.06.15]'
           ''
           '- Verwendung des TaskDialogs (ab Vista)'
           
             '- Men'#252'-Eintrag "Eintr'#228'ge anzeigen" von "Bearbeiten" nach "Ansich' +
             't" '
-          '  verschoben'
+          'verschoben'
           '- .ini/.reg Datei Parser v1.1 mit Multi-Line support'
+          '- Verwendung von Unicode '
           '- OSUtils v2.1'
+          '- Updater v2.3'
           ''
           '----------------------------------------'
           ''
@@ -742,7 +736,7 @@ object Info: TInfo
             'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
             '.'
           ''
-          '05/2015')
+          '06/2015')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0

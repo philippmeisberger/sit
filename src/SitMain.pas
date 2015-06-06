@@ -43,7 +43,7 @@ type
     mmLang: TMenuItem;
     mmGer: TMenuItem;
     mmEng: TMenuItem;
-    mmFra: TMenuItem;
+    mmFre: TMenuItem;
     mmReport: TMenuItem;
     mmCopyIcon: TMenuItem;
     N5: TMenuItem;
@@ -75,7 +75,7 @@ type
     procedure mmDeleteIconClick(Sender: TObject);
     procedure mmGerClick(Sender: TObject);
     procedure mmEngClick(Sender: TObject);
-    procedure mmFraClick(Sender: TObject);
+    procedure mmFreClick(Sender: TObject);
     procedure mmUpdateClick(Sender: TObject);
     procedure mmDownloadCertClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
@@ -113,11 +113,18 @@ implementation
 procedure TMain.FormCreate(Sender: TObject);
 begin
   // German language default
-  FLang := TLanguageFile.Create(Self, Application);
+  FLang := TLanguageFile.Create(Self);
   FLang.AddLanguage(LANG_GERMAN, 100);
   FLang.AddLanguage(LANG_ENGLISH, 200);
   FLang.AddLanguage(LANG_FRENCH, 300);
   FLang.ChangeLanguage(LANG_USER);
+
+  case FLang.Id of
+    200: mmEng.Checked := True;
+    300: mmFre.Checked := True;
+    else
+         mmGer.Checked := True;
+  end;  //of case
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create(Self, 'SIT', FLang);
@@ -782,7 +789,7 @@ end;
 
   MainMenu entry that allows to change the current language to french. }
 
-procedure TMain.mmFraClick(Sender: TObject);
+procedure TMain.mmFreClick(Sender: TObject);
 begin
   FLang.ChangeLanguage(LANG_FRENCH);
 end;

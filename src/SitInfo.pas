@@ -12,7 +12,7 @@ interface
 
 uses
   SysUtils, Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls,
-  PMCW.OSUtils;
+  PMCW.OSUtils, System.Classes;
 
 type
   { TInfo }

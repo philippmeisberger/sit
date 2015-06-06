@@ -9,11 +9,12 @@ Firmenstempel auf dem Kunden PC hinterlassen."
 History
 --------
 
-Version 3.2 [??.05.15]
+Version 3.2 [??.06.15]
 
 - Verwendung des TaskDialogs (ab Vista)
 - Menü-Eintrag "Einträge anzeigen" von "Bearbeiten" nach "Ansicht" verschoben
 - .ini/.reg Datei Parser v1.1 mit Multi-Line support
+- Verwendung von Unicode 
 - OSUtils v2.1
 - Updater v2.3
 

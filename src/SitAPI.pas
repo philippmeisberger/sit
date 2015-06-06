@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT API Interface Unit v3.2                                             }
 {                                                                         }
-{ Copyright (c) 2011-2014 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,31 +11,31 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, IniFileParser, PMCW.OSUtils, ShellAPI;
+  Windows, Classes, SysUtils, Registry, ShellAPI, IniFileParser, PMCW.OSUtils;
 
 const
   { Ini-file section name constants }
-  INI_GENERAL = 'General';
+  INI_GENERAL      = 'General';
   INI_SUPPORT_INFO = 'Support Information';
 
   { OEM information location >= Windows 2000 }
-  OEMINFO_LOGO = '\System32\OEMLOGO.bmp';
-  OEMINFO_INFO = '\System32\OEMINFO.ini';
+  OEMINFO_LOGO     = '\System32\OEMLOGO.bmp';
+  OEMINFO_INFO     = '\System32\OEMINFO.ini';
 
   { OEM information location >= Windows Vista }
-  OEMINFO_KEY = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
+  OEMINFO_KEY      = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
 
   { Registry value name constants }
-  INFO_ICON = 'Logo';
-  INFO_MAN = 'Manufacturer';
-  INFO_MODEL = 'Model';
-  INFO_PHONE = 'SupportPhone';
-  INFO_HOURS = 'SupportHours';
-  INFO_URL = 'SupportURL';
+  INFO_ICON        = 'Logo';
+  INFO_MAN         = 'Manufacturer';
+  INFO_MODEL       = 'Model';
+  INFO_PHONE       = 'SupportPhone';
+  INFO_HOURS       = 'SupportHours';
+  INFO_URL         = 'SupportURL';
 
 type
   { Support information base class }
-  TSupportInformationBase = class(TWinWOW64)
+  TSupportInformationBase = class(TObject)
   private
     FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
   public
@@ -172,30 +172,30 @@ end;
 
 procedure TSupportInformationBase.SaveAsIni(const AFilename: string);
 var
-  ext: string;
-  ini: TIniFile;
+  Ext: string;
+  Ini: TIniFile;
 
 begin
   if (ExtractFileExt(AFileName) = '') then
-    ext := '.ini'
+    Ext := '.ini'
   else
-    ext := '';
+    Ext := '';
 
-  ini := TIniFile.Create(AFileName + ext, True);
+  Ini := TIniFile.Create(AFileName + Ext, True);
 
   try
-    ini.AddRemove(INFO_ICON, INFO_ICON, FIcon);
-    ini.AddRemove(INI_GENERAL, INFO_MAN, FMan);
-    ini.AddRemove(INI_GENERAL, INFO_MODEL, FModel);
-    ini.AddRemove(INI_GENERAL, INFO_URL, FUrl);
-    ini.AddRemove(INI_SUPPORT_INFO, INFO_PHONE, FPhone);
-    ini.AddRemove(INI_SUPPORT_INFO, INFO_HOURS, FHours);
+    Ini.AddRemove(INFO_ICON, INFO_ICON, FIcon);
+    Ini.AddRemove(INI_GENERAL, INFO_MAN, FMan);
+    Ini.AddRemove(INI_GENERAL, INFO_MODEL, FModel);
+    Ini.AddRemove(INI_GENERAL, INFO_URL, FUrl);
+    Ini.AddRemove(INI_SUPPORT_INFO, INFO_PHONE, FPhone);
+    Ini.AddRemove(INI_SUPPORT_INFO, INFO_HOURS, FHours);
 
     // Save file
-    ini.Save();
+    Ini.Save();
 
   finally
-    ini.Free;
+    Ini.Free;
   end;  //of try
 end;
 
@@ -208,27 +208,27 @@ end;
 
 function TSupportInformation.DeleteOEMIcon(): Boolean;
 var
-  reg: TRegistry;
+  Reg: TRegistry;
   Icon: string;
 
 begin
-  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_WRITE or KEY_READ));
+  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_WRITE or KEY_READ));
 
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    if reg.OpenKey(OEMINFO_KEY, False) then
+    if Reg.OpenKey(OEMINFO_KEY, False) then
     begin
       // Remove icon file and registry value
-      Icon := reg.ReadString(INFO_ICON);
-      result := DeleteFile(Icon) and reg.DeleteValue(INFO_ICON);
+      Icon := Reg.ReadString(INFO_ICON);
+      Result := DeleteFile(Icon) and Reg.DeleteValue(INFO_ICON);
     end  //of begin
     else
-      result := False;
+      Result := False;
 
   finally
-    reg.CloseKey();
-    reg.Free;
+    Reg.CloseKey();
+    Reg.Free;
   end;  //of try
 end;
 
@@ -238,21 +238,21 @@ end;
   
 function TSupportInformation.Exists(): Boolean;
 var
-  reg: TRegistry;
+  Reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
+  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ));
 
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, True);
-    result := (reg.ValueExists(INFO_ICON) or reg.ValueExists(INFO_MAN) or
-               reg.ValueExists(INFO_MODEL) or reg.ValueExists(INFO_PHONE) or
-               reg.ValueExists(INFO_HOURS) or reg.ValueExists(INFO_URL));
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
+    Reg.OpenKey(OEMINFO_KEY, True);
+    Result := (Reg.ValueExists(INFO_ICON) or Reg.ValueExists(INFO_MAN) or
+               Reg.ValueExists(INFO_MODEL) or Reg.ValueExists(INFO_PHONE) or
+               Reg.ValueExists(INFO_HOURS) or Reg.ValueExists(INFO_URL));
 
   finally
-    reg.CloseKey();
-    reg.Free;
+    Reg.CloseKey();
+    Reg.Free;
   end;  //of try
 end;
 
@@ -262,23 +262,23 @@ end;
 
 function TSupportInformation.GetOEMIcon(): string;
 var
-  reg: TRegistry;
+  Reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
+  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ));
 
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, False);
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
+    Reg.OpenKey(OEMINFO_KEY, False);
 
-    if reg.ValueExists(INFO_ICON) then
-      result := reg.ReadString(INFO_ICON)
+    if Reg.ValueExists(INFO_ICON) then
+      Result := Reg.ReadString(INFO_ICON)
     else
-      result := '';
+      Result := '';
 
   finally
-    reg.CloseKey();
-    reg.Free;
+    Reg.CloseKey();
+    Reg.Free;
   end;  //of try
 end;
 
@@ -288,22 +288,22 @@ end;
 
 procedure TSupportInformation.Load();
 var
-  reg: TRegistry;
+  Reg: TRegistry;
 
   function ReadValue(AValueName: string): string;
   begin
-    if reg.ValueExists(AValueName) then
-      result := reg.ReadString(AValueName)
+    if Reg.ValueExists(AValueName) then
+      Result := Reg.ReadString(AValueName)
     else
-      result := '';
+      Result := '';
   end;
   
 begin
-  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
+  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ));
 
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, True);
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
+    Reg.OpenKey(OEMINFO_KEY, True);
 
     // Read all OEM information
     FIcon := ReadValue(INFO_ICON);
@@ -314,8 +314,8 @@ begin
     FUrl := ReadValue(INFO_URL);
 
   finally
-    reg.CloseKey();
-    reg.Free;
+    Reg.CloseKey();
+    Reg.Free;
   end;  //of try
 end;
 
@@ -341,7 +341,7 @@ begin
     FUrl := RegFile.ReadString(RegSection, INFO_URL);
 
   finally
-    regFile.Free;
+    RegFile.Free;
   end;  //of try
 end;
 
@@ -351,22 +351,22 @@ end;
 
 function TSupportInformation.Remove(): Boolean;
 var
-  reg: TRegistry;
+  Reg: TRegistry;
 
 begin
-  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_WRITE));
+  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_WRITE));
 
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    if reg.OpenKey(ExtractFileDir(OEMINFO_KEY), False) then
-      result := reg.DeleteKey(ExtractFileName(OEMINFO_KEY))
+    if Reg.OpenKey(ExtractFileDir(OEMINFO_KEY), False) then
+      Result := Reg.DeleteKey(ExtractFileName(OEMINFO_KEY))
     else
-      result := False;
+      Result := False;
 
   finally
-    reg.CloseKey();
-    reg.Free;
+    Reg.CloseKey();
+    Reg.Free;
   end;  //of try
 end;
 
@@ -376,23 +376,23 @@ end;
 
 procedure TSupportInformation.Save();
 var
-  reg: TRegistry;
+  Reg: TRegistry;
 
   procedure WriteValue(AValueName, AValue: string);
   begin
     if (AValue <> '') then
-      reg.WriteString(AValueName, AValue)
+      Reg.WriteString(AValueName, AValue)
     else
-      if reg.ValueExists(AValueName) then
-        reg.DeleteValue(AValueName);
+      if Reg.ValueExists(AValueName) then
+        Reg.DeleteValue(AValueName);
   end;
 
 begin
-  reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ or KEY_WRITE));
+  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ or KEY_WRITE));
 
   try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    reg.OpenKey(OEMINFO_KEY, True);
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
+    Reg.OpenKey(OEMINFO_KEY, True);
 
     WriteValue(INFO_HOURS, FHours);
     WriteValue(INFO_ICON, FIcon);
@@ -402,8 +402,8 @@ begin
     WriteValue(INFO_URL, FUrl);
 
   finally
-    reg.CloseKey();
-    reg.Free;
+    Reg.CloseKey();
+    Reg.Free;
   end;  //of try
 end;
 
@@ -461,7 +461,7 @@ end;
 
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
-  result := TOSUtils.GetWinDir() + OEMINFO_INFO;
+  Result := TOSUtils.GetWinDir() + OEMINFO_INFO;
 end;
 
 { public TSupportInformationXP.Clear
@@ -483,7 +483,7 @@ end;
 
 function TSupportInformationXP.DeleteOEMIcon(): Boolean;
 begin
-  result := DeleteFile(FIcon);
+  Result := DeleteFile(FIcon);
 end;
 
 { public TSupportInformationXP.Exists
@@ -492,7 +492,7 @@ end;
   
 function TSupportInformationXP.Exists(): Boolean;
 begin
-  result := FileExists(GetOemInfo());
+  Result := FileExists(GetOemInfo());
 end;
 
 { public TSupportInformationXP.GetOEMIcon
@@ -501,7 +501,7 @@ end;
 
 function TSupportInformationXP.GetOEMIcon(): string;
 begin
-  result := TOSUtils.GetWinDir() + OEMINFO_LOGO;
+  Result := TOSUtils.GetWinDir() + OEMINFO_LOGO;
 end;
 
 { public TSupportInformationXP.Load
@@ -510,14 +510,14 @@ end;
 
 procedure TSupportInformationXP.Load();
 var
-  ini: TIniFile;
+  Ini: TIniFile;
 
 begin
   // Read OEMINFO.ini
-  ini := TIniFile.Create(GetOEMInfo());
+  Ini := TIniFile.Create(GetOEMInfo());
 
   try
-    with ini do
+    with Ini do
     begin
       FMan := ReadString(INI_GENERAL, INFO_MAN);
       FModel := ReadString(INI_GENERAL, INFO_MODEL);
@@ -527,7 +527,7 @@ begin
     end;  //of wit
 
   finally
-    ini.Free;
+    Ini.Free;
   end;  //of try
 
   // OEMLOGO.bmp exists?
@@ -543,7 +543,7 @@ end;
 
 function TSupportInformationXP.Remove(): Boolean;
 begin
-  result := DeleteFile(GetOEMInfo());
+  Result := DeleteFile(GetOEMInfo());
 end;
 
 { public TSupportInformationXP.Save
@@ -552,14 +552,14 @@ end;
 
 procedure TSupportInformationXP.Save();
 var
-  ini: TIniFile;
+  Ini: TIniFile;
   OEMIcon: string;
 
 begin
   ini := TIniFile.Create(GetOEMInfo());
 
   try
-    with ini do
+    with Ini do
     begin
       WriteString(INI_GENERAL, INFO_MAN, FMan);
       WriteString(INI_GENERAL, INFO_MODEL, FModel);
@@ -572,7 +572,7 @@ begin
     end;  //of with
   
     // Save file
-    ini.Save();
+    Ini.Save();
 
   finally
     ini.Free;
