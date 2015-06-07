@@ -556,9 +556,10 @@ object Info: TInfo
           
             '- Men'#252'-Eintrag "Eintr'#228'ge anzeigen" von "Bearbeiten" nach "Ansich' +
             't" '
-          'verschoben'
+          '  verschoben'
           '- .ini/.reg Datei Parser v1.1 mit Multi-Line support'
-          '- Verwendung von Unicode '
+          '- Sprache wird nun benutzerspezifisch gesetzt'
+          '- Unterst'#252'tzung f'#252'r Unicode'
           '- OSUtils v2.1'
           '- Updater v2.3'
           ''
@@ -723,18 +724,18 @@ object Info: TInfo
           
             '----------------------------------------------------------------' +
             '-------'
-          'SIT wurde unter der BSD-Lizenz ver'#246'ffentlicht und ist somit '
-          'Open-Source. Der Quelltext kann auf der Website heruntergeladen '
-          'werden.'
+          
+            'SIT wurde unter der BSD-Lizenz ver'#246'ffentlicht und ist somit Open' +
+            '-Source. '
+          'Der Quelltext kann auf der Website heruntergeladen werden.'
+          ''
           
             'Soll SIT auf eine kommerzielle CD-ROM (mit Magazin) gepresst wer' +
-            '-'
+            'den, w'#228're '
           
-            'den, w'#228're es nett, mir eine Ausgabe dieser CD-ROM (mit Magazin) ' +
-            'zu'
-          
-            'schicken. Meine Adresse erfahren Sie unter team@pm-codeworks.de ' +
-            '.'
+            'es nett, mir eine Ausgabe dieser CD-ROM (mit Magazin) zu schicke' +
+            'n. Meine '
+          'Adresse erfahren Sie unter team@pm-codeworks.de.'
           ''
           '06/2015')
         ReadOnly = True

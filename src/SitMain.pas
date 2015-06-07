@@ -20,7 +20,6 @@ type
   TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
     lCopy: TLabel;
     lVersion: TLabel;
-    Image: TImage;
     bAccept: TButton;
     bShowSupport: TButton;
     MainMenu: TMainMenu;
@@ -544,8 +543,11 @@ end;
 procedure TMain.bAddClick(Sender: TObject);
 var
   OpenDialog : TOpenDialog;
+  Image: TPicture;
 
 begin
+  Image := TPicture.Create;
+
   // init dialog
   OpenDialog := TOpenDialog.Create(Self);
 
@@ -553,9 +555,8 @@ begin
     // Set dialog options
     with OpenDialog do
     begin
-      Options := Options + [ofFileMustExist];
-      Filter := FLang.GetString(57);
       Title := FLang.GetString(53);
+      Filter := FLang.GetString(57);
 
       // Icon exists?
       if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
@@ -572,20 +573,21 @@ begin
     // "Open" clicked
     if OpenDialog.Execute then
     begin
-      Image.Picture.LoadFromFile(OpenDialog.FileName);
+      Image.LoadFromFile(OpenDialog.FileName);
 
       // Check square format of image and warn user
       if (Image.Height <> Image.Width) then
       begin
-        FLang.ShowMessage(FLang.Format([58, 59], [Image.Height, Image.Width]),
+        FLang.ShowMessage(FLang.Format([58, 59], [Image.Width, Image.Height]),
           mtWarning);
       end;  //of begin
 
       eLogo.Text := OpenDialog.FileName;
-    end; //of if
+    end;  //of if
 
   finally
     OpenDialog.Free;
+    Image.Free;
     eLogo.SetFocus;
   end;  //of try
 end;

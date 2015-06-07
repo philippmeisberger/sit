@@ -54,14 +54,6 @@ object Main: TMain
     Caption = 'v3.2'
     Transparent = True
   end
-  object Image: TImage
-    Left = 144
-    Top = 64
-    Width = 120
-    Height = 120
-    AutoSize = True
-    Visible = False
-  end
   object bAccept: TButton
     Left = 8
     Top = 240
