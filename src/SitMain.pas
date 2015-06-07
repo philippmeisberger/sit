@@ -446,7 +446,7 @@ end;
 procedure TMain.ShowValues(AReload: Boolean = True);
 begin
   // Set title
-  Caption := Application.Title + TOSUtils.GetArchitecture();
+  Caption := Application.Title + PLATFORM_ARCH;
 
   if AReload then
     // Reload support information
@@ -640,7 +640,7 @@ begin
       // "Open" clicked
       if OpenDialog.Execute then
       begin
-        Caption := Application.Title + TOSUtils.GetArchitecture() +' - '+
+        Caption := Application.Title + PLATFORM_ARCH +' - '+
           ExtractFileName(OpenDialog.FileName);
 
         case OpenDialog.FilterIndex of
@@ -729,7 +729,7 @@ end;
 
 procedure TMain.mmDeleteEditsClick(Sender: TObject);
 begin
-  Caption := Application.Title + TOSUtils.GetArchitecture();
+  Caption := Application.Title + PLATFORM_ARCH;
   eLogo.Clear;
   eMan.Clear;
   eModel.Clear;
