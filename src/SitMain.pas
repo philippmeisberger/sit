@@ -544,9 +544,15 @@ procedure TMain.bAddClick(Sender: TObject);
 var
   OpenDialog : TOpenDialog;
   Image: TPicture;
+  Win64: Boolean;
 
 begin
   Image := TPicture.Create;
+  Win64 := TOSUtils.IsWindows64();
+
+  // Disable file system redirection on 64 bit Windows
+  if Win64 then
+    TOSUtils.Wow64FsRedirection(True);
 
   // init dialog
   OpenDialog := TOpenDialog.Create(Self);
@@ -589,6 +595,10 @@ begin
     OpenDialog.Free;
     Image.Free;
     eLogo.SetFocus;
+
+    // Enable file system redirection on 64 bit Windows again
+    if Win64 then
+      TOSUtils.Wow64FsRedirection(False);
   end;  //of try
 end;
 
