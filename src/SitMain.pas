@@ -166,7 +166,7 @@ begin
   // Check for incompatibility
   if not (WindowsVistaMin or (Windows <> '')) then
   begin
-    FLang.ShowMessage(FLang.Format([74, 75], [Windows]), mtError);
+    FLang.ShowMessage(FLang.Format([84, 85], [Windows]), mtError);
     bAccept.Enabled := False;
     mmFile.Enabled := False;
     mmEdit.Enabled := False;
@@ -224,7 +224,12 @@ begin
       {$IFDEF WIN64}
         Download('sit64.exe', 'SIT.exe');
       {$ELSE}
-        Download('sit.exe', 'SIT.exe');
+        // Ask user to permit download of 64-Bit version
+        if (FLang.ShowMessage(FLang.Format([34, 35], ['SIT']),
+          mtConfirmation) = IDYES) then
+          Download('sit64.exe', 'SIT.exe')
+        else
+          Download('sit.exe', 'SIT.exe');
       {$ENDIF}
       end;  //of begin
 
@@ -246,14 +251,14 @@ begin
   if not FileExists(AFile) then
   begin
     eLogo.SetFocus;
-    raise EAbort.Create(FLang.GetString(76));
+    raise EAbort.Create(FLang.GetString(86));
   end  //of begin
   else
     // Icon is a *.bmp file?
     if (ExtractFileExt(AFile) <> '.bmp') then
     begin
       eLogo.SetFocus;
-      raise EAbort.Create(FLang.GetString(78));
+      raise EAbort.Create(FLang.GetString(88));
     end;  //of if
 end;
 
@@ -275,7 +280,7 @@ begin
     end;  //of with
 
   except
-    FLang.ShowMessage(FLang.GetString(68), mtError);
+    FLang.ShowMessage(FLang.GetString(78), mtError);
   end; //of try
 end;
 
@@ -288,18 +293,18 @@ begin
   with FLang do
   begin
     // Set captions for TMenuItems
-    mmFile.Caption := GetString(31);
-    mmImport.Caption := GetString(32);
-    mmExport.Caption := GetString(33);
-    mmExportEdit.Caption := GetString(34);
+    mmFile.Caption := GetString(41);
+    mmImport.Caption := GetString(42);
+    mmExport.Caption := GetString(43);
+    mmExportEdit.Caption := GetString(44);
 
     // "Edit" menu
-    mmEdit.Caption := GetString(35);
-    mmShow.Caption := GetString(36);
-    mmDeleteValues.Caption := GetString(37);
-    mmDeleteEdits.Caption := GetString(38);
-    mmCopyIcon.Caption := GetString(40);
-    mmDeleteIcon.Caption := GetString(39);
+    mmEdit.Caption := GetString(45);
+    mmShow.Caption := GetString(46);
+    mmDeleteValues.Caption := GetString(47);
+    mmDeleteEdits.Caption := GetString(48);
+    mmCopyIcon.Caption := GetString(50);
+    mmDeleteIcon.Caption := GetString(49);
 
     // "View" menu
     mmView.Caption := GetString(20);
@@ -313,21 +318,21 @@ begin
     mmInfo.Caption := GetString(17);
 
     // Set captions for labels
-    gbIcon.Caption := GetString(41);
-    eLogo.EditLabel.Caption := GetString(43);
+    gbIcon.Caption := GetString(51);
+    eLogo.EditLabel.Caption := GetString(53);
     cbCopyIcon.Caption := mmCopyIcon.Caption;
 
     gbInfo.Caption := GetString(0);
-    eMan.EditLabel.Caption := GetString(44);
-    ePhone.EditLabel.Caption := GetString(45);
-    eHours.EditLabel.Caption := GetString(46);
-    eModel.EditLabel.Caption := GetString(47);
-    eUrl.EditLabel.Caption := GetString(48);
+    eMan.EditLabel.Caption := GetString(54);
+    ePhone.EditLabel.Caption := GetString(55);
+    eHours.EditLabel.Caption := GetString(56);
+    eModel.EditLabel.Caption := GetString(57);
+    eUrl.EditLabel.Caption := GetString(58);
 
     // Set captions for buttons
-    bAccept.Caption := GetString(49);
-    bShowSupport.Caption := GetString(50);
-    bAdd.Hint := GetString(53);
+    bAccept.Caption := GetString(59);
+    bShowSupport.Caption := GetString(60);
+    bAdd.Hint := GetString(63);
   end;  //of with
 end;
 
@@ -348,7 +353,7 @@ begin
   try
     with SaveDialog do
     begin
-      Title := FLang.GetString(52);
+      Title := FLang.GetString(62);
       FileName := ExtractFileName(AFile);
       Filter := FLang.GetString(57);
       DefaultExt := '.bmp';
@@ -360,16 +365,16 @@ begin
     begin
       // Destination file is a *.bmp file?
       if (ExtractFileExt(SaveDialog.FileName) <> '.bmp') then
-        raise EAbort.Create(FLang.GetString(78));
+        raise EAbort.Create(FLang.GetString(88));
 
       // Copy valid icon
       if CopyFile(PChar(AFile), PChar(SaveDialog.FileName), False) then
       begin
-        FLang.ShowMessage(FLang.Format(77, [SaveDialog.FileName]));
+        FLang.ShowMessage(FLang.Format(87, [SaveDialog.FileName]));
         result := SaveDialog.FileName;
       end  //of begin
       else
-        FLang.ShowMessage(FLang.GetString(70), mtError);
+        FLang.ShowMessage(FLang.GetString(80), mtError);
     end;  //of begin
 
   finally
@@ -394,21 +399,21 @@ begin
     // Set dialog options
     with SaveDialog do
     begin
-      Title := FLang.GetString(52);
-      FileName := FLang.GetString(54);
+      Title := FLang.GetString(62);
+      FileName := FLang.GetString(64);
       Options := Options + [ofOverwritePrompt];
 
       // Set OS dependend filter
       if (Win32MajorVersion >= 6) then
       begin
         // Windows >= Vista: Export as *.ini and *.reg
-        Filter := FLang.GetString(55);
+        Filter := FLang.GetString(65);
         FilterIndex := 2;
       end  //of begin
       else
       begin
         // Windows < Vista: Export only as *.ini
-        Filter := FLang.GetString(56);
+        Filter := FLang.GetString(66);
         DefaultExt := '.ini';
       end;  //of if
     end;  //of with
@@ -435,7 +440,7 @@ begin
     end;  //of try
 
   except
-    FLang.ShowMessage(FLang.GetString(69), mtError);
+    FLang.ShowMessage(FLang.GetString(79), mtError);
   end;  //of try
 end;
 
@@ -472,7 +477,7 @@ var
 
 begin
   // Confirm save progress
-  if (FLang.ShowMessage(FLang.GetString(60), mtConfirmation) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(70), mtConfirmation) = IDYES) then
   try
     IconPath := eLogo.Text;
 
@@ -509,21 +514,21 @@ begin
     else
     begin
       eMan.SetFocus;
-      raise EAbort.Create(FLang.GetString(73));
+      raise EAbort.Create(FLang.GetString(83));
     end;  //of if
 
     // Refresh VCL
     ShowValues(False);
 
     // Show success message in best case
-    Flang.ShowMessage(FLang.GetString(65));
+    Flang.ShowMessage(FLang.GetString(75));
 
   except
     on E: EAbort do
       FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.ShowMessage(FLang.GetString(71), mtError);
+      FLang.ShowMessage(FLang.GetString(81), mtError);
   end;  //of try
 end;
 
@@ -548,11 +553,11 @@ var
 
 begin
   Image := TPicture.Create;
-  Win64 := TOSUtils.IsWindows64();
+  Win64 := TWinWOW64.IsWindows64();
 
   // Disable file system redirection on 64 bit Windows
   if Win64 then
-    TOSUtils.Wow64FsRedirection(True);
+    TWinWOW64.Wow64FsRedirection(True);
 
   // init dialog
   OpenDialog := TOpenDialog.Create(Self);
@@ -561,8 +566,8 @@ begin
     // Set dialog options
     with OpenDialog do
     begin
-      Title := FLang.GetString(53);
-      Filter := FLang.GetString(57);
+      Title := FLang.GetString(63);
+      Filter := FLang.GetString(67);
 
       // Icon exists?
       if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
@@ -584,7 +589,7 @@ begin
       // Check square format of image and warn user
       if (Image.Height <> Image.Width) then
       begin
-        FLang.ShowMessage(FLang.Format([58, 59], [Image.Width, Image.Height]),
+        FLang.ShowMessage(FLang.Format([68, 69], [Image.Width, Image.Height]),
           mtWarning);
       end;  //of begin
 
@@ -598,7 +603,7 @@ begin
 
     // Enable file system redirection on 64 bit Windows again
     if Win64 then
-      TOSUtils.Wow64FsRedirection(False);
+      TWinWOW64.Wow64FsRedirection(False);
   end;  //of try
 end;
 
@@ -619,18 +624,17 @@ begin
     // Set dialog options
     with OpenDialog do
     begin
-      Title := FLang.GetString(51);
-      Options := Options + [ofFileMustExist];
+      Title := FLang.GetString(61);
 
       // Windows >= Vista: Import *.ini and *.reg files
       if (Win32MajorVersion >= 6) then
       begin
-        Filter := FLang.GetString(55);
+        Filter := FLang.GetString(65);
         FilterIndex := 2;
       end  //of begin
       else
         // Windows < Vista: Import only *.ini files
-        Filter := FLang.GetString(56);
+        Filter := FLang.GetString(66);
     end;  //of with
 
     // Create deep copy of TSupportInformation object
@@ -658,7 +662,7 @@ begin
     end;  //of try
 
   except
-    FLang.ShowMessage(FLang.GetString(72), mtError);
+    FLang.ShowMessage(FLang.GetString(82), mtError);
   end;  //of try
 end;
 
@@ -679,7 +683,7 @@ procedure TMain.mmExportEditClick(Sender: TObject);
 begin
   if ((eLogo.Text = '') and (eMan.Text = '') and (eModel.Text = '') and
     (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
-    FLang.ShowMessage(FLang.GetString(73), mtWarning)
+    FLang.ShowMessage(FLang.GetString(83), mtWarning)
   else
     ShowExportDialog(True);
 end;
@@ -700,9 +704,9 @@ end;
 procedure TMain.mmDeleteValuesClick(Sender: TObject);
 begin
   // Show confirmation before deleting
-  if (FLang.ShowMessage(FLang.GetString(61), mtCustom) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(71), mtCustom) = IDYES) then
   begin
-    if (FLang.ShowMessage(FLang.GetString(62), mtConfirmation) = IDYES) then
+    if (FLang.ShowMessage(FLang.GetString(72), mtConfirmation) = IDYES) then
       ShowExportDialog(False);
 
     // Remove icon?
@@ -716,10 +720,10 @@ begin
       mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
       mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
       FSupportInfo.Clear;
-      FLang.ShowMessage(FLang.GetString(64));
+      FLang.ShowMessage(FLang.GetString(74));
     end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(66), mtError);
+      FLang.ShowMessage(FLang.GetString(76), mtError);
   end;  //of begin
 end;
 
@@ -757,7 +761,7 @@ begin
       FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.ShowMessage(FLang.GetString(70), mtError);
+      FLang.ShowMessage(FLang.GetString(80), mtError);
   end;  //of try
 end;
 
@@ -768,7 +772,7 @@ end;
 procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
   // Show confirmation
-  if (FLang.ShowMessage(FLang.GetString(63), mtConfirmation) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(73), mtConfirmation) = IDYES) then
     if FSupportInfo.DeleteOEMIcon() then
     begin
       mmDeleteIcon.Enabled := False;
@@ -776,7 +780,7 @@ begin
       FSupportInfo.Icon := '';
     end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(67), mtError);
+      FLang.ShowMessage(FLang.GetString(77), mtError);
 end;
 
 { TMain.mmGerClick
@@ -887,11 +891,11 @@ end;
 procedure TMain.eUrlDblClick(Sender: TObject);
 begin
   // Ask user to open URL
-  if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(79), mtConfirmation) = IDYES)) then
+  if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(89), mtConfirmation) = IDYES)) then
   begin
     // Try to open URL
     if not TOSUtils.OpenUrl(eUrl.Text) then
-      FLang.EditBalloonTip(eUrl.Handle, 2, 80, biError);
+      FLang.EditBalloonTip(eUrl.Handle, 2, 90, biError);
   end  //of begin
   else
     eUrl.SelectAll;
