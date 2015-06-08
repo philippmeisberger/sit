@@ -1,12 +1,12 @@
 { *********************************************************************** }
 {                                                                         }
-{ Initialization file parser Unit v1.1                                    }
+{ PM Code Works Initialization file parser Unit v1.1.1                    }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
-unit IniFileParser;
+unit PMCW.IniFileParser;
 
 {$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
@@ -71,7 +71,8 @@ type
     function ReadString(ASectionName, AKey: string; ADefault: string = ''): string;
     function Remove(ASectionName, AKey: string): Boolean; overload;
     function RemoveSection(ASectionName: string): Boolean;
-    procedure Save();
+    procedure Save(); overload;
+    procedure Save(AEncoding: TEncoding); overload;
     function SectionExists(ASectionName: string): Boolean;
     function WriteBoolean(ASectionName, AKey: string; AValue: Boolean): Integer;
     function WriteInteger(ASectionName, AKey: string; AValue: Integer): Integer;
@@ -730,7 +731,16 @@ end;
 
 procedure TIniFile.Save();
 begin
-  FFile.SaveToFile(FFileName);
+  Save(TEncoding.UTF8);
+end;
+
+{ public TIniFile.Save
+
+  Writes current file with explicit encoding to disk. }
+
+procedure TIniFile.Save(AEncoding: TEncoding);
+begin
+  FFile.SaveToFile(FFileName, AEncoding);
 end;
 
 { public TIniFile.SectionExists
@@ -1009,9 +1019,9 @@ begin
     // Init Registry access
     FReg.RootKey := AHKey;
 
-    // Invalid key?
+    // Key invalid?
     if not FReg.OpenKey(AKeyPath, False) then
-      raise EParserException.Create('Error while exporting key: Key does not exist!');
+      Exit;
 
     // Read all values from current key
     Values := TStringList.Create;
@@ -1100,11 +1110,11 @@ begin
 
     // Invalid key?
     if not FReg.OpenKey(AKeyPath, False) then
-      raise EParserException.Create('Error while exporting value: Key does not exist!');
+      raise ERegistryException.Create('Error while exporting value: Key does not exist!');
 
     // Invalid value?
     if not FReg.ValueExists(AValueName) then
-      raise EParserException.Create('Error while exporting value: Value does not exist!');
+      raise ERegistryException.Create('Error while exporting value: Value does not exist!');
 
     MakeHeadline();
 
