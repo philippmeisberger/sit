@@ -212,7 +212,7 @@ var
   Icon: string;
 
 begin
-  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_WRITE or KEY_READ));
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_WRITE or KEY_READ);
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -241,7 +241,7 @@ var
   Reg: TRegistry;
 
 begin
-  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ));
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_READ);
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -265,7 +265,7 @@ var
   Reg: TRegistry;
 
 begin
-  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ));
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_READ);
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -299,7 +299,7 @@ var
   end;
   
 begin
-  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ));
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_READ);
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -354,7 +354,7 @@ var
   Reg: TRegistry;
 
 begin
-  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_WRITE));
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_WRITE);
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -388,7 +388,7 @@ var
   end;
 
 begin
-  Reg := TRegistry.Create(TWinWOW64.Wow64RegistryRedirection(KEY_READ or KEY_WRITE));
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_READ or KEY_WRITE);
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
@@ -461,7 +461,7 @@ end;
 
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
-  Result := TOSUtils.GetWinDir() + OEMINFO_INFO;
+  Result := GetWinDir() + OEMINFO_INFO;
 end;
 
 { public TSupportInformationXP.Clear
@@ -501,7 +501,7 @@ end;
 
 function TSupportInformationXP.GetOEMIcon(): string;
 begin
-  Result := TOSUtils.GetWinDir() + OEMINFO_LOGO;
+  Result := GetWinDir() + OEMINFO_LOGO;
 end;
 
 { public TSupportInformationXP.Load

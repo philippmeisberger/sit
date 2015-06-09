@@ -159,7 +159,7 @@ var
   WindowsVistaMin: Boolean;
 
 begin
-  Windows := TOSUtils.GetWinVersion();
+  Windows := GetWinVersion();
   WindowsVistaMin := (Win32MajorVersion >= 6);
   cbCopyIcon.Enabled := WindowsVistaMin;
   
@@ -553,11 +553,11 @@ var
 
 begin
   Image := TPicture.Create;
-  Win64 := TWinWOW64.IsWindows64();
+  Win64 := IsWindows64();
 
   // Disable file system redirection on 64 bit Windows
   if Win64 then
-    TWinWOW64.Wow64FsRedirection(True);
+    Wow64FsRedirection(True);
 
   // init dialog
   OpenDialog := TOpenDialog.Create(Self);
@@ -603,7 +603,7 @@ begin
 
     // Enable file system redirection on 64 bit Windows again
     if Win64 then
-      TWinWOW64.Wow64FsRedirection(False);
+      Wow64FsRedirection(False);
   end;  //of try
 end;
 
@@ -820,7 +820,7 @@ var
 
 begin
   // Certificate already installed?
-  if (TOSUtils.PMCertExists() and (FLang.ShowMessage(27, 28, mtConfirmation) = IDNO)) then
+  if (PMCertExists() and (FLang.ShowMessage(27, 28, mtConfirmation) = IDNO)) then
     Exit;
 
   // Init downloader
@@ -855,7 +855,7 @@ end;
 
 procedure TMain.mmReportClick(Sender: TObject);
 begin
-  TOSUtils.OpenUrl(URL_CONTACT);
+  OpenUrl(URL_CONTACT);
 end;
 
 { TMain.mmInfoClick
@@ -894,7 +894,7 @@ begin
   if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(89), mtConfirmation) = IDYES)) then
   begin
     // Try to open URL
-    if not TOSUtils.OpenUrl(eUrl.Text) then
+    if not OpenUrl(eUrl.Text) then
       FLang.EditBalloonTip(eUrl.Handle, 2, 90, biError);
   end  //of begin
   else
@@ -907,7 +907,7 @@ end;
 
 procedure TMain.lCopyClick(Sender: TObject);
 begin
-  TOSUtils.OpenUrl(URL_BASE);
+  OpenUrl(URL_BASE);
 end;
 
 { TMain.lCopyMouseEnter
