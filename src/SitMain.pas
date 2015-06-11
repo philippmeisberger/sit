@@ -355,7 +355,7 @@ begin
     begin
       Title := FLang.GetString(62);
       FileName := ExtractFileName(AFile);
-      Filter := FLang.GetString(57);
+      Filter := FLang.GetString(67);
       DefaultExt := '.bmp';
       Options := Options + [ofOverwritePrompt];
     end;  //of with
@@ -364,7 +364,7 @@ begin
     if SaveDialog.Execute then
     begin
       // Destination file is a *.bmp file?
-      if (ExtractFileExt(SaveDialog.FileName) <> '.bmp') then
+      if (ExtractFileExt(SaveDialog.FileName) <> SaveDialog.DefaultExt) then
         raise EAbort.Create(FLang.GetString(88));
 
       // Copy valid icon
@@ -432,7 +432,7 @@ begin
         case saveDialog.FilterIndex of
           1: SupportInfo.SaveAsIni(saveDialog.FileName);
           2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
-        end; //of case
+        end;  //of case
 
     finally
       SupportInfo.Free;
@@ -549,15 +549,9 @@ procedure TMain.bAddClick(Sender: TObject);
 var
   OpenDialog : TOpenDialog;
   Image: TPicture;
-  Win64: Boolean;
 
 begin
   Image := TPicture.Create;
-  Win64 := IsWindows64();
-
-  // Disable file system redirection on 64 bit Windows
-  if Win64 then
-    Wow64FsRedirection(True);
 
   // init dialog
   OpenDialog := TOpenDialog.Create(Self);
@@ -600,10 +594,6 @@ begin
     OpenDialog.Free;
     Image.Free;
     eLogo.SetFocus;
-
-    // Enable file system redirection on 64 bit Windows again
-    if Win64 then
-      Wow64FsRedirection(False);
   end;  //of try
 end;
 
@@ -778,6 +768,7 @@ begin
       mmDeleteIcon.Enabled := False;
       mmCopyIcon.Enabled := False;
       FSupportInfo.Icon := '';
+      eLogo.Clear;
     end  //of begin
     else
       FLang.ShowMessage(FLang.GetString(77), mtError);
