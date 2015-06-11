@@ -113,8 +113,8 @@
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <VerInfo_MinorVer>2</VerInfo_MinorVer>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>320</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.320;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
+        <VerInfo_Build>321</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.321;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
