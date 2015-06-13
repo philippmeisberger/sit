@@ -88,9 +88,8 @@ type
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
-    procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
-    procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure CheckIcon(AFile: string);
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     procedure SetLanguage(Sender: TObject);
     function ShowCopyIconDialog(AFile: string): string;
@@ -184,62 +183,6 @@ begin
   ShowValues();
 end;
 
-{ private TMain.AfterUpdate
-
-  Event method that is called by TUpdate when download is finished. }
-
-procedure TMain.AfterUpdate(Sender: TObject; ADownloadedFileName: string);
-begin
-  if (ExtractFileExt(ADownloadedFileName) <> '.reg') then
-  begin
-    // Caption "Search for update"
-    mmUpdate.Caption := FLang.GetString(15);
-    mmUpdate.Enabled := False;
-  end  //of begin
-  else
-    mmDownloadCert.Enabled := False;
-end;
-
-{ private TMain.BeforeUpdate
-
-  Event that is called by TUpdateCheck when TUpdateCheckThread finds an update. }
-
-procedure TMain.BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
-var
-  Updater: TUpdate;
-
-begin
-  // Ask user to permit download
-  if (FLang.ShowMessage(FLang.Format(21, [ANewBuild]), FLang.GetString(22),
-    mtConfirmation) = IDYES) then
-  begin
-    // init TUpdate instance
-    Updater := TUpdate.Create(Self, FLang);
-
-    try
-      with Updater do
-      begin
-        Title := FLang.GetString(24);
-
-      {$IFDEF WIN64}
-        Download('sit64.exe', 'SIT.exe');
-      {$ELSE}
-        // Ask user to permit download of 64-Bit version
-        if (FLang.ShowMessage(FLang.Format([34, 35], ['SIT']),
-          mtConfirmation) = IDYES) then
-          Download('sit64.exe', 'SIT.exe')
-        else
-          Download('sit.exe', 'SIT.exe');
-      {$ENDIF}
-      end;  //of begin
-
-    finally
-      Updater.Free;
-    end;  //of try
-  end  //of begin
-  else
-    mmUpdate.Caption := FLang.GetString(24);
-end;
 
 { private TMain.CheckIcon
 
@@ -260,6 +203,57 @@ begin
       eLogo.SetFocus;
       raise EAbort.Create(FLang.GetString(88));
     end;  //of if
+end;
+
+{ private TMain.OnUpdate
+
+  Event that is called by TUpdateCheck when an update is available. }
+
+procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+var
+  Updater: TUpdate;
+
+begin
+  // Ask user to permit download
+  if (FLang.ShowMessage(FLang.Format(21, [ANewBuild]), FLang.GetString(22),
+    mtConfirmation) = IDYES) then
+  begin
+    // init TUpdate instance
+    Updater := TUpdate.Create(Self, FLang);
+
+    try
+      // Set updater options
+      with Updater do
+      begin
+        Title := FLang.GetString(24);
+        FileNameLocal := 'SIT.exe';
+
+      {$IFDEF WIN64}
+        FileNameRemote := 'sit64.exe';
+      {$ELSE}
+        // Ask user to permit download of 64-Bit version
+        if (FLang.ShowMessage(FLang.Format([34, 35], ['SIT']),
+          mtConfirmation) = IDYES) then
+          FileNameRemote := 'sit64.exe'
+        else
+          FileNameRemote := 'sit.exe';
+      {$ENDIF}
+      end;  //of begin
+
+      // Successfully downloaded update?
+      if Updater.Execute() then
+      begin
+        // Caption "Search for update"
+        mmUpdate.Caption := FLang.GetString(15);
+        mmUpdate.Enabled := False;
+      end;  //of begin
+
+    finally
+      Updater.Free;
+    end;  //of try
+  end  //of begin
+  else
+    mmUpdate.Caption := FLang.GetString(24);
 end;
 
 { private TMain.RefreshEdits
@@ -822,8 +816,14 @@ begin
     with Updater do
     begin
       Title := FLang.GetString(16);
-      DownloadCertificate();
+      FileNameRemote := 'cert.reg';
+      FileNameLocal := 'PMCW-Certificate.reg';
+      DownloadDirectory := GetTempDir();
     end;  //of begin
+
+    // Successfully downloaded certificate?
+    if Updater.Execute() then
+      mmDownloadCert.Enabled := False;
 
   finally
     Updater.Free;
