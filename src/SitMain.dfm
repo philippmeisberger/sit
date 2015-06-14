@@ -40,6 +40,8 @@ object Main: TMain
     Font.Name = 'Arial'
     Font.Style = [fsBold]
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
     Transparent = True
     OnClick = lCopyClick
     OnMouseEnter = lCopyMouseEnter
@@ -153,7 +155,7 @@ object Main: TMain
       385
       85)
     object bAdd: TButton
-      Left = 343
+      Left = 340
       Top = 36
       Width = 28
       Height = 23

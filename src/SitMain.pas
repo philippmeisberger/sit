@@ -327,6 +327,7 @@ begin
     bAccept.Caption := GetString(59);
     bShowSupport.Caption := GetString(60);
     bAdd.Hint := GetString(63);
+    lCopy.Hint := GetString(29);
   end;  //of with
 end;
 
