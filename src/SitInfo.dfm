@@ -26,10 +26,6 @@ object Info: TInfo
     TabOrder = 0
     object ts_infos: TTabSheet
       Caption = 'Infos'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         449
         244)
@@ -491,12 +487,12 @@ object Info: TInfo
           'System. IT-Firmen k'#246'nnen so mit wenigen Klicks ihren '
           '(virtuellen) Firmenstempel auf dem Kunden PC hinterlassen."'
           ''
-          'SIT ist durch internationale Copyright-Gesetze gesch'#252'tzt und '
-          'unterliegt dem Urheberrecht. Das Copyright f'#252'r alle Programm-'
-          'teile liegt beim Autor von SIT Philipp Meisberger (PM Code '
-          'Works). '
-          'F'#252'r Sch'#228'den an Hard- und Software, die durch die Be-'
-          'nutzung von SIT entstehen, wird keine Haftung '#252'bernommen.'
+          'Copyright (C) 2011 Philipp Meisberger '
+          ''
+          'Dieses Programm kann durch jedermann gem'#228#223' den '
+          'Bestimmungen der Deutschen Freien Software Lizenz genutzt '
+          'werden. Die Lizenz kann unter http://www.d-fsl.de abgerufen '
+          'werden.'
           ''
           '06/2015')
         ReadOnly = True
@@ -523,10 +519,6 @@ object Info: TInfo
     object ts_history: TTabSheet
       Caption = 'Versions History'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         449
         244)
@@ -560,17 +552,19 @@ object Info: TInfo
           ''
           'Version 3.2 [??.06.15]'
           ''
-          '- Verwendung des TaskDialogs (ab Vista)'
+          '- Logos m'#252'ssen nicht mehr zwingend beim Ausw'#228'hlen Bitmaps sein'
+          '  - Beim "'#220'bernehmen" wird Logo in Bitmap konvertiert'
           
             '- Men'#252'-Eintrag "Eintr'#228'ge anzeigen" von "Bearbeiten" nach "Ansich' +
             't" '
           '  verschoben'
+          '- Verwendung des TaskDialogs (ab Vista)'
           '- .ini/.reg Datei Parser v1.1 mit Multi-Line support'
           '- Sprache wird nun benutzerspezifisch gesetzt'
           '- Unterst'#252'tzung von Unicode'
           '- 32/64-Bit Bin'#228'rdateien'
           '- Updater v2.3'
-          '- OSUtils v2.1'
+          '- OSUtils v2.2'
           ''
           '----------------------------------------'
           ''
@@ -734,8 +728,8 @@ object Info: TInfo
             '----------------------------------------------------------------' +
             '-------'
           
-            'SIT wurde unter der BSD-Lizenz ver'#246'ffentlicht und ist somit Open' +
-            '-Source. '
+            'SIT wurde unter der D-FSL-Lizenz ver'#246'ffentlicht und ist somit Op' +
+            'en-Source. '
           'Der Quelltext kann auf der Website heruntergeladen werden.'
           ''
           

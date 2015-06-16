@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls,
-  CommCtrl, Menus, Dialogs, SitAPI, SitInfo, PMCW.LanguageFile, PMCW.Dialogs,
-  PMCW.OSUtils, PMCW.Updater;
+  CommCtrl, Menus, Dialogs, ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo,
+  PMCW.LanguageFile, PMCW.Dialogs, PMCW.OSUtils, PMCW.Updater;
 
 type
   { TMain }
@@ -88,11 +88,10 @@ type
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
-    procedure CheckIcon(AFile: string);
     procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     procedure SetLanguage(Sender: TObject);
-    function ShowCopyIconDialog(AFile: string): string;
+    function ShowCopyIconDialog(const AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
     procedure ShowValues(AReload: Boolean = True);
   end;
@@ -110,7 +109,7 @@ implementation
 
 procedure TMain.FormCreate(Sender: TObject);
 begin
-  // German language default
+  // Setup language
   FLang := TLanguageFile.Create(Self);
   FLang.AddLanguage(LANG_GERMAN, 100);
   FLang.AddLanguage(LANG_ENGLISH, 200);
@@ -183,28 +182,6 @@ begin
   ShowValues();
 end;
 
-
-{ private TMain.CheckIcon
-
-  Checks icon constraints. }
-
-procedure TMain.CheckIcon(AFile: string);
-begin
-  // Icon exists?
-  if not FileExists(AFile) then
-  begin
-    eLogo.SetFocus;
-    raise EAbort.Create(FLang.GetString(86));
-  end  //of begin
-  else
-    // Icon is a *.bmp file?
-    if (ExtractFileExt(AFile) <> '.bmp') then
-    begin
-      eLogo.SetFocus;
-      raise EAbort.Create(FLang.GetString(88));
-    end;  //of if
-end;
-
 { private TMain.OnUpdate
 
   Event that is called by TUpdateCheck when an update is available. }
@@ -262,20 +239,15 @@ end;
 
 procedure TMain.RefreshEdits(ASupportInfo: TSupportInformationBase);
 begin
-  try
-    with ASupportInfo do
-    begin
-      eLogo.Text := Icon;
-      eMan.Text := Manufacturer;
-      eModel.Text := Model;
-      eUrl.Text := Url;
-      ePhone.Text := Phone;
-      eHours.Text := Hours;
-    end;  //of with
-
-  except
-    FLang.ShowMessage(FLang.GetString(78), mtError);
-  end; //of try
+  with ASupportInfo do
+  begin
+    eLogo.Text := Icon;
+    eMan.Text := Manufacturer;
+    eModel.Text := Model;
+    eUrl.Text := Url;
+    ePhone.Text := Phone;
+    eHours.Text := Hours;
+  end;  //of with
 end;
 
 { private TMain.SetLanguage
@@ -335,24 +307,30 @@ end;
 
   Allows users to copy a icon in *.bmp format. }
 
-function TMain.ShowCopyIconDialog(AFile: string): string;
+function TMain.ShowCopyIconDialog(const AFile: string): string;
 var
   SaveDialog : TSaveDialog;
+  Image: TPicture;
+  Bitmap: TBitmap;
 
 begin
   Result := '';
 
-  // init dialog
+  // File exists?
+  if not FileExists(AFile) then
+    raise EAbort.Create(FLang.GetString(86));
+
+  // Init dialog
   SaveDialog := TSaveDialog.Create(Self);
 
   try
     with SaveDialog do
     begin
-      Title := FLang.GetString(62);
-      FileName := ExtractFileName(AFile);
-      Filter := FLang.GetString(67);
+      Title := StripHotkey(mmCopyIcon.Caption);
+      Filter := GraphicFilter(TBitmap);
       DefaultExt := '.bmp';
       Options := Options + [ofOverwritePrompt];
+      FileName := ChangeFileExt(ExtractFileName(AFile), DefaultExt);
     end;  //of with
 
     // Save clicked
@@ -362,14 +340,24 @@ begin
       if (ExtractFileExt(SaveDialog.FileName) <> SaveDialog.DefaultExt) then
         raise EAbort.Create(FLang.GetString(88));
 
-      // Copy valid icon
-      if CopyFile(PChar(AFile), PChar(SaveDialog.FileName), False) then
-      begin
+      Image := TPicture.Create;
+      Bitmap := TBitmap.Create;
+
+      // Try to convert any picture to bitmap
+      try
+        Image.LoadFromFile(AFile);
+        Bitmap.Width := Image.Width;
+        Bitmap.Height := Image.Height;
+        Bitmap.Canvas.Draw(0, 0, Image.Graphic);
+        Bitmap.SaveToFile(SaveDialog.FileName);
+
         FLang.ShowMessage(FLang.Format(87, [SaveDialog.FileName]));
-        result := SaveDialog.FileName;
-      end  //of begin
-      else
-        FLang.ShowMessage(FLang.GetString(80), mtError);
+        Result := SaveDialog.FileName;
+
+      finally
+        Bitmap.Free;
+        Image.Free;
+      end;  //of try
     end;  //of begin
 
   finally
@@ -394,9 +382,13 @@ begin
     // Set dialog options
     with SaveDialog do
     begin
-      Title := FLang.GetString(62);
-      FileName := FLang.GetString(64);
+      if AExportEdits then
+        Title := StripHotkey(mmExportEdit.Caption)
+      else
+        Title := StripHotkey(mmExport.Caption);
+
       Options := Options + [ofOverwritePrompt];
+      FileName := FLang.GetString(64);
 
       // Set OS dependend filter
       if (Win32MajorVersion >= 6) then
@@ -426,7 +418,7 @@ begin
       if SaveDialog.Execute then
         case saveDialog.FilterIndex of
           1: SupportInfo.SaveAsIni(saveDialog.FileName);
-          2: (SupportInfo as TSupportInformation).SaveAsReg(saveDialog.FileName);
+          2: (SupportInfo as TSupportInformation).SaveAsReg(SaveDialog.FileName);
         end;  //of case
 
     finally
@@ -435,7 +427,8 @@ begin
     end;  //of try
 
   except
-    FLang.ShowMessage(FLang.GetString(79), mtError);
+    on E: Exception do
+      FLang.ShowException(FLang.GetString(79), E.Message);
   end;  //of try
 end;
 
@@ -448,8 +441,8 @@ begin
   // Set title
   Caption := Application.Title + PLATFORM_ARCH;
 
+  // Reload support information?
   if AReload then
-    // Reload support information
     FSupportInfo.Load();
 
   // Refresh VCL
@@ -474,13 +467,23 @@ begin
   // Confirm save progress
   if (FLang.ShowMessage(FLang.GetString(70), mtConfirmation) = IDYES) then
   try
+    // Manufacturer is essential!
+    if (Trim(eMan.Text) = '') then
+    begin
+      FLang.EditBalloonTip(eMan.Handle, 2, 83, biError);
+      Exit;
+    end;  //of begin
+
     IconPath := eLogo.Text;
 
-    // Icon exists?
+    // Icon seems to exist?
     if (IconPath <> '') then
     begin
-      // Check icon constraints
-      CheckIcon(IconPath);
+      if not FileExists(IconPath) then
+      begin
+        FLang.EditBalloonTip(eLogo.Handle, 2, 86, biError);
+        Exit;
+      end;  //of begin
 
       // Make copy of selected icon?
       if cbCopyIcon.Checked then
@@ -490,40 +493,40 @@ begin
         // User clicked cancel?
         if (IconPath = '') then
           Exit;
-      end;  //of if
-    end;  //of if
+      end  //of if
+      else
+        // Icon must be a bitmap!
+        if (ExtractFileExt(IconPath) <> '.bmp') then
+        begin
+          FLang.EditBalloonTip(eLogo.Handle, 2, 88, biError);
+          Exit;
+        end;  //of begin
+    end;  //of begin
 
     // Save support information
-    // Note: Manufacturer is essential!
-    if (eMan.Text <> '') then
-      with FSupportInfo do
-      begin
-        Icon := IconPath;
-        Phone := ePhone.Text;
-        Hours := eHours.Text;
-        Manufacturer := eMan.Text;
-        Model := eModel.Text;
-        Url := eUrl.Text;
-        Save();
-      end  //of with
-    else
+    with FSupportInfo do
     begin
-      eMan.SetFocus;
-      raise EAbort.Create(FLang.GetString(83));
-    end;  //of if
+      Icon := IconPath;
+      Phone := ePhone.Text;
+      Hours := eHours.Text;
+      Manufacturer := eMan.Text;
+      Model := eModel.Text;
+      Url := eUrl.Text;
+      Save();
+    end;  //of with
 
     // Refresh VCL
     ShowValues(False);
 
     // Show success message in best case
-    Flang.ShowMessage(FLang.GetString(75));
+    FLang.ShowMessage(FLang.GetString(75));
 
   except
     on E: EAbort do
       FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.ShowMessage(FLang.GetString(81), mtError);
+      FLang.ShowException(FLang.GetString(81), E.Message);
   end;  //of try
 end;
 
@@ -538,25 +541,22 @@ end;
 
 { TMain.bAddClick
 
-  Allows users to search for a support information icon in *.bmp format. }
+  Allows users to search for a support information image. }
 
 procedure TMain.bAddClick(Sender: TObject);
 var
-  OpenDialog : TOpenDialog;
+  OpenDialog: TOpenPictureDialog;
   Image: TPicture;
 
 begin
-  Image := TPicture.Create;
-
-  // init dialog
-  OpenDialog := TOpenDialog.Create(Self);
+  // Init dialog
+  OpenDialog := TOpenPictureDialog.Create(Self);
 
   try
     // Set dialog options
     with OpenDialog do
     begin
       Title := FLang.GetString(63);
-      Filter := FLang.GetString(67);
 
       // Icon exists?
       if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
@@ -573,21 +573,28 @@ begin
     // "Open" clicked
     if OpenDialog.Execute then
     begin
-      Image.LoadFromFile(OpenDialog.FileName);
+      Image := TPicture.Create;
 
-      // Check square format of image and warn user
-      if (Image.Height <> Image.Width) then
-      begin
-        FLang.ShowMessage(FLang.Format([68, 69], [Image.Width, Image.Height]),
-          mtWarning);
-      end;  //of begin
+      try
+        Image.LoadFromFile(OpenDialog.FileName);
 
-      eLogo.Text := OpenDialog.FileName;
-    end;  //of if
+        // Check square format of image and warn user
+        if (Image.Height <> Image.Width) then
+        begin
+          FLang.ShowMessage(FLang.Format([68, 69], [Image.Width, Image.Height]),
+            mtWarning);
+        end;  //of begin
+
+        cbCopyIcon.Checked := not (Image.Graphic is TBitmap);
+        eLogo.Text := OpenDialog.FileName;
+
+      finally
+        Image.Free;
+      end;  //of try
+    end;  //of begin
 
   finally
     OpenDialog.Free;
-    Image.Free;
     eLogo.SetFocus;
   end;  //of try
 end;
@@ -609,7 +616,7 @@ begin
     // Set dialog options
     with OpenDialog do
     begin
-      Title := FLang.GetString(61);
+      Title := StripHotkey(mmImport.Caption);
 
       // Windows >= Vista: Import *.ini and *.reg files
       if (Win32MajorVersion >= 6) then
@@ -647,7 +654,8 @@ begin
     end;  //of try
 
   except
-    FLang.ShowMessage(FLang.GetString(82), mtError);
+    on E: Exception do
+      FLang.ShowException(FLang.GetString(82), E.Message);
   end;  //of try
 end;
 
@@ -712,7 +720,7 @@ begin
   end;  //of begin
 end;
 
-{ TMain.mmDelEditClick
+{ TMain.mmDeleteEditsClick
 
   Allows users to clear all text fields. }
 
@@ -735,9 +743,6 @@ end;
 procedure TMain.mmCopyIconClick(Sender: TObject);
 begin
   try
-    // Check icon constraints
-    CheckIcon(FSupportInfo.Icon);
-
     // Start copy icon procedure
     ShowCopyIconDialog(FSupportInfo.Icon);
 
@@ -746,18 +751,18 @@ begin
       FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.ShowMessage(FLang.GetString(80), mtError);
+      FLang.ShowException(FLang.GetString(80), E.Message);
   end;  //of try
 end;
 
-{ TMain.mmDelLogoClick
+{ TMain.mmDeleteIconClick
 
   Allows users to delete the support information icon. }
 
 procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
   // Show confirmation
-  if (FLang.ShowMessage(FLang.GetString(73), mtConfirmation) = IDYES) then
+  if (FLang.ShowMessage(FLang.Format(73, [FSupportInfo.Icon]), mtCustom) = IDYES) then
     if FSupportInfo.DeleteOEMIcon() then
     begin
       mmDeleteIcon.Enabled := False;
