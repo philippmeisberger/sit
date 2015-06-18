@@ -3,3 +3,4 @@ BACKUP/**
 src\__history\**
 **.dcu
 **.exe
+**.zip

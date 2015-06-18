@@ -209,8 +209,8 @@ begin
         FileNameRemote := 'sit64.exe';
       {$ELSE}
         // Ask user to permit download of 64-Bit version
-        if (FLang.ShowMessage(FLang.Format([34, 35], ['SIT']),
-          mtConfirmation) = IDYES) then
+        if (IsWindows64() and (FLang.ShowMessage(FLang.Format([34, 35], ['SIT']),
+          mtConfirmation) = IDYES)) then
           FileNameRemote := 'sit64.exe'
         else
           FileNameRemote := 'sit.exe';
