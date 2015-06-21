@@ -2,10 +2,10 @@ program Sit;
 
 uses
   Vcl.Forms,
+  PMCWMutex in 'PMCWMutex.pas',
   SitMain in 'SitMain.pas' {Main},
   SitInfo in 'SitInfo.pas' {Info},
   SitAPI in 'SitAPI.pas',
-  PMCW.Mutex in 'PMCW.Mutex.pas',
   AdminManifest in 'AdminManifest.pas';
 
 {$R *.res}

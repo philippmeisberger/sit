@@ -11,8 +11,8 @@ unit SitInfo;
 interface
 
 uses
-  SysUtils, Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls,
-  PMCW.OSUtils, System.Classes;
+  Classes, SysUtils, Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls,
+  PMCWOSUtils;
 
 type
   { TInfo }

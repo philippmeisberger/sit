@@ -13,7 +13,7 @@ interface
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls,
   CommCtrl, Menus, Dialogs, ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo,
-  PMCW.LanguageFile, PMCW.Dialogs, PMCW.OSUtils, PMCW.Updater;
+  PMCWLanguageFile, PMCWDialogs, PMCWOSUtils, PMCWUpdater;
 
 type
   { TMain }

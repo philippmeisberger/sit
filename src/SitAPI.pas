@@ -11,7 +11,7 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, ShellAPI, PMCW.IniFileParser, PMCW.OSUtils;
+  Windows, Classes, SysUtils, Registry, ShellAPI, PMCWIniFileParser, PMCWOSUtils;
 
 const
   { Ini-file section name constants }
