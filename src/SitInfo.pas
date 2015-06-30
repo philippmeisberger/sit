@@ -12,7 +12,7 @@ interface
 
 uses
   Classes, SysUtils, Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls,
-  PMCWOSUtils;
+  PMCWUpdater;
 
 type
   { TInfo }
@@ -38,7 +38,7 @@ implementation
 
 procedure TInfo.FormCreate(Sender: TObject);
 begin
-  lBuild.Caption := '(Build: '+ IntToStr(GetBuildNumber()) +')';
+  lBuild.Caption := '(Build: '+ IntToStr(TUpdateCheck.GetBuildNumber()) +')';
 end;
 
 end.

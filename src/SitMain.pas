@@ -11,9 +11,10 @@ unit SitMain;
 interface
 
 uses
-  Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls,
-  CommCtrl, Menus, Dialogs, ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo,
-  PMCWLanguageFile, PMCWDialogs, PMCWOSUtils, PMCWUpdater;
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls,
+  Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.CommCtrl, Vcl.Menus, Vcl.Dialogs,
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo, PMCWLanguageFile, PMCWDialogs,
+  PMCWOSUtils, PMCWUpdater;
 
 type
   { TMain }
@@ -152,19 +153,11 @@ end;
   VCL event that is called when form is shown. }
 
 procedure TMain.FormShow(Sender: TObject);
-var
-  Windows: string;
-  WindowsVistaMin: Boolean;
-
 begin
-  Windows := GetWinVersion();
-  WindowsVistaMin := (Win32MajorVersion >= 6);
-  cbCopyIcon.Enabled := WindowsVistaMin;
-  
-  // Check for incompatibility
-  if not (WindowsVistaMin or (Windows <> '')) then
+  // At least Windows 2000!
+  if not TOSVersion.Check(5) then
   begin
-    FLang.ShowMessage(FLang.Format([84, 85], [Windows]), mtError);
+    FLang.ShowMessage(FLang.Format([84, 85], [TOSVersion.Name]), mtError);
     bAccept.Enabled := False;
     mmFile.Enabled := False;
     mmEdit.Enabled := False;
@@ -177,6 +170,9 @@ begin
     bShowSupport.Enabled := False;
     Exit;
   end;  //of begin
+
+  // Copy icon only available for Vista and later
+  cbCopyIcon.Enabled := TOSVersion.Check(6);
 
   // Show support information
   ShowValues();
@@ -209,8 +205,8 @@ begin
         FileNameRemote := 'sit64.exe';
       {$ELSE}
         // Ask user to permit download of 64-Bit version
-        if (IsWindows64() and (FLang.ShowMessage(FLang.Format([34, 35], ['SIT']),
-          mtConfirmation) = IDYES)) then
+        if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
+          FLang.Format([34, 35], ['SIT']), mtConfirmation) = IDYES)) then
           FileNameRemote := 'sit64.exe'
         else
           FileNameRemote := 'sit.exe';
@@ -811,7 +807,8 @@ var
 
 begin
   // Certificate already installed?
-  if (PMCertExists() and (FLang.ShowMessage(27, 28, mtConfirmation) = IDNO)) then
+  if (TUpdate.PMCertificateExists() and (FLang.ShowMessage(27, 28,
+    mtConfirmation) = IDNO)) then
     Exit;
 
   // Init downloader

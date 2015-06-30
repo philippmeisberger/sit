@@ -26,10 +26,6 @@ object Info: TInfo
     TabOrder = 0
     object ts_infos: TTabSheet
       Caption = 'Infos'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         449
         244)
@@ -498,7 +494,7 @@ object Info: TInfo
           'werden. Die Lizenz kann unter http://www.d-fsl.de abgerufen '
           'werden.'
           ''
-          '06/2015')
+          '07/2015')
         ReadOnly = True
         TabOrder = 0
       end
@@ -523,10 +519,6 @@ object Info: TInfo
     object ts_history: TTabSheet
       Caption = 'Versions History'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         449
         244)
@@ -558,7 +550,7 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.2 [??.06.15]'
+          'Version 3.2 [??.07.15]'
           ''
           '- Logos m'#252'ssen nicht mehr zwingend beim Ausw'#228'hlen Bitmaps sein'
           '  - Beim "'#220'bernehmen" wird Logo in Bitmap konvertiert'
@@ -748,7 +740,7 @@ object Info: TInfo
             'n. Meine '
           'Adresse erfahren Sie unter team@pm-codeworks.de.'
           ''
-          '06/2015')
+          '07/2015')
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0
