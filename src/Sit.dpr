@@ -13,6 +13,7 @@ uses
 begin
   Application.Initialize;
   Application.Title := 'SIT';
+  Application.MainFormOnTaskbar := True;
   Application.CreateForm(TMain, Main);
   Application.Run;
 end.

@@ -550,17 +550,19 @@ object Info: TInfo
           'History'
           '--------'
           ''
-          'Version 3.2 [??.07.15]'
+          'Version 3.2 [08.07.15]'
           ''
-          '- Logos m'#252'ssen nicht mehr zwingend beim Ausw'#228'hlen Bitmaps sein'
-          '  - Beim "'#220'bernehmen" wird Logo in Bitmap konvertiert'
+          
+            '- Logo muss beim Ausw'#228'hlen nicht mehr zwingend vom Typ Bitmap se' +
+            'in'
+          '  - Automatische Konvertierung (in Bitmap) beim "'#220'bernehmen"  '
           
             '- Men'#252'-Eintrag "Eintr'#228'ge anzeigen" von "Bearbeiten" nach "Ansich' +
             't" '
-          '  verschoben'
+          'verschoben'
           '- Verwendung des TaskDialogs (ab Vista)'
-          '- .ini/.reg Datei Parser v1.1 mit Multi-Line support'
-          '- Sprache wird nun benutzerspezifisch gesetzt'
+          '- .ini/.reg Datei Parser v1.1.1'
+          '- Sprache wird nun benutzerspezifisch geladen'
           '- Unterst'#252'tzung von Unicode'
           '- 32/64-Bit Bin'#228'rdateien'
           '- Updater v2.3'
