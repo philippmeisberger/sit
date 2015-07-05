@@ -13,8 +13,8 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.CommCtrl, Vcl.Menus, Vcl.Dialogs,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo, PMCWLanguageFile, PMCWDialogs,
-  PMCWOSUtils, PMCWUpdater;
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo, PMCWLanguageFile, PMCWOSUtils,
+  PMCWUpdater;
 
 type
   { TMain }

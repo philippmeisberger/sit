@@ -4,8 +4,8 @@ object Info: TInfo
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = #220'ber SIT'
-  ClientHeight = 271
-  ClientWidth = 456
+  ClientHeight = 256
+  ClientWidth = 450
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clBlack
@@ -15,20 +15,24 @@ object Info: TInfo
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
+  DesignSize = (
+    450
+    256)
   PixelsPerInch = 96
   TextHeight = 14
   object PageControl: TPageControl
     Left = 0
     Top = 0
-    Width = 457
-    Height = 273
+    Width = 454
+    Height = 258
     ActivePage = ts_infos
+    Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     object ts_infos: TTabSheet
       Caption = 'Infos'
       DesignSize = (
-        449
-        244)
+        446
+        229)
       object iLogo: TImage
         Left = 24
         Top = 19
@@ -454,8 +458,8 @@ object Info: TInfo
         Transparent = True
       end
       object lCopy: TLabel
-        Left = 172
-        Top = 224
+        Left = 170
+        Top = 209
         Width = 112
         Height = 14
         Anchors = [akBottom]
@@ -467,6 +471,8 @@ object Info: TInfo
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
+        ExplicitLeft = 172
+        ExplicitTop = 224
       end
       object lBuild: TLabel
         Left = 30
@@ -476,10 +482,10 @@ object Info: TInfo
         Caption = '(Build: )'
       end
       object mInfos: TMemo
-        Left = 120
-        Top = 16
-        Width = 313
-        Height = 193
+        Left = 104
+        Top = 17
+        Width = 320
+        Height = 178
         Anchors = [akLeft, akTop, akRight, akBottom]
         Lines.Strings = (
           '"SIT ist ein Werkzeug zum einfachen Eintragen von System-'
@@ -490,20 +496,19 @@ object Info: TInfo
           'Copyright (C) 2011 Philipp Meisberger '
           ''
           'Dieses Programm kann durch jedermann gem'#228#223' den '
-          'Bestimmungen der Deutschen Freien Software Lizenz genutzt '
-          'werden. Die Lizenz kann unter http://www.d-fsl.de abgerufen '
-          'werden.'
-          ''
-          '07/2015')
+          'Bestimmungen der Deutschen Freien Software Lizenz '
+          'genutzt werden. Die Lizenz kann unter http://www.d-fsl.de '
+          'abgerufen werden.')
         ReadOnly = True
         TabOrder = 0
       end
       object bOk: TButton
-        Left = 352
-        Top = 216
+        Left = 349
+        Top = 201
         Width = 75
         Height = 25
         Anchors = [akRight, akBottom]
+        Cancel = True
         Caption = 'OK'
         Default = True
         Font.Charset = ANSI_CHARSET
@@ -520,11 +525,11 @@ object Info: TInfo
       Caption = 'Versions History'
       ImageIndex = 1
       DesignSize = (
-        449
-        244)
+        446
+        229)
       object lCopy2: TLabel
-        Left = 172
-        Top = 224
+        Left = 170
+        Top = 209
         Width = 112
         Height = 14
         Anchors = [akBottom]
@@ -536,12 +541,14 @@ object Info: TInfo
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
+        ExplicitLeft = 172
+        ExplicitTop = 224
       end
       object mHistory: TMemo
         Left = 24
         Top = 16
-        Width = 401
-        Height = 193
+        Width = 400
+        Height = 178
         Anchors = [akLeft, akTop, akRight, akBottom]
         Lines.Strings = (
           'SIT (alias "Supportinfo-Tool")'
@@ -748,11 +755,12 @@ object Info: TInfo
         TabOrder = 0
       end
       object bOk2: TButton
-        Left = 352
-        Top = 216
+        Left = 349
+        Top = 201
         Width = 75
         Height = 25
         Anchors = [akRight, akBottom]
+        Cancel = True
         Caption = 'OK'
         Default = True
         Font.Charset = ANSI_CHARSET
