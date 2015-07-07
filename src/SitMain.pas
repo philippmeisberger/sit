@@ -199,17 +199,18 @@ begin
       with Updater do
       begin
         Title := FLang.GetString(24);
-        FileNameLocal := 'SIT.exe';
+        FileNameLocal := 'SIT.zip';
+        Unzip := True;
 
       {$IFDEF WIN64}
-        FileNameRemote := 'sit64.exe';
+        FileNameRemote := 'sit64.zip';
       {$ELSE}
         // Ask user to permit download of 64-Bit version
         if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
           FLang.Format([34, 35], ['SIT']), mtConfirmation) = IDYES)) then
-          FileNameRemote := 'sit64.exe'
+          FileNameRemote := 'sit64.zip'
         else
-          FileNameRemote := 'sit.exe';
+          FileNameRemote := 'sit.zip';
       {$ENDIF}
       end;  //of begin
 
