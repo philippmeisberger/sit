@@ -1,8 +1,8 @@
 ﻿SIT (alias "Supportinfo-Tool")
 Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 
-History
---------
+Changelog
+-----------
 
 Version 3.2 [08.07.15]
 

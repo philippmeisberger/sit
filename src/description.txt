@@ -1,0 +1,5 @@
+﻿"SIT ist ein Werkzeug zum einfachen Eintragen von System-Herstellerinformationen in den Systemsteuerungszweig System. IT-Firmen können so mit wenigen Klicks ihren (virtuellen) Firmenstempel auf dem Kunden PC hinterlassen."
+
+Copyright (C) 2011 Philipp Meisberger 
+
+Dieses Programm kann durch jedermann gemäß den Bestimmungen der Deutschen Freien Software Lizenz genutzt werden. Die Lizenz kann unter http://www.d-fsl.de abgerufen werden.

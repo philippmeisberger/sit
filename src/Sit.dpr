@@ -4,9 +4,9 @@ uses
   Vcl.Forms,
   PMCWMutex in 'PMCWMutex.pas',
   SitMain in 'SitMain.pas' {Main},
-  SitInfo in 'SitInfo.pas' {Info},
   SitAPI in 'SitAPI.pas',
-  AdminManifest in 'AdminManifest.pas';
+  AdminManifest in 'AdminManifest.pas',
+  PMCWAbout in 'PMCWAbout.pas' {Info};
 
 {$R *.res}
 

@@ -13,7 +13,7 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.CommCtrl, Vcl.Menus, Vcl.Dialogs,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, SitAPI, SitInfo, PMCWLanguageFile, PMCWOSUtils,
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, SitAPI, PMCWAbout, PMCWLanguageFile, PMCWOSUtils,
   PMCWUpdater;
 
 type
@@ -199,18 +199,17 @@ begin
       with Updater do
       begin
         Title := FLang.GetString(24);
-        FileNameLocal := 'SIT.zip';
-        Unzip := True;
+        FileNameLocal := 'SIT.exe';
 
       {$IFDEF WIN64}
-        FileNameRemote := 'sit64.zip';
+        FileNameRemote := 'sit64.exe';
       {$ELSE}
         // Ask user to permit download of 64-Bit version
         if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
           FLang.Format([34, 35], ['SIT']), mtConfirmation) = IDYES)) then
-          FileNameRemote := 'sit64.zip'
+          FileNameRemote := 'sit64.exe'
         else
-          FileNameRemote := 'sit.zip';
+          FileNameRemote := 'sit.exe';
       {$ENDIF}
       end;  //of begin
 
