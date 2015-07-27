@@ -279,9 +279,9 @@ object Main: TMain
       object N3: TMenuItem
         Caption = '-'
       end
-      object mmDownloadCert: TMenuItem
-        Caption = 'Zertifikat herunterladen'
-        OnClick = mmDownloadCertClick
+      object mmInstallCertificate: TMenuItem
+        Caption = 'Zertifikat installieren'
+        OnClick = mmInstallCertificateClick
       end
       object mmReport: TMenuItem
         Caption = 'Fehler melden'
@@ -290,9 +290,9 @@ object Main: TMain
       object N4: TMenuItem
         Caption = '-'
       end
-      object mmInfo: TMenuItem
-        Caption = #220'ber...'
-        OnClick = mmInfoClick
+      object mmAbout: TMenuItem
+        Caption = #220'ber SIT'
+        OnClick = mmAboutClick
       end
     end
   end

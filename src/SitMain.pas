@@ -30,12 +30,12 @@ type
     mmEdit: TMenuItem;
     mmDeleteValues: TMenuItem;
     mmHelp: TMenuItem;
-    mmInfo: TMenuItem;
+    mmAbout: TMenuItem;
     mmExportEdit: TMenuItem;
     N1: TMenuItem;
     mmDeleteEdits: TMenuItem;
     mmDeleteIcon: TMenuItem;
-    mmDownloadCert: TMenuItem;
+    mmInstallCertificate: TMenuItem;
     mmUpdate: TMenuItem;
     N3: TMenuItem;
     N4: TMenuItem;
@@ -77,9 +77,9 @@ type
     procedure mmEngClick(Sender: TObject);
     procedure mmFreClick(Sender: TObject);
     procedure mmUpdateClick(Sender: TObject);
-    procedure mmDownloadCertClick(Sender: TObject);
+    procedure mmInstallCertificateClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
-    procedure mmInfoClick(Sender: TObject);
+    procedure mmAboutClick(Sender: TObject);
     procedure eLogoDblClick(Sender: TObject);
     procedure eUrlDblClick(Sender: TObject);
     procedure lCopyClick(Sender: TObject);
@@ -255,7 +255,7 @@ begin
   with FLang do
   begin
     // Set captions for TMenuItems
-    mmFile.Caption := GetString(41);
+    mmFile.Caption := GetString(33);
     mmImport.Caption := GetString(42);
     mmExport.Caption := GetString(43);
     mmExportEdit.Caption := GetString(44);
@@ -269,15 +269,15 @@ begin
     mmDeleteIcon.Caption := GetString(49);
 
     // "View" menu
-    mmView.Caption := GetString(20);
+    mmView.Caption := GetString(10);
     mmLang.Caption := GetString(25);
 
     // "Help" menu
     mmHelp.Caption := GetString(14);
     mmUpdate.Caption := GetString(15);
-    mmDownloadCert.Caption := GetString(16);
+    mmInstallCertificate.Caption := GetString(16);
     mmReport.Caption := GetString(26);
-    mmInfo.Caption := GetString(17);
+    mmAbout.Caption := Format(17, [Application.Title]);
 
     // Set captions for labels
     gbIcon.Caption := GetString(51);
@@ -797,36 +797,23 @@ begin
   FLang.ChangeLanguage(LANG_FRENCH);
 end;
 
-{ TMain.mmDownloadCertClick
+{ TMain.mmInstallCertificateClick
 
-  MainMenu entry that allows to download the PM Code Works certificate. }
+  MainMenu entry that allows to install the PM Code Works certificate. }
 
-procedure TMain.mmDownloadCertClick(Sender: TObject);
+procedure TMain.mmInstallCertificateClick(Sender: TObject);
 var
   Updater: TUpdate;
 
 begin
-  // Certificate already installed?
-  if (TUpdate.PMCertificateExists() and (FLang.ShowMessage(27, 28,
-    mtConfirmation) = IDNO)) then
-    Exit;
-
-  // Init downloader
   Updater := TUpdate.Create(Self, FLang);
 
-  // Download certificate
   try
-    with Updater do
-    begin
-      Title := FLang.GetString(16);
-      FileNameRemote := 'cert.reg';
-      FileNameLocal := 'PMCW-Certificate.reg';
-      DownloadDirectory := GetTempDir();
-    end;  //of begin
-
-    // Successfully downloaded certificate?
-    if Updater.Execute() then
-      mmDownloadCert.Enabled := False;
+    // Certificate already installed?
+    if not Updater.CertificateExists() then
+      Updater.InstallCertificate()
+    else
+      FLang.ShowMessage(FLang.GetString(27), mtInformation);
 
   finally
     Updater.Free;
@@ -856,7 +843,7 @@ end;
 
   MainMenu entry that shows a info page with build number and version history. }
 
-procedure TMain.mmInfoClick(Sender: TObject);
+procedure TMain.mmAboutClick(Sender: TObject);
 var
   Info: TInfo;
 
