@@ -1,5 +1,8 @@
 program Sit;
 
+{$R 'description.res' 'description.rc'}
+{$R 'changelog.res' 'changelog.rc'}
+
 uses
   Vcl.Forms,
   PMCWMutex in 'PMCWMutex.pas',

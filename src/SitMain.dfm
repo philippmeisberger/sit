@@ -10,13 +10,13 @@ object Main: TMain
   Color = 1797885
   Constraints.MinHeight = 170
   Constraints.MinWidth = 362
-  Font.Charset = ANSI_CHARSET
+  Font.Charset = DEFAULT_CHARSET
   Font.Color = clBlack
   Font.Height = -11
   Font.Name = 'Arial'
   Font.Style = []
   Menu = MainMenu
-  OldCreateOrder = False
+  OldCreateOrder = True
   Position = poScreenCenter
   Visible = True
   OnCreate = FormCreate
