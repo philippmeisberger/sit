@@ -156,15 +156,14 @@
         <RcCompile Include="changelog.rc">
             <Form>changelog.res</Form>
         </RcCompile>
+        <DCCReference Include="AdminManifest.pas"/>
         <DCCReference Include="PMCWMutex.pas"/>
         <DCCReference Include="SitMain.pas">
             <Form>Main</Form>
         </DCCReference>
         <DCCReference Include="SitAPI.pas"/>
-        <DCCReference Include="AdminManifest.pas"/>
         <DCCReference Include="PMCWAbout.pas">
             <Form>Info</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
@@ -584,13 +583,13 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
             </Deployment>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

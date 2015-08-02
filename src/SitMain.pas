@@ -111,6 +111,7 @@ begin
   FLang := TLanguageFile.Create(Self);
   FLang.Interval := 100;
   FLang.BuildLanguageMenu(MainMenu, mmLang);
+  FLang.Update();
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create(Self, 'SIT', FLang);
