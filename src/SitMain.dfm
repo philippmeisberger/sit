@@ -254,19 +254,16 @@ object Main: TMain
           AutoCheck = True
           Caption = 'Deutsch (German)'
           RadioItem = True
-          OnClick = mmGerClick
         end
         object mmEng: TMenuItem
           AutoCheck = True
           Caption = 'Englisch (English)'
           RadioItem = True
-          OnClick = mmEngClick
         end
         object mmFre: TMenuItem
           AutoCheck = True
           Caption = 'Franz'#246'sisch (Fran'#231'ais)'
           RadioItem = True
-          OnClick = mmFreClick
         end
       end
     end
