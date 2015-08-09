@@ -9,8 +9,9 @@ Version 3.2 [??.08.15]
 - Logo muss beim Auswählen nicht mehr zwingend vom Typ Bitmap sein
   - Automatische Konvertierung (in Bitmap) beim "Übernehmen"  
 - Menü-Eintrag "Einträge anzeigen" von "Bearbeiten" nach "Ansicht" verschoben
-- Verwendung des TaskDialogs (ab Vista)
 - .ini/.reg Datei Parser v1.1.1
+- Nutzung von Windows spezifischen grafischen Features (ab Vista)
+  - Verwendung des TaskDialogs
 - Sprache wird nun benutzerspezifisch geladen
 - Unterstützung von Unicode
 - 32/64-Bit Binärdateien
