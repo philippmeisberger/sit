@@ -2,9 +2,9 @@
 Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 
 Changelog
------------
+=========
 
-Version 3.2 [??.08.15]
+Version 3.2 [22.08.15]
 
 - Logo muss beim Auswählen nicht mehr zwingend vom Typ Bitmap sein
   - Automatische Konvertierung (in Bitmap) beim "Übernehmen"  

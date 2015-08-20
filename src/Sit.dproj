@@ -107,8 +107,8 @@
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>2</VerInfo_MinorVer>
-        <VerInfo_Build>376</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.376;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE8</VerInfo_Keys>
+        <VerInfo_Build>378</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.378;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE8</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <VerInfo_MinorVer>2</VerInfo_MinorVer>
@@ -125,6 +125,7 @@
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_PreRelease>true</VerInfo_PreRelease>
@@ -136,13 +137,13 @@
         <VerInfo_Build>34</VerInfo_Build>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <VerInfo_Build>34</VerInfo_Build>
+        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <DCC_DcuOutput>debug\win64\</DCC_DcuOutput>
         <DCC_ExeOutput>..\debug\win64\</DCC_ExeOutput>
         <VerInfo_MinorVer>2</VerInfo_MinorVer>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>323</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.323;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
-        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.2.0.34;InternalName=SIT;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=;ProductName=SIT;ProductVersion=3.2;Comments=Delphi XE7</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
@@ -186,6 +187,10 @@
                     <Source Name="MainSource">Sit.dpr</Source>
                 </Source>
                 <Excluded_Packages>
+                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\LibD22\dclfrx22.bpl">Datei C:\Program Files (x86)\FastReports\LibD22\dclfrx22.bpl nicht gefunden</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\LibD22\dclfrxDB22.bpl">Datei C:\Program Files (x86)\FastReports\LibD22\dclfrxDB22.bpl nicht gefunden</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\LibD22\dclfrxe22.bpl">Datei C:\Program Files (x86)\FastReports\LibD22\dclfrxe22.bpl nicht gefunden</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\LibD22\dclfrxtee22.bpl">Datei C:\Program Files (x86)\FastReports\LibD22\dclfrxtee22.bpl nicht gefunden</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k220.bpl">Microsoft Office 2000 Beispiele für gekapselte Komponenten für Automatisierungsserver</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dclofficexp220.bpl">Microsoft Office XP Beispiele für gekapselte Komponenten für Automation Server</Excluded_Packages>
                 </Excluded_Packages>
@@ -583,13 +588,13 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
             </Deployment>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
