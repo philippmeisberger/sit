@@ -41,9 +41,6 @@ type
     N4: TMenuItem;
     mmView: TMenuItem;
     mmLang: TMenuItem;
-    mmGer: TMenuItem;
-    mmEng: TMenuItem;
-    mmFre: TMenuItem;
     mmReport: TMenuItem;
     mmCopyIcon: TMenuItem;
     N5: TMenuItem;
@@ -273,7 +270,7 @@ begin
     eLogo.EditLabel.Caption := GetString(53);
     cbCopyIcon.Caption := mmCopyIcon.Caption;
 
-    gbInfo.Caption := GetString(0);
+    gbInfo.Caption := GetString(52);
     eMan.EditLabel.Caption := GetString(54);
     ePhone.EditLabel.Caption := GetString(55);
     eHours.EditLabel.Caption := GetString(56);

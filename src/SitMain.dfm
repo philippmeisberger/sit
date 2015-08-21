@@ -250,21 +250,6 @@ object Main: TMain
       end
       object mmLang: TMenuItem
         Caption = 'Sprache w'#228'hlen'
-        object mmGer: TMenuItem
-          AutoCheck = True
-          Caption = 'Deutsch (German)'
-          RadioItem = True
-        end
-        object mmEng: TMenuItem
-          AutoCheck = True
-          Caption = 'Englisch (English)'
-          RadioItem = True
-        end
-        object mmFre: TMenuItem
-          AutoCheck = True
-          Caption = 'Franz'#246'sisch (Fran'#231'ais)'
-          RadioItem = True
-        end
       end
     end
     object mmHelp: TMenuItem
