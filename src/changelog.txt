@@ -1,4 +1,4 @@
-﻿SIT (alias "Supportinfo-Tool")
+﻿SIT (alias "Support Information Tool")
 Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 
 Changelog
@@ -157,7 +157,7 @@ Version 1.1 [10.02.11]
 
 Version 1.0 [01.02.11]
 
-Erste Version von SIT (alias "Supportinfo-Tool")
+Erste Version von SIT (alias "Support Information Tool")
 
 -----------------------------------------------------------------------
 SIT wurde unter der D-FSL-Lizenz veröffentlicht und ist somit Open-Source. Der Quelltext kann auf der Website heruntergeladen werden.
