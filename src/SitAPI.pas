@@ -11,7 +11,8 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, ShellAPI, PMCWIniFileParser, PMCWOSUtils;
+  Windows, Classes, SysUtils, Registry, ShellAPI, Winapi.SHFolder, PMCWOSUtils,
+  PMCWIniFileParser;
 
 const
   { Ini-file section name constants }
@@ -461,7 +462,7 @@ end;
 
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
-  Result := GetWinDir() + OEMINFO_INFO;
+  Result := GetFolderPath(CSIDL_WINDOWS) + OEMINFO_INFO;
 end;
 
 { public TSupportInformationXP.Clear
@@ -501,7 +502,7 @@ end;
 
 function TSupportInformationXP.GetOEMIcon(): string;
 begin
-  Result := GetWinDir() + OEMINFO_LOGO;
+  Result := GetFolderPath(CSIDL_WINDOWS) + OEMINFO_LOGO;
 end;
 
 { public TSupportInformationXP.Load

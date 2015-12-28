@@ -13,8 +13,8 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.CommCtrl, Vcl.Menus, Vcl.Dialogs,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, SitAPI, PMCWAbout, PMCWLanguageFile, PMCWOSUtils,
-  PMCWUpdater;
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, SitAPI, PMCWAbout, PMCWOSUtils,
+  PMCWLanguageFile, PMCWUpdater, SHFolder;
 
 type
   { TMain }
@@ -97,6 +97,7 @@ var
 implementation
 
 {$R *.dfm}
+{$I LanguageIDs.inc}
 
 { TMain.FormCreate
 
@@ -108,7 +109,6 @@ begin
   FLang := TLanguageFile.Create(Self);
   FLang.Interval := 100;
   FLang.BuildLanguageMenu(MainMenu, mmLang);
-  FLang.Update();
 
   // Init update notificator
   FUpdateCheck := TUpdateCheck.Create(Self, 'SIT', FLang);
@@ -117,7 +117,7 @@ begin
   FUpdateCheck.CheckForUpdate(False);
 
   // Init support information instance
-  if (Win32MajorVersion >= 6) then
+  if CheckWin32Version(6) then
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
@@ -141,9 +141,10 @@ end;
 procedure TMain.FormShow(Sender: TObject);
 begin
   // At least Windows 2000!
-  if not TOSVersion.Check(5) then
+  if not CheckWin32Version(5) then
   begin
-    FLang.ShowMessage(FLang.Format([84, 85], [TOSVersion.Name]), mtError);
+    FLang.ShowMessage(FLang.Format([LID_ERROR_INCOMPATIBLE1, LID_ERROR_INCOMPATIBLE2],
+      [TOSVersion.Name]), mtError);
     bAccept.Enabled := False;
     mmFile.Enabled := False;
     mmEdit.Enabled := False;
@@ -158,7 +159,7 @@ begin
   end;  //of begin
 
   // Copy icon only available for Vista and later
-  cbCopyIcon.Enabled := TOSVersion.Check(6);
+  cbCopyIcon.Enabled := CheckWin32Version(6);
 
   // Show support information
   ShowValues();
@@ -174,8 +175,8 @@ var
 
 begin
   // Ask user to permit download
-  if (FLang.ShowMessage(FLang.Format(21, [ANewBuild]), FLang.GetString(22),
-    mtConfirmation) = IDYES) then
+  if (FLang.ShowMessage(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
+    FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
   begin
     // init TUpdate instance
     Updater := TUpdate.Create(Self, FLang);
@@ -184,7 +185,7 @@ begin
       // Set updater options
       with Updater do
       begin
-        Title := FLang.GetString(24);
+        Title := FLang.GetString(LID_UPDATE_DOWNLOAD);
         FileNameLocal := 'SIT.exe';
 
       {$IFDEF WIN64}
@@ -192,7 +193,8 @@ begin
       {$ELSE}
         // Ask user to permit download of 64-Bit version
         if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
-          FLang.Format([34, 35], ['SIT']), mtConfirmation) = IDYES)) then
+          FLang.Format([LID_UPDATE_64BIT, LID_UPDATE_64BIT_CONFIRM], ['SIT']),
+          mtConfirmation) = IDYES)) then
           FileNameRemote := 'sit64.exe'
         else
           FileNameRemote := 'sit.exe';
@@ -203,7 +205,7 @@ begin
       if Updater.Execute() then
       begin
         // Caption "Search for update"
-        mmUpdate.Caption := FLang.GetString(15);
+        mmUpdate.Caption := FLang.GetString(LID_UPDATE_SEARCH);
         mmUpdate.Enabled := False;
       end;  //of begin
 
@@ -212,7 +214,7 @@ begin
     end;  //of try
   end  //of begin
   else
-    mmUpdate.Caption := FLang.GetString(24);
+    mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
 end;
 
 { private TMain.RefreshEdits
@@ -241,47 +243,47 @@ begin
   with FLang do
   begin
     // Set captions for TMenuItems
-    mmFile.Caption := GetString(33);
-    mmImport.Caption := GetString(42);
-    mmExport.Caption := GetString(43);
-    mmExportEdit.Caption := GetString(44);
+    mmFile.Caption := GetString(LID_FILE);
+    mmImport.Caption := GetString(LID_IMPORT);
+    mmExport.Caption := GetString(LID_EXPORT);
+    mmExportEdit.Caption := GetString(LID_INPUT_EXPORT);
 
     // "Edit" menu
-    mmEdit.Caption := GetString(45);
-    mmShow.Caption := GetString(46);
-    mmDeleteValues.Caption := GetString(47);
-    mmDeleteEdits.Caption := GetString(48);
-    mmCopyIcon.Caption := GetString(50);
-    mmDeleteIcon.Caption := GetString(49);
+    mmEdit.Caption := GetString(LID_EDIT);
+    mmShow.Caption := GetString(LID_ITEMS_SHOW);
+    mmDeleteValues.Caption := GetString(LID_ITEMS_DELETE);
+    mmDeleteEdits.Caption := GetString(LID_INPUT_DELETE);
+    mmCopyIcon.Caption := GetString(LID_ICON_COPY);
+    mmDeleteIcon.Caption := GetString(LID_ICON_DELETE);
 
     // "View" menu
-    mmView.Caption := GetString(10);
-    mmLang.Caption := GetString(25);
+    mmView.Caption := GetString(LID_VIEW);
+    mmLang.Caption := GetString(LID_SELECT_LANGUAGE);
 
     // "Help" menu
-    mmHelp.Caption := GetString(14);
-    mmUpdate.Caption := GetString(15);
-    mmInstallCertificate.Caption := GetString(16);
-    mmReport.Caption := GetString(26);
-    mmAbout.Caption := Format(17, [Application.Title]);
+    mmHelp.Caption := GetString(LID_HELP);
+    mmUpdate.Caption := GetString(LID_UPDATE_SEARCH);
+    mmInstallCertificate.Caption := GetString(LID_CERTIFICATE_INSTALL);
+    mmReport.Caption := GetString(LID_REPORT_BUG);
+    mmAbout.Caption := Format(LID_ABOUT, [Application.Title]);
 
     // Set captions for labels
-    gbIcon.Caption := GetString(51);
-    eLogo.EditLabel.Caption := GetString(53);
+    gbIcon.Caption := GetString(LID_ICON);
+    eLogo.EditLabel.Caption := GetString(LID_ICON_FILE);
     cbCopyIcon.Caption := mmCopyIcon.Caption;
 
     gbInfo.Caption := GetString(52);
-    eMan.EditLabel.Caption := GetString(54);
-    ePhone.EditLabel.Caption := GetString(55);
-    eHours.EditLabel.Caption := GetString(56);
-    eModel.EditLabel.Caption := GetString(57);
-    eUrl.EditLabel.Caption := GetString(58);
+    eMan.EditLabel.Caption := GetString(LID_MANUFACTURER);
+    ePhone.EditLabel.Caption := GetString(LID_PHONE);
+    eHours.EditLabel.Caption := GetString(LID_HOURS);
+    eModel.EditLabel.Caption := GetString(LID_MODEL);
+    eUrl.EditLabel.Caption := GetString(LID_URL);
 
     // Set captions for buttons
-    bAccept.Caption := GetString(59);
-    bShowSupport.Caption := GetString(60);
-    bAdd.Hint := GetString(63);
-    lCopy.Hint := GetString(29);
+    bAccept.Caption := GetString(LID_APPLY);
+    bShowSupport.Caption := GetString(LID_SHOW);
+    bAdd.Hint := GetString(LID_ICON_SELECT);
+    lCopy.Hint := GetString(LID_TO_WEBSITE);
   end;  //of with
 end;
 
@@ -300,7 +302,7 @@ begin
 
   // File exists?
   if not FileExists(AFile) then
-    raise EAbort.Create(FLang.GetString(86));
+    raise EAbort.Create(FLang.GetString(LID_ERROR_ICON_NOT_EXIST));
 
   // Init dialog
   SaveDialog := TSaveDialog.Create(Self);
@@ -320,7 +322,7 @@ begin
     begin
       // Destination file is a *.bmp file?
       if (ExtractFileExt(SaveDialog.FileName) <> SaveDialog.DefaultExt) then
-        raise EAbort.Create(FLang.GetString(88));
+        raise EAbort.Create(FLang.GetString(LID_ERROR_INVALID_EXT));
 
       Image := TPicture.Create;
       Bitmap := TBitmap.Create;
@@ -333,7 +335,7 @@ begin
         Bitmap.Canvas.Draw(0, 0, Image.Graphic);
         Bitmap.SaveToFile(SaveDialog.FileName);
 
-        FLang.ShowMessage(FLang.Format(87, [SaveDialog.FileName]));
+        FLang.ShowMessage(FLang.Format(LID_ICON_COPIED, [SaveDialog.FileName]));
         Result := SaveDialog.FileName;
 
       finally
@@ -353,7 +355,7 @@ end;
   
 procedure TMain.ShowExportDialog(AExportEdits: Boolean);
 var
-  SaveDialog : TSaveDialog;
+  SaveDialog: TSaveDialog;
   SupportInfo: TSupportInformationBase;
 
 begin
@@ -370,19 +372,19 @@ begin
         Title := StripHotkey(mmExport.Caption);
 
       Options := Options + [ofOverwritePrompt];
-      FileName := FLang.GetString(64);
+      FileName := FLang.GetString(LID_EXPORT_DEFAULT);
 
       // Set OS dependend filter
-      if (Win32MajorVersion >= 6) then
+      if CheckWin32Version(6) then
       begin
         // Windows >= Vista: Export as *.ini and *.reg
-        Filter := FLang.GetString(65);
+        Filter := FLang.GetString(LID_FILTER_INI_FILE) +'|'+ FLang.GetString(LID_FILTER_REGISTRY_FILE);
         FilterIndex := 2;
       end  //of begin
       else
       begin
         // Windows < Vista: Export only as *.ini
-        Filter := FLang.GetString(66);
+        Filter := FLang.GetString(LID_FILTER_INI_FILE);
         DefaultExt := '.ini';
       end;  //of if
     end;  //of with
@@ -398,8 +400,8 @@ begin
     try
       // "Save" clicked
       if SaveDialog.Execute then
-        case saveDialog.FilterIndex of
-          1: SupportInfo.SaveAsIni(saveDialog.FileName);
+        case SaveDialog.FilterIndex of
+          1: SupportInfo.SaveAsIni(SaveDialog.FileName);
           2: (SupportInfo as TSupportInformation).SaveAsReg(SaveDialog.FileName);
         end;  //of case
 
@@ -410,7 +412,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(79), E.Message);
+      FLang.ShowException(FLang.GetString(LID_ERROR_WRITING_FILE), E.Message);
   end;  //of try
 end;
 
@@ -447,12 +449,12 @@ var
 
 begin
   // Confirm save progress
-  if (FLang.ShowMessage(FLang.GetString(70), mtConfirmation) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(LID_ITEMS_SAVE_CONFIRM), mtConfirmation) = IDYES) then
   try
     // Manufacturer is essential!
     if (Trim(eMan.Text) = '') then
     begin
-      FLang.EditBalloonTip(eMan.Handle, 2, 83, biError);
+      FLang.EditBalloonTip(eMan.Handle, LID_ERROR, LID_NOTHING_ENTERED, biError);
       Exit;
     end;  //of begin
 
@@ -463,7 +465,7 @@ begin
     begin
       if not FileExists(IconPath) then
       begin
-        FLang.EditBalloonTip(eLogo.Handle, 2, 86, biError);
+        FLang.EditBalloonTip(eLogo.Handle, LID_ERROR, LID_ERROR_ICON_NOT_EXIST, biError);
         Exit;
       end;  //of begin
 
@@ -480,7 +482,7 @@ begin
         // Icon must be a bitmap!
         if (ExtractFileExt(IconPath) <> '.bmp') then
         begin
-          FLang.EditBalloonTip(eLogo.Handle, 2, 88, biError);
+          FLang.EditBalloonTip(eLogo.Handle, LID_ERROR, LID_ERROR_INVALID_EXT, biError);
           Exit;
         end;  //of begin
     end;  //of begin
@@ -501,14 +503,14 @@ begin
     ShowValues(False);
 
     // Show success message in best case
-    FLang.ShowMessage(FLang.GetString(75));
+    FLang.ShowMessage(FLang.GetString(LID_ITEMS_SAVED));
 
   except
     on E: EAbort do
       FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString(81), E.Message);
+      FLang.ShowException(FLang.GetString(LID_ERROR_SAVING), E.Message);
   end;  //of try
 end;
 
@@ -538,7 +540,7 @@ begin
     // Set dialog options
     with OpenDialog do
     begin
-      Title := FLang.GetString(63);
+      Title := FLang.GetString(LID_ICON_SELECT);
 
       // Icon exists?
       if ((eLogo.Text <> '') and FileExists(eLogo.Text)) then
@@ -549,7 +551,7 @@ begin
       end  //of begin
       else
         // Open picture folder of current user
-        InitialDir := '%USERPROFILE%\Pictures';
+        InitialDir := GetFolderPath(CSIDL_MYPICTURES);
     end;  //of with
 
     // "Open" clicked
@@ -563,8 +565,8 @@ begin
         // Check square format of image and warn user
         if (Image.Height <> Image.Width) then
         begin
-          FLang.ShowMessage(FLang.Format([68, 69], [Image.Width, Image.Height]),
-            mtWarning);
+          FLang.ShowMessage(FLang.Format([LID_ICON_NOT_SQUARE1, LID_ICON_NOT_SQUARE2],
+            [Image.Width, Image.Height]), mtWarning);
         end;  //of begin
 
         cbCopyIcon.Checked := not (Image.Graphic is TBitmap);
@@ -601,14 +603,14 @@ begin
       Title := StripHotkey(mmImport.Caption);
 
       // Windows >= Vista: Import *.ini and *.reg files
-      if (Win32MajorVersion >= 6) then
+      if CheckWin32Version(6) then
       begin
-        Filter := FLang.GetString(65);
+        Filter := FLang.GetString(LID_FILTER_INI_FILE) +'|'+ FLang.GetString(LID_FILTER_REGISTRY_FILE);
         FilterIndex := 2;
       end  //of begin
       else
         // Windows < Vista: Import only *.ini files
-        Filter := FLang.GetString(66);
+        Filter := FLang.GetString(LID_FILTER_INI_FILE);
     end;  //of with
 
     // Create deep copy of TSupportInformation object
@@ -637,7 +639,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(82), E.Message);
+      FLang.ShowException(FLang.GetString(LID_ERROR_IMPORTING), E.Message);
   end;  //of try
 end;
 
@@ -658,7 +660,7 @@ procedure TMain.mmExportEditClick(Sender: TObject);
 begin
   if ((eLogo.Text = '') and (eMan.Text = '') and (eModel.Text = '') and
     (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
-    FLang.ShowMessage(FLang.GetString(83), mtWarning)
+    FLang.ShowMessage(FLang.GetString(LID_NOTHING_ENTERED), mtWarning)
   else
     ShowExportDialog(True);
 end;
@@ -679,9 +681,10 @@ end;
 procedure TMain.mmDeleteValuesClick(Sender: TObject);
 begin
   // Show confirmation before deleting
-  if (FLang.ShowMessage(FLang.GetString(71), mtCustom) = IDYES) then
+  if (FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETE_CONFIRM), mtCustom) = IDYES) then
   begin
-    if (FLang.ShowMessage(FLang.GetString(72), mtConfirmation) = IDYES) then
+    if (FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETE_STORE),
+      mtConfirmation) = IDYES) then
       ShowExportDialog(False);
 
     // Remove icon?
@@ -695,10 +698,10 @@ begin
       mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
       mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
       FSupportInfo.Clear;
-      FLang.ShowMessage(FLang.GetString(74));
+      FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETED));
     end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(76), mtError);
+      FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING), mtError);
   end;  //of begin
 end;
 
@@ -733,7 +736,7 @@ begin
       FLang.ShowMessage(E.Message, mtWarning);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString(80), E.Message);
+      FLang.ShowException(FLang.GetString(LID_ERROR_COPYING), E.Message);
   end;  //of try
 end;
 
@@ -744,7 +747,8 @@ end;
 procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
   // Show confirmation
-  if (FLang.ShowMessage(FLang.Format(73, [FSupportInfo.Icon]), mtCustom) = IDYES) then
+  if (FLang.ShowMessage(FLang.Format(LID_ICON_DELETE_CONFIRM, [FSupportInfo.Icon]),
+    mtCustom) = IDYES) then
     if FSupportInfo.DeleteOEMIcon() then
     begin
       mmDeleteIcon.Enabled := False;
@@ -753,7 +757,7 @@ begin
       eLogo.Clear;
     end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(77), mtError);
+      FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING_ICON), mtError);
 end;
 
 { TMain.mmInstallCertificateClick
@@ -772,7 +776,7 @@ begin
     if not Updater.CertificateExists() then
       Updater.InstallCertificate()
     else
-      FLang.ShowMessage(FLang.GetString(27), mtInformation);
+      FLang.ShowMessage(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED), mtInformation);
 
   finally
     Updater.Free;
@@ -831,11 +835,12 @@ end;
 procedure TMain.eUrlDblClick(Sender: TObject);
 begin
   // Ask user to open URL
-  if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(89), mtConfirmation) = IDYES)) then
+  if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(LID_URL_OPEN),
+    mtConfirmation) = IDYES)) then
   begin
     // Try to open URL
     if not OpenUrl(eUrl.Text) then
-      FLang.EditBalloonTip(eUrl.Handle, 2, 90, biError);
+      FLang.EditBalloonTip(eUrl.Handle, LID_ERROR, LID_ERROR_INVALID_URL, biError);
   end  //of begin
   else
     eUrl.SelectAll;

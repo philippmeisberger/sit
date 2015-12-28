@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Initialization file parser Unit v1.1.1                    }
+{ PM Code Works Initialization file parser Unit v1.2.2                    }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -16,7 +16,7 @@ uses
 {$IFDEF MSWINDOWS}
   Windows, Registry,
 {$ENDIF}
-  Classes, SysUtils, StrUtils, PMCWOSUtils;
+  Classes, SysUtils, StrUtils;
 
 {$IFDEF MSWINDOWS}
 const
@@ -113,9 +113,9 @@ type
     function DeleteQuoteChars(const AText: string): string;
     function EscapePathDelimiter(const APath: string): string;
     procedure ExportKey(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean;
-      AFilter: TFilterDataTypes = []);
+      AFilterValues: TStrings = nil; AFilterTypes: TFilterDataTypes = []);
     procedure ExportReg(AHKey: HKEY; AKeyPath: string; ARecursive: Boolean = True;
-      AFilter: TFilterDataTypes = []); overload;
+      AFilterValues: TStrings = nil; AFilterTypes: TFilterDataTypes = []); overload;
     procedure ExportReg(AHKey: HKEY; AKeyPath, AValueName: string); overload;
     function GetSection(AHKey: HKEY; AKeyPath: string): string;
     procedure MakeHeadline();
@@ -1026,7 +1026,7 @@ end;
   Collects data from a key path and writes it to .reg file. }
 
 procedure TRegistryFile.ExportKey(AHKey: HKEY; AKeyPath: string;
-  ARecursive: Boolean; AFilter: TFilterDataTypes = []);
+  ARecursive: Boolean; AFilterValues: TStrings = nil; AFilterTypes: TFilterDataTypes = []);
 var
   Values, Keys: TStringList;
   i: Cardinal;
@@ -1035,8 +1035,8 @@ var
 
 begin
   // Default: Filter nothing
-  if (AFilter = []) then
-    AFilter := [rdString, rdInteger, rdExpandString, rdBinary];
+  if (AFilterTypes = []) then
+    AFilterTypes := [rdString, rdInteger, rdExpandString, rdBinary];
 
   try
     // Init Registry access
@@ -1056,28 +1056,35 @@ begin
 
     if (Values.Count > 0) then
       // Append key-value pairs
-      for i := 0 to Values.Count -1 do
+      for i := 0 to Values.Count - 1 do
+      begin
+        // Filter values
+        if (Assigned(AFilterValues) and (AFilterValues.Count > 0)) then
+          if (AFilterValues.IndexOf(Values[i]) = -1) then
+            Continue;
+
         case FReg.GetDataType(Values[i]) of
           rdString:
-            if (rdString in AFilter) then
+            if (rdString in AFilterTypes) then
               WriteString(Section, Values[i], FReg.ReadString(Values[i]));
 
           rdInteger:
-            if (rdInteger in AFilter) then
+            if (rdInteger in AFilterTypes) then
               WriteInteger(Section, Values[i], FReg.ReadInteger(Values[i]));
 
           rdExpandString:
-            if (rdExpandString in AFilter) then
+            if (rdExpandString in AFilterTypes) then
               WriteExpandString(Section, Values[i], FReg.ReadString(Values[i]));
 
           rdBinary:
-            if (rdBinary in AFilter) then
+            if (rdBinary in AFilterTypes) then
             begin
               SetLength(Buffer, FReg.GetDataSize(Values[i]));
               FReg.ReadBinaryData(Values[i], Buffer[0], Length(Buffer));
               WriteBinary(Section, Values[i], Buffer);
             end;  //of begin
         end;  //of case
+      end;  //of begin
 
     // Include subkeys?
     if (ARecursive and FReg.HasSubKeys()) then
@@ -1089,7 +1096,8 @@ begin
       for i := 0 to Keys.Count -1 do
       begin
         FReg.CloseKey();
-        ExportKey(AHKey, AKeyPath +'\'+ Keys[i], True, AFilter);
+        ExportKey(AHKey, IncludeTrailingPathDelimiter(AKeyPath) + Keys[i], True,
+          AFilterValues, AFilterTypes);
       end;  //of for
     end;  //of begin
 
@@ -1104,13 +1112,14 @@ end;
   Exports an entire Registry key (opt. recursive) and saves it as .reg file. }
 
 procedure TRegistryFile.ExportReg(AHKey: HKEY; AKeyPath: string;
-  ARecursive: Boolean = True; AFilter: TFilterDataTypes = []);
+  ARecursive: Boolean = True; AFilterValues: TStrings = nil;
+  AFilterTypes: TFilterDataTypes = []);
 begin
   if Assigned(FOnExportBegin) then
     FOnExportBegin(Self);
 
   MakeHeadline();
-  ExportKey(AHKey, AKeyPath, ARecursive, AFilter);
+  ExportKey(AHKey, AKeyPath, ARecursive, AFilterValues, AFilterTypes);
   Save();
 
   if Assigned(FOnExportEnd) then
@@ -1171,8 +1180,19 @@ end;
   Returns the concat of AHKEY and AKeyPath. }
 
 function TRegistryFile.GetSection(AHKey: HKEY; AKeyPath: string): string;
+var
+  Reg: TRegistry;
+
 begin
-  Result := HKeyToStr(AHKey) +'\'+ AKeyPath;
+  Reg := TRegistry.Create;
+
+  try
+    Reg.RootKey := AHKey;
+    Result := ExcludeTrailingPathDelimiter(Reg.RootKeyName +'\'+ AKeyPath);
+
+  finally
+    Reg.Free;
+  end;  //of try
 end;
 
 { public TRegistryFile.MakeHeadline

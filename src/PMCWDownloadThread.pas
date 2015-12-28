@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Download Thread v3.0                                      }
+{ PM Code Works Download Thread v3.0.1                                    }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -12,9 +12,12 @@ interface
 
 uses
   Classes, SysUtils, System.Net.HttpClientComponent, System.Net.HttpClient,
-  System.Net.URLClient, StrUtils, ComObj, ActiveX;
+  System.Net.URLClient, System.NetConsts, StrUtils;
 
 const
+  /// <summary>
+  ///   Error saying that something went wrong with server certificate validation.
+  /// </summary>
   ERROR_CERTIFICATE_VALIDATION = -2;
 
 type
@@ -24,14 +27,19 @@ type
     const FResponseText: string) of object;
   TDownloadFinishedEvent = procedure(Sender: TThread; const AFileName: string) of object;
 
-  { TDownloadThread }
+  /// <summary>
+  ///   A <c>TDownloadThread</c> downloads a file from an URL using TLS (default).
+  ///   In case of error a precise description will be returned in the
+  ///   <see cref="OnError"/> event. The progress of the download can be seen
+  ///   in the <see cref="OnDownloading"/> event. Of course the download can be
+  ///   canceled: Just use the <c>Terminate</c> method.
+  /// </summary>
   TDownloadThread = class(TThread)
   private
     FHttp: THttpClient;
     FOnDownloading: TDownloadingEvent;
     FOnError: TRequestErrorEvent;
     FOnFinish: TDownloadFinishedEvent;
-    FOnUnzip,
     FOnCancel: TNotifyEvent;
     FContentLength,
     FReadCount: Int64;
@@ -39,33 +47,73 @@ type
     FUrl,
     FResponseText: string;
     FResponseCode: Integer;
-    FTLSEnabled,
-    FAbort: Boolean;
-    { Synchronized events }
+    FTLSEnabled: Boolean;
     procedure DoNotifyOnCancel;
     procedure DoNotifyOnDownloading;
     procedure DoNotifyOnError;
     procedure DoNotifyOnFinish;
-    procedure DoNotifyOnUnzip;
     procedure Downloading(const Sender: TObject; AContentLength, AReadCount: Int64;
       var AAbort: Boolean);
     procedure OnValidateServerCertificate(const Sender: TObject;
       const ARequest: TURLRequest; const ACertificate: TCertificate; var AAccepted: Boolean);
-    function UnzipArchive(): Boolean;
     procedure SetTlsEnabled(const AValue: Boolean);
   protected
     procedure Execute; override;
   public
+    /// <summary>
+    ///   Constructor for creating a <c>TDownloadThread</c> instance.
+    /// </summary>
+    /// <param name="AUrl">
+    ///   The complete URL to the file that should be downloaded.
+    /// </param>
+    /// <param name="AFileName">
+    ///   The filename under which the downloaded file should be stored.
+    /// </param>
+    /// <param name="AAllowOverwrite">
+    ///   If set to <c>True</c> and the file was already downloaded then this
+    ///   will be overwritten. Otherwise the existing file is kept and a new
+    ///   file with a number suffix is created.
+    /// </param>
     constructor Create(const AUrl, AFileName: string; AAllowOverwrite: Boolean = False);
+
+    /// <summary>
+    ///   Destructor for destroying a <c>TDownloadThread</c> instance.
+    /// </summary>
     destructor Destroy; override;
-    procedure Cancel(Sender: TObject);
+
+    /// <summary>
+    ///   Creates an unique filename to be sure downloading to a non-existing
+    ///   file. If the file already exists a number suffix is appended to this
+    ///   filename.
+    /// </summary>
+    /// <returns>
+    ///   The unique filename
+    /// </returns>
     function GetUniqueFileName(const AFileName: string): string;
-    { external }
+
+    /// <summary>
+    ///   Occurs when download has been canceled by user.
+    /// </summary>
     property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
+
+    /// <summary>
+    ///   Occurs when download is in progress.
+    /// </summary>
     property OnDownloading: TDownloadingEvent read FOnDownloading write FOnDownloading;
+
+    /// <summary>
+    ///   Occurs when an error occurs while downloading.
+    /// </summary>
     property OnError: TRequestErrorEvent read FOnError write FOnError;
+
+    /// <summary>
+    ///   Occurs when download has finished.
+    /// </summary>
     property OnFinish: TDownloadFinishedEvent read FOnFinish write FOnFinish;
-    property OnUnzip: TNotifyEvent read FOnUnzip write FOnUnzip;
+
+    /// <summary>
+    ///   Gets or sets the usage of TLS.
+    /// </summary>
     property TLSEnabled: Boolean read FTLSEnabled write SetTlsEnabled;
   end;
 
@@ -73,16 +121,11 @@ implementation
 
 { TDownloadThread }
 
-{ public TDownloadThread.Create
-
-  Constructor for creating a TDownloadThread instance. }
-
 constructor TDownloadThread.Create(const AUrl, AFileName: string;
   AAllowOverwrite: Boolean = False);
 begin
   inherited Create(True);
   FreeOnTerminate := True;
-  FAbort := False;
   FUrl := AUrl;
   FTLSEnabled := AnsiStartsStr('https://', AUrl);
 
@@ -105,29 +148,11 @@ begin
   end;  //of begin
 end;
 
-{ public TDownloadThread.Destroy
-
-  Destructor for destroying a TDownloadThread instance. }
-
 destructor TDownloadThread.Destroy;
 begin
   FHttp.Free;
   inherited Destroy;
 end;
-
-{ private TDownloadThread.Cancel
-
-  Cancels the current download. }
-
-procedure TDownloadThread.Cancel(Sender: TObject);
-begin
-  FAbort := True;
-end;
-
-{ private TDownloadThread.DoNotifyOnCancel
-
-  Synchronizable event method that is called when download has been canceled
-  by user. }
 
 procedure TDownloadThread.DoNotifyOnCancel;
 begin
@@ -135,19 +160,11 @@ begin
     OnCancel(Self);
 end;
 
-{ private TDownloadThread.DoNotifyOnDownloading
-
-  Synchronizable event method that is called when download is in progress. }
-
 procedure TDownloadThread.DoNotifyOnDownloading;
 begin
   if Assigned(FOnDownloading) then
     OnDownloading(Self, FContentLength, FReadCount);
 end;
-
-{ private TDownloadThread.DoNotifyOnError
-
-  Synchronizable event method that is called when an error occurs while downloading. }
 
 procedure TDownloadThread.DoNotifyOnError;
 begin
@@ -155,35 +172,17 @@ begin
     OnError(Self, FResponseCode, FResponseText);
 end;
 
-{ private TDownloadThread.DoNotifyOnFinish
-
-  Synchronizable event method that is called when download is finished. }
-
 procedure TDownloadThread.DoNotifyOnFinish;
 begin
   if Assigned(OnFinish) then
     OnFinish(Self, FFileName);
 end;
 
-{ private TDownloadThread.DoNotifyOnUnzip
-
-  Synchronizable event method that is called when zip file gets unzipped. }
-
-procedure TDownloadThread.DoNotifyOnUnzip;
-begin
-  if Assigned(FOnUnzip) then
-    OnUnzip(Self);
-end;
-
-{ private TDownloadThread.Downloading
-
-  Event method that is called when download is in progress. }
-
 procedure TDownloadThread.Downloading(const Sender: TObject; AContentLength,
   AReadCount: Int64; var AAbort: Boolean);
 begin
   // Abort download if user canceled
-  AAbort := FAbort;
+  AAbort := Terminated;
 
   // Convert Bytes to KB
   FContentLength := AContentLength div 1024;
@@ -193,20 +192,12 @@ begin
   Synchronize(DoNotifyOnDownloading);
 end;
 
-{ private TDownloadThread.OnValidateServerCertificate
-
-  Event method that is called when certificate could not be validated. }
-
 procedure TDownloadThread.OnValidateServerCertificate(const Sender: TObject;
   const ARequest: TURLRequest; const ACertificate: TCertificate; var AAccepted: Boolean);
 begin
   // Anything went wrong: Do not accept server SSL certificate!
   AAccepted := False;
 end;
-
-{ private TDownloadThread.SetTlsEnabled
-
-  Changes the used URL protocol to HTTPS or HTTP. }
 
 procedure TDownloadThread.SetTlsEnabled(const AValue: Boolean);
 begin
@@ -221,55 +212,6 @@ begin
   FTLSEnabled := AValue;
 end;
 
-{ private TDownloadThread.Unzip
-
-  Unzips the downloaded .zip archive. }
-
-function TDownloadThread.UnzipArchive(): Boolean;
-const
-  SHCONTCH_NOPROGRESSBOX   = 4;
-  SHCONTCH_AUTORENAME      = 8;
-  SHCONTCH_RESPONDYESTOALL = 16;
-  SHCONTF_FOLDERS          = 32;
-  SHCONTF_NONFOLDERS       = 64;
-
-var
-  ShellObj, Source, Destination, Items: OleVariant;
-  Flags: Byte;
-
-  function GetNameSpace(Ole: OleVariant): OleVariant;
-  begin
-    Result := ShellObj.NameSpace(Ole);
-  end;
-
-begin
-  Result := False;
-  Synchronize(DoNotifyOnUnzip);
-  CoInitialize(nil);
-
-  try
-    ShellObj := CreateOleObject('Shell.Application');
-
-    Source := GetNameSpace(FFileName);
-    Destination := GetNameSpace(ExtractFileDir(FFileName));
-    Items := Source.Items;
-
-    // Setup flags
-    Flags := SHCONTCH_NOPROGRESSBOX;
-
-    // Unzip files
-    Destination.CopyHere(Items, Flags);
-    Result := True;
-
-  finally
-    CoUninitialize();
-  end;  //of try
-end;
-
-{ protected TDownloadThread.Execute
-
-  Thread main method that downloads a file from an HTTP source. }
-  
 procedure TDownloadThread.Execute;
 var
   FileStream: TFileStream;
@@ -298,14 +240,8 @@ begin
     end;  //of begin
 
     // User canceled?
-    if FAbort then
+    if Terminated then
       Abort;
-
-    // Unzip archive?
-    if Assigned(FOnUnzip) then
-      // Unzip successful?
-      if UnzipArchive() then
-        DeleteFile(FFileName);
 
     // Download successful!
     Synchronize(DoNotifyOnFinish);
@@ -329,10 +265,6 @@ begin
     end;
   end;  //of try
 end;
-
-{ public TDownloadThread.GetUniqueFileName
-
-  Returns an unique file name to be sure downloading to an non-existing file. }
 
 function TDownloadThread.GetUniqueFileName(const AFileName: string): string;
 var
