@@ -584,19 +584,21 @@ begin
   // Delete current icon when new icon is empty and old still exists
   if ((FIcon = '') and FileExists(OEMIcon)) then
   begin
-    if DeleteFile(OEMIcon) then
-      FIcon := ''
-    else
-      raise Exception.Create('Error while deleting icon!');
+    if not DeleteFile(OEMIcon) then
+      raise Exception.Create(SysErrorMessage(GetLastError()));
+
+    FIcon := '';
   end  //of begin
   else
     begin
       // Copy logo only if paths differ
       if ((FIcon <> '') and (FIcon <> OEMIcon)) then
-        if CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
-          FIcon := OEMIcon
-        else
-          raise Exception.Create('Error while copying icon!');
+      begin
+        if not CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
+          raise Exception.Create(SysErrorMessage(GetLastError()));
+
+        FIcon := OEMIcon;
+      end;  //of begin
     end;  //of if
 end;
 

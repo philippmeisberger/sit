@@ -293,9 +293,9 @@ end;
 
 function TMain.ShowCopyIconDialog(const AFile: string): string;
 var
-  SaveDialog : TSaveDialog;
   Image: TPicture;
   Bitmap: TBitmap;
+  FileName: string;
 
 begin
   Result := '';
@@ -304,48 +304,33 @@ begin
   if not FileExists(AFile) then
     raise EAbort.Create(FLang.GetString(LID_ERROR_ICON_NOT_EXIST));
 
-  // Init dialog
-  SaveDialog := TSaveDialog.Create(Self);
+  FileName := ChangeFileExt(ExtractFileName(AFile), '.bmp');
 
+  if not PromptForFileName(FileName, GraphicFilter(TBitmap), '.bmp',
+    StripHotkey(mmCopyIcon.Caption), '', True) then
+    Exit;
+
+  // Destination file is a *.bmp file?
+  if (ExtractFileExt(FileName) <> '.bmp') then
+    raise EAbort.Create(FLang.GetString(LID_ERROR_INVALID_EXT));
+
+  Image := TPicture.Create;
+  Bitmap := TBitmap.Create;
+
+  // Try to convert any picture to bitmap
   try
-    with SaveDialog do
-    begin
-      Title := StripHotkey(mmCopyIcon.Caption);
-      Filter := GraphicFilter(TBitmap);
-      DefaultExt := '.bmp';
-      Options := Options + [ofOverwritePrompt];
-      FileName := ChangeFileExt(ExtractFileName(AFile), DefaultExt);
-    end;  //of with
+    Image.LoadFromFile(AFile);
+    Bitmap.Width := Image.Width;
+    Bitmap.Height := Image.Height;
+    Bitmap.Canvas.Draw(0, 0, Image.Graphic);
+    Bitmap.SaveToFile(FileName);
 
-    // Save clicked
-    if SaveDialog.Execute then
-    begin
-      // Destination file is a *.bmp file?
-      if (ExtractFileExt(SaveDialog.FileName) <> SaveDialog.DefaultExt) then
-        raise EAbort.Create(FLang.GetString(LID_ERROR_INVALID_EXT));
-
-      Image := TPicture.Create;
-      Bitmap := TBitmap.Create;
-
-      // Try to convert any picture to bitmap
-      try
-        Image.LoadFromFile(AFile);
-        Bitmap.Width := Image.Width;
-        Bitmap.Height := Image.Height;
-        Bitmap.Canvas.Draw(0, 0, Image.Graphic);
-        Bitmap.SaveToFile(SaveDialog.FileName);
-
-        FLang.ShowMessage(FLang.Format(LID_ICON_COPIED, [SaveDialog.FileName]));
-        Result := SaveDialog.FileName;
-
-      finally
-        Bitmap.Free;
-        Image.Free;
-      end;  //of try
-    end;  //of begin
+    FLang.ShowMessage(FLang.Format(LID_ICON_COPIED, [FileName]));
+    Result := FileName;
 
   finally
-    SaveDialog.Free;
+    Bitmap.Free;
+    Image.Free;
   end;  //of try
 end;
 
