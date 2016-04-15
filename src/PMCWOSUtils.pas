@@ -2,7 +2,7 @@
 {                                                                         }
 { PM Code Works Operating System Utilities Unit v2.3                      }
 {                                                                         }
-{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -16,7 +16,7 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-  Windows, Classes, Registry, ShellAPI, ShlObj, Forms, SHFolder, Knownfolders,
+  Windows, Classes, Registry, ShellAPI, ShlObj, Forms, Knownfolders, ActiveX,
 {$ELSE}
   Process,
 {$ENDIF}
@@ -78,8 +78,8 @@ type
     /// <summary>
     ///   Converts a <c>HKEY</c> short string representation into a <see cref="TRootKey"/>.
     /// </summary>
-    /// <param name="AHKey">
-    ///   The <c>HKEY</c>.
+    /// <param name="AShortHKey">
+    ///   The <c>HKEY</c> short string representation.
     /// </param>
     procedure FromString(AShortHKey: string);
 
@@ -254,9 +254,6 @@ type
   ///   <c>True</c> if the filesystem redirection was successfully or <c>False</c>
   ///   otherwise.
   /// </returns>
-  /// <remarks>
-  ///
-  /// </remarks>
   function Wow64FsRedirection(A64Bit: Boolean = True): Boolean;
 
   /// <summary>
@@ -379,6 +376,7 @@ begin
   if Succeeded(SHGetKnownFolderPath(AFolderId, 0, 0, Path)) then
   begin
     AFolderPath := IncludeTrailingBackslash(string(Path));
+    CoTaskMemFree(Path);
     Result := True;
   end;  //of begin
 end;
@@ -510,19 +508,19 @@ begin
         Result := Wow64DisableWow64FsRedirection(nil);
     end  //of begin
     else
-       begin
-         Wow64RevertWow64FsRedirection := GetProcAddress(LibraryHandle,
-           'Wow64RevertWow64FsRedirection');
+    begin
+      Wow64RevertWow64FsRedirection := GetProcAddress(LibraryHandle,
+        'Wow64RevertWow64FsRedirection');
 
-         // Loading of Wow64RevertWow64FsRedirection successful?
-         if Assigned(Wow64RevertWow64FsRedirection) then
-           Result := Wow64RevertWow64FsRedirection(nil);
-       end;  //of begin
+      // Loading of Wow64RevertWow64FsRedirection successful?
+      if Assigned(Wow64RevertWow64FsRedirection) then
+        Result := Wow64RevertWow64FsRedirection(nil);
+    end;  //of begin
   end;  //of begin
 {$ENDIF}
 {$ELSE}
 begin
-  // Nothing redirected on 64 bit Windows!
+  // Nothing redirected with 64 bit application on 64 bit Windows!
   Result := True;
 {$ENDIF}
 end;
@@ -625,3 +623,4 @@ end;
 {$ENDIF}
 
 end.
+
