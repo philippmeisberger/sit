@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT API Interface Unit v3.2                                             }
 {                                                                         }
-{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -462,7 +462,9 @@ end;
 
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
+{$WARN SYMBOL_DEPRECATED OFF}
   Result := GetFolderPath(CSIDL_WINDOWS) + OEMINFO_INFO;
+{$WARN SYMBOL_DEPRECATED ON}
 end;
 
 { public TSupportInformationXP.Clear
@@ -502,7 +504,9 @@ end;
 
 function TSupportInformationXP.GetOEMIcon(): string;
 begin
+{$WARN SYMBOL_DEPRECATED OFF}
   Result := GetFolderPath(CSIDL_WINDOWS) + OEMINFO_LOGO;
+{$WARN SYMBOL_DEPRECATED ON}
 end;
 
 { public TSupportInformationXP.Load
