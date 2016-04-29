@@ -104,6 +104,9 @@ implementation
   VCL event that is called when form is being created. }
 
 procedure TMain.FormCreate(Sender: TObject);
+var
+  VersionInfo: TFileProductVersion;
+
 begin
   // Setup language
   FLang := TLanguageFile.Create(Self);
@@ -121,6 +124,13 @@ begin
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
+
+  // Get version information
+  if TUpdateCheck.GetFileVersion(Application.ExeName, VersionInfo) then
+  begin
+    lVersion.Caption := Format('v%d.%d', [VersionInfo[VERSION_MAJOR],
+      VersionInfo[VERSION_MINOR]]);
+  end;  //of begin
 end;
 
 { TMain.FormDestroy
