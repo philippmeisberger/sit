@@ -189,12 +189,13 @@ begin
     FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
   begin
     // init TUpdate instance
-    Updater := TUpdate.Create(Self, FLang);
+    Updater := TUpdate.Create(Self);
 
     try
       // Set updater options
       with Updater do
       begin
+        LanguageFile := FLang;
         Title := FLang.GetString(LID_UPDATE_DOWNLOAD);
         FileNameLocal := 'SIT.exe';
 
@@ -764,7 +765,8 @@ var
   Updater: TUpdate;
 
 begin
-  Updater := TUpdate.Create(Self, FLang);
+  Updater := TUpdate.Create(Self);
+  Updater.LanguageFile := FLang;
 
   try
     // Certificate already installed?
