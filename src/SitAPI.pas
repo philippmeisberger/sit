@@ -19,10 +19,6 @@ const
   INI_GENERAL      = 'General';
   INI_SUPPORT_INFO = 'Support Information';
 
-  { OEM information location >= Windows 2000 }
-  OEMINFO_LOGO     = '\System32\OEMLOGO.bmp';
-  OEMINFO_INFO     = '\System32\OEMINFO.ini';
-
   { OEM information location >= Windows Vista }
   OEMINFO_KEY      = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
 
@@ -75,6 +71,12 @@ type
     procedure Show(AOwner: HWND = 0); override;
   end;
 
+const
+  { OEM information location >= Windows 2000 }
+  OEMINFO_LOGO     = '\System32\OEMLOGO.bmp';
+  OEMINFO_INFO     = '\System32\OEMINFO.ini';
+
+type
   { Support information class >= Windows 2000 }
   TSupportInformationXP = class(TSupportInformationBase)
   private
@@ -173,16 +175,10 @@ end;
 
 procedure TSupportInformationBase.SaveAsIni(const AFilename: string);
 var
-  Ext: string;
   Ini: TIniFile;
 
 begin
-  if (ExtractFileExt(AFileName) = '') then
-    Ext := '.ini'
-  else
-    Ext := '';
-
-  Ini := TIniFile.Create(AFileName + Ext, True);
+  Ini := TIniFile.Create(ChangeFileExt(AFilename, '.ini'), True);
 
   try
     Ini.AddRemove(INFO_ICON, INFO_ICON, FIcon);
@@ -415,16 +411,10 @@ end;
 procedure TSupportInformation.SaveAsReg(const AFilename: string);
 var
   RegFile: TRegistryFile;
-  ext, Section: string;
+  Section: string;
 
 begin
-  if (ExtractFileExt(AFileName) = '') then
-    ext := '.reg'
-  else
-    ext := '';
-
-  // init *.reg file
-  RegFile := TRegistryFile.Create(AFilename + ext);
+  RegFile := TRegistryFile.Create(ChangeFileExt(AFilename, '.reg'));
 
   try
     RegFile.MakeHeadline();
