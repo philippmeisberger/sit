@@ -19,7 +19,6 @@ uses
 type
   { TMain }
   TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
-    lCopy: TLabel;
     lVersion: TLabel;
     bAccept: TButton;
     bShowSupport: TButton;
@@ -56,6 +55,7 @@ type
     eLogo: TLabeledEdit;
     mmShow: TMenuItem;
     N6: TMenuItem;
+    lCopy: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);

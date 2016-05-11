@@ -27,13 +27,22 @@ object Main: TMain
     278)
   PixelsPerInch = 96
   TextHeight = 14
-  object lCopy: TLabel
-    Left = 144
-    Top = 255
-    Width = 112
+  object lVersion: TLabel
+    Left = 372
+    Top = 6
+    Width = 21
     Height = 14
-    Anchors = [akBottom]
-    Caption = #169' P.Meisberger 2016'
+    Anchors = [akTop, akRight]
+    Caption = 'v3.2'
+    Transparent = True
+  end
+  object lCopy: TLabel
+    Left = 156
+    Top = 254
+    Width = 88
+    Height = 14
+    Alignment = taCenter
+    Caption = 'PM Code Works'
     Font.Charset = ANSI_CHARSET
     Font.Color = clBlack
     Font.Height = -11
@@ -46,15 +55,6 @@ object Main: TMain
     OnClick = lCopyClick
     OnMouseEnter = lCopyMouseEnter
     OnMouseLeave = lCopyMouseLeave
-  end
-  object lVersion: TLabel
-    Left = 372
-    Top = 6
-    Width = 21
-    Height = 14
-    Anchors = [akTop, akRight]
-    Caption = 'v3.2'
-    Transparent = True
   end
   object bAccept: TButton
     Left = 8
