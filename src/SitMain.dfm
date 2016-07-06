@@ -28,12 +28,13 @@ object Main: TMain
   PixelsPerInch = 96
   TextHeight = 14
   object lVersion: TLabel
-    Left = 372
-    Top = 6
-    Width = 21
+    Left = 352
+    Top = 8
+    Width = 41
     Height = 14
+    Alignment = taRightJustify
     Anchors = [akTop, akRight]
-    Caption = 'v3.2'
+    Caption = 'v%d.%d'
     Transparent = True
   end
   object lCopy: TLabel
