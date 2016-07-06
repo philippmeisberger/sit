@@ -4,10 +4,21 @@ Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 Changelog
 =========
 
+Version 3.2.1  [??.07.16]
+
+- neues Manifest für Windows 10 Kompatibilität
+- Verwendung des neuen "Über ..."- Dialogs
+- Fehler-Melde-System verbessert:
+  - Übersetzungen für deutsch, englisch, französisch hinzugefügt
+  - Falls kein Mail-Client für Senden des Fehlerberichts installiert ist, wird Website aufgerufen
+- Signierung der Programmdatei mit SHA-256
+
+----------------------------------------
+
 Version 3.2 [22.08.15]
 
 - Logo muss beim Auswählen nicht mehr zwingend vom Typ Bitmap sein
-  - Automatische Konvertierung (in Bitmap) beim "Übernehmen"  
+  - Automatische Konvertierung (in Bitmap) beim "Übernehmen"
 - Menü-Eintrag "Einträge anzeigen" von "Bearbeiten" nach "Ansicht" verschoben
 - .ini/.reg Datei Parser v1.1.1
 - Nutzung von Windows spezifischen grafischen Features (ab Vista)
@@ -69,12 +80,12 @@ Version 2.0.1 [25.04.13]
 Version 2.0 (NT) [19.10.12]
 
 - SIT NT: Source Code größtenteils neugeschrieben
-  - weiterhin Lite Version 
+  - weiterhin Lite Version
   - API Version 2
 - Menü um einige Funktionen erweitert
-  - "Datei": 
+  - "Datei":
     - Eingaben und Einträge können getrennt exportiert werden
-  - "Bearbeiten": 
+  - "Bearbeiten":
     - Eingaben und Einträge können getrennt gelöscht werden
     - Funktion "Logo löschen" erscheint ab Win2000
   - "Hilfe" erweitert:
@@ -89,7 +100,7 @@ Version 2.0 (NT) [19.10.12]
 
 Version 1.3.42 Lite [09.09.11]
 
-- vollständige Optimierung für tragbare Laufwerke (Sticks, etc.) 
+- vollständige Optimierung für tragbare Laufwerke (Sticks, etc.)
 - SIT benötigt keine eigenen Registry-Einträge mehr
   - Farbe ändern wurde entfernt
 
