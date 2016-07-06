@@ -682,21 +682,27 @@ begin
       mtConfirmation) = IDYES) then
       ShowExportDialog(False);
 
-    // Remove icon?
-    mmDeleteIcon.Click;
+    try
+      // Remove icon?
+      mmDeleteIcon.Click;
 
-    // Remove entries
-    if FSupportInfo.Remove() then
-    begin
-      mmDeleteValues.Enabled := False;
-      mmExport.Enabled := False;
-      mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
-      mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
-      FSupportInfo.Clear;
-      FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETED));
-    end  //of begin
-    else
-      FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING), mtError);
+      // Remove entries
+      if FSupportInfo.Remove() then
+      begin
+        mmDeleteValues.Enabled := False;
+        mmExport.Enabled := False;
+        mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
+        mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
+        FSupportInfo.Clear;
+        FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETED));
+      end  //of begin
+      else
+        FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING), mtError);
+
+    except
+      on E: Exception do
+        FLang.ShowException(FLang.GetString(LID_ERROR_DELETING), E.Message);
+    end;  //of try
   end;  //of begin
 end;
 

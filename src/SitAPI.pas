@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ SIT API Interface Unit v3.2                                             }
+{ SIT API Interface Unit                                                  }
 {                                                                         }
 { Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -11,7 +11,7 @@ unit SitAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Registry, ShellAPI, Winapi.SHFolder, PMCWOSUtils,
+  Windows, SysUtils, Registry, ShellAPI, Winapi.SHFolder, PMCWOSUtils,
   PMCWIniFileParser;
 
 const
@@ -31,78 +31,295 @@ const
   INFO_URL         = 'SupportURL';
 
 type
-  { Support information base class }
-  TSupportInformationBase = class(TObject)
+  /// <summary>
+  ///   <c>TSupportInformationBase</c> is the abstract class for managing
+  ///   support information.
+  /// </summary>
+  TSupportInformationBase = class abstract(TObject)
   private
-    FIcon, FMan, FModel, FUrl, FPhone, FHours: string;
+    FIcon,
+    FMan,
+    FModel,
+    FUrl,
+    FPhone,
+    FHours: string;
   public
-    constructor Create(AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
+    /// <summary>
+    ///   Constructor for creating a <c>TSupportInformationBase</c> instance
+    /// </summary>
+    /// <param name="AIcon">
+    ///   The icon to show.
+    /// </param>
+    /// <param name="AMan">
+    ///   The manufacturer.
+    /// </param>
+    /// <param name="AModel">
+    ///   The model.
+    /// </param>
+    /// <param name="AUrl">
+    ///   The support URL.
+    /// </param>
+    /// <param name="APhone">
+    ///   The support phone number.
+    /// </param>
+    /// <param name="AHours">
+    ///   The telephone support working hours.
+    /// </param>
+    constructor Create(const AIcon, AMan, AModel, AUrl, APhone, AHours: string); overload;
+
+    /// <summary>
+    ///   Constructor for creating a <c>TSupportInformationBase</c> instance
+    /// </summary>
+    /// <param name="ASupportInformationBase">
+    ///   The support information to copy.
+    /// </param>
     constructor Create(ASupportInformationBase: TSupportInformationBase); overload;
+
+    /// <summary>
+    ///   Clears the internal cached support information.
+    /// </summary>
     procedure Clear(); virtual;
+
+    /// <summary>
+    ///   Deletes the company icon.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if icon was successfully deleted or <c>False</c> otherwise.
+    /// </returns>
     function DeleteOEMIcon(): Boolean; virtual; abstract;
+
+    /// <summary>
+    ///   Checks if any support information currently exists.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if any exists or <c>False</c> otherwise.
+    /// </returns>
     function Exists(): Boolean; virtual; abstract;
+
+    /// <summary>
+    ///   Gets the path to the support information icon.
+    /// </summary>
+    /// <returns>
+    ///   The path.
+    /// </returns>
     function GetOEMIcon(): string; virtual; abstract;
+
+    /// <summary>
+    ///   Loads the support information of the system.
+    /// </summary>
     procedure Load(); virtual; abstract;
+
+    /// <summary>
+    ///   Loads the support information from an external .ini file.
+    /// </summary>
+    /// <param name="AFilename">
+    ///   Absolute filename to an .ini file.
+    /// </param>
     procedure LoadFromIni(const AFilename: string);
+
+    /// <summary>
+    ///   Removes the support information.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if removing was successful or <c>False</c> otherwise.
+    /// </returns>
     function Remove(): Boolean; virtual; abstract;
+
+    /// <summary>
+    ///   Saves the current support information.
+    /// </summary>
     procedure Save(); virtual; abstract;
+
+    /// <summary>
+    ///   Saves the current support information to an external .ini file.
+    /// </summary>
+    /// <param name="AFilename">
+    ///   Absolute filename to an .ini file.
+    /// </param>
     procedure SaveAsIni(const AFilename: string);
+
+    /// <summary>
+    ///   Shows the current support information.
+    /// </summary>
+    /// <param name="AOwner">
+    ///   Optional: A handle to the parent window if the window should be modal.
+    /// </param>
     procedure Show(AOwner: HWND = 0); virtual; abstract;
-    { external }
+
+    /// <summary>
+    ///   Gets or sets the telephone support working hours.
+    /// </summary>
     property Hours: string read FHours write FHours;
+
+    /// <summary>
+    ///   Gets or sets the icon.
+    /// </summary>
     property Icon: string read FIcon write FIcon;
+
+    /// <summary>
+    ///   Gets or sets the manufacturer.
+    /// </summary>
     property Manufacturer: string read FMan write FMan;
+
+    /// <summary>
+    ///   Gets or sets the model.
+    /// </summary>
     property Model: string read FModel write FModel;
+
+    /// <summary>
+    ///   Gets or sets the support URL.
+    /// </summary>
     property Url: string read FUrl write FUrl;
-    property Phone: string read FPhone write FPhone;    
+
+    /// <summary>
+    ///   Gets or sets the support phone number.
+    /// </summary>
+    property Phone: string read FPhone write FPhone;
   end;
 
-  { Support information class >= Windows Vista }
+  /// <summary>
+  ///   <c>TSupportInformation</c> manages support information on Windows Vista
+  ///   and later.
+  /// </summary>
   TSupportInformation = class(TSupportInformationBase)
   public
+    /// <summary>
+    ///   Deletes the company icon.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if icon was successfully deleted or <c>False</c> otherwise.
+    /// </returns>
     function DeleteOEMIcon(): Boolean; override;
+
+    /// <summary>
+    ///   Checks if any support information currently exists.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if any exists or <c>False</c> otherwise.
+    /// </returns>
     function Exists(): Boolean; override;
+
+    /// <summary>
+    ///   Gets the path to the support information icon.
+    /// </summary>
+    /// <returns>
+    ///   The path.
+    /// </returns>
     function GetOEMIcon(): string; override;
+
+    /// <summary>
+    ///   Loads the support information of the system.
+    /// </summary>
     procedure Load(); override;
+
+    /// <summary>
+    ///   Loads the support information from an external .reg file.
+    /// </summary>
+    /// <param name="AFilename">
+    ///   Absolute filename to an .reg file.
+    /// </param>
     procedure LoadFromReg(const AFilename: string);
+
+    /// <summary>
+    ///   Removes the support information.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if removing was successful or <c>False</c> otherwise.
+    /// </returns>
     function Remove(): Boolean; override;
+
+    /// <summary>
+    ///   Saves the current support information.
+    /// </summary>
     procedure Save(); override;
+
+    /// <summary>
+    ///   Saves the current support information to an external .reg file.
+    /// </summary>
+    /// <param name="AFilename">
+    ///   Absolute filename to an .reg file.
+    /// </param>
     procedure SaveAsReg(const AFilename: string);
+
+    /// <summary>
+    ///   Shows the current support information.
+    /// </summary>
+    /// <param name="AOwner">
+    ///   Optional: A handle to the parent window if the window should be modal.
+    /// </param>
     procedure Show(AOwner: HWND = 0); override;
   end;
 
-const
-  { OEM information location >= Windows 2000 }
-  OEMINFO_LOGO     = '\System32\OEMLOGO.bmp';
-  OEMINFO_INFO     = '\System32\OEMINFO.ini';
-
-type
-  { Support information class >= Windows 2000 }
+  /// <summary>
+  ///   <c>TSupportInformationXP</c> manages support information prior to
+  ///   Windows XP.
+  /// </summary>
   TSupportInformationXP = class(TSupportInformationBase)
   private
     function GetOEMInfo(): string;
   public
+    /// <summary>
+    ///   Clears the internal cached support information.
+    /// </summary>
     procedure Clear(); override;
-    function DeleteOEMIcon(): Boolean; override;
-    function Exists(): Boolean; override;
-    function GetOEMIcon(): string; override;
-    procedure Load(); override;
-    function Remove(): Boolean; override;
-    procedure Save(); override;
-    procedure Show(AOwner: HWND = 0); override;
-  end;
 
+    /// <summary>
+    ///   Deletes the company icon.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if icon was successfully deleted or <c>False</c> otherwise.
+    /// </returns>
+    function DeleteOEMIcon(): Boolean; override;
+
+    /// <summary>
+    ///   Checks if any support information currently exists.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if any exists or <c>False</c> otherwise.
+    /// </returns>
+    function Exists(): Boolean; override;
+
+    /// <summary>
+    ///   Gets the path to the support information icon.
+    /// </summary>
+    /// <returns>
+    ///   The path.
+    /// </returns>
+    function GetOEMIcon(): string; override;
+
+    /// <summary>
+    ///   Loads the support information of the system.
+    /// </summary>
+    procedure Load(); override;
+
+    /// <summary>
+    ///   Removes the support information.
+    /// </summary>
+    /// <returns>
+    ///   <c>True</c> if removing was successful or <c>False</c> otherwise.
+    /// </returns>
+    function Remove(): Boolean; override;
+
+    /// <summary>
+    ///   Saves the current support information.
+    /// </summary>
+    procedure Save(); override;
+
+    /// <summary>
+    ///   Shows the current support information.
+    /// </summary>
+    /// <param name="AOwner">
+    ///   Optional: A handle to the parent window if the window should be modal.
+    /// </param>
+    procedure Show(AOwner: HWND = 0); override;
+  end;  //deprecated;
 
 implementation
 
 { TSupportInformationBase }
 
-{ public TSupportInformationBase.Create
-
-  General constructor for creating a TSupportInformationBase instance. }
-
-constructor TSupportInformationBase.Create(AIcon, AMan, AModel, AUrl, APhone,
-  AHours: string);
+constructor TSupportInformationBase.Create(const AIcon, AMan, AModel, AUrl,
+  APhone, AHours: string);
 begin
   inherited Create;
   FIcon := AIcon;
@@ -112,10 +329,6 @@ begin
   FPhone := APhone;
   FHours := AHours;
 end;
-
-{ public TSupportInformationBase.Create
-
-  Copy constructor for creating a copy of a TSupportInformationBase instance. }
 
 constructor TSupportInformationBase.Create(ASupportInformationBase: TSupportInformationBase);
 begin
@@ -128,10 +341,6 @@ begin
   FUrl := ASupportInformationBase.Url;
 end;
 
-{ public TSupportInformationBase.Clear
-
-  Clears the entered support information. }
-
 procedure TSupportInformationBase.Clear();
 begin
   FHours := '';
@@ -141,10 +350,6 @@ begin
   FPhone := '';
   FUrl := '';
 end;
-
-{ public TSupportInformationBase.LoadFromIni
-
-  Loads a TSupportInformationBase object from an *.ini file. }
 
 procedure TSupportInformationBase.LoadFromIni(const AFilename: string);
 var
@@ -168,10 +373,6 @@ begin
     ini.Free;
   end;  //of try
 end;
-
-{ public TSupportInformationBase.SaveAsIni
-
-  Saves a TSupportInformationBase object as an *.ini file. }
 
 procedure TSupportInformationBase.SaveAsIni(const AFilename: string);
 var
@@ -199,10 +400,6 @@ end;
 
 { TSupportInformation }
 
-{ public TSupportInformation.DeleteIcon
-
-  Deletes the support information icon. }
-
 function TSupportInformation.DeleteOEMIcon(): Boolean;
 var
   Reg: TRegistry;
@@ -229,10 +426,6 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.Exists
-
-  Checks if any support information exist. }
-  
 function TSupportInformation.Exists(): Boolean;
 var
   Reg: TRegistry;
@@ -252,10 +445,6 @@ begin
     Reg.Free;
   end;  //of try
 end;
-
-{ public TSupportInformation.GetOEMIcon
-
-  Returns path to support information icon. }
 
 function TSupportInformation.GetOEMIcon(): string;
 var
@@ -278,10 +467,6 @@ begin
     Reg.Free;
   end;  //of try
 end;
-
-{ public TSupportInformation.Load
-
-  Loads fresh support information. }
 
 procedure TSupportInformation.Load();
 var
@@ -316,10 +501,6 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.LoadFromReg
-
-  Loads a TSupportInformation object from a *.reg file. }
-
 procedure TSupportInformation.LoadFromReg(const AFilename: string);
 var
   RegFile: TRegistryFile;
@@ -342,10 +523,6 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.Remove
-
-  Removes support information from the Windows Registry. }
-
 function TSupportInformation.Remove(): Boolean;
 var
   Reg: TRegistry;
@@ -366,10 +543,6 @@ begin
     Reg.Free;
   end;  //of try
 end;
-
-{ public TSupportInformation.Save
-
-  Commits changes on support information. }
 
 procedure TSupportInformation.Save();
 var
@@ -404,10 +577,6 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.SaveAsReg
-
-  Saves a TSupportInformation object as a *.reg file. }
-
 procedure TSupportInformation.SaveAsReg(const AFilename: string);
 var
   RegFile: TRegistryFile;
@@ -434,10 +603,6 @@ begin
   end;  //of try
 end;
 
-{ public TSupportInformation.Show
-
-  Shows Windows system properties. }
-
 procedure TSupportInformation.Show(AOwner: HWND = 0);
 begin
   ShellExecute(AOwner, nil, 'control', 'system', nil, SW_SHOWNORMAL);
@@ -446,20 +611,12 @@ end;
 
 { TSupportInformationXP }
 
-{ private TSupportInformationXP.GetOEMInfo
-
-  Returns path to OEMINFO.ini }
-
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
 {$WARN SYMBOL_DEPRECATED OFF}
-  Result := GetFolderPath(CSIDL_WINDOWS) + OEMINFO_INFO;
+  Result := GetFolderPath(CSIDL_WINDOWS) +'\System32\OEMINFO.ini';
 {$WARN SYMBOL_DEPRECATED ON}
 end;
-
-{ public TSupportInformationXP.Clear
-
-  Clears the entered support information except the icon. }
 
 procedure TSupportInformationXP.Clear();
 begin
@@ -470,38 +627,22 @@ begin
   FUrl := '';
 end;
 
-{ public TSupportInformationXP.DeleteOEMIcon
-
-  Deletes the OEMLOGO.bmp if exists. }
-
 function TSupportInformationXP.DeleteOEMIcon(): Boolean;
 begin
   Result := DeleteFile(FIcon);
 end;
-
-{ public TSupportInformationXP.Exists
-
-  Checks if any support information exist. }
   
 function TSupportInformationXP.Exists(): Boolean;
 begin
   Result := FileExists(GetOemInfo());
 end;
 
-{ public TSupportInformationXP.GetOEMIcon
-
-  Returns path to support information logo. }
-
 function TSupportInformationXP.GetOEMIcon(): string;
 begin
 {$WARN SYMBOL_DEPRECATED OFF}
-  Result := GetFolderPath(CSIDL_WINDOWS) + OEMINFO_LOGO;
+  Result := GetFolderPath(CSIDL_WINDOWS) +'\System32\OEMLOGO.bmp';
 {$WARN SYMBOL_DEPRECATED ON}
 end;
-
-{ public TSupportInformationXP.Load
-
-  Loads fresh support information. }
 
 procedure TSupportInformationXP.Load();
 var
@@ -519,7 +660,7 @@ begin
       FUrl := ReadString(INI_GENERAL, INFO_URL);
       FPhone := ReadString(INI_SUPPORT_INFO, 'Line3');
       FHours := ReadString(INI_SUPPORT_INFO, 'Line4');
-    end;  //of wit
+    end;  //of with
 
   finally
     Ini.Free;
@@ -532,18 +673,10 @@ begin
     FIcon := '';
 end;
 
-{ public TSupportInformationXP.Remove
-
-  Removes support information. }
-
 function TSupportInformationXP.Remove(): Boolean;
 begin
   Result := DeleteFile(GetOEMInfo());
 end;
-
-{ public TSupportInformationXP.Save
-
-  Commits changes on support information. }
 
 procedure TSupportInformationXP.Save();
 var
@@ -595,10 +728,6 @@ begin
       end;  //of begin
     end;  //of if
 end;
-
-{ public TSupportInformationXP.Show
-
-  Shows Windows system properties. }
 
 procedure TSupportInformationXP.Show(AOwner: HWND = 0);
 begin
