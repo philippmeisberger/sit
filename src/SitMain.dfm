@@ -21,20 +21,19 @@ object Main: TMain
   Visible = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnShow = FormShow
   DesignSize = (
     400
     278)
   PixelsPerInch = 96
   TextHeight = 14
   object lVersion: TLabel
-    Left = 352
+    Left = 372
     Top = 8
-    Width = 41
+    Width = 21
     Height = 14
     Alignment = taRightJustify
     Anchors = [akTop, akRight]
-    Caption = 'v%d.%d'
+    Caption = 'v3.3'
     Transparent = True
   end
   object lCopy: TLabel

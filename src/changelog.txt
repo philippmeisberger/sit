@@ -4,10 +4,11 @@ Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 Changelog
 =========
 
-Version 3.3  [??.07.16]
+Version 3.3  [08.07.16]
 
 - Bug fixes:
   - Vermeidung von Fehlern beim Wechseln der Sprache unter Windows XP
+  - Vermeidung eines Fehlers beim Starten, falls keine Support Information existieren
 - Fehlermeldung hinzugefügt, falls Zertifikat nicht installiert wurde
 - neues Manifest für Windows 10 Kompatibilität
 - Verwendung des neuen "Über ..."- Dialogs

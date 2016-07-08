@@ -11,7 +11,7 @@ uses
   PMCWMutex in 'PMCWMutex.pas',
   SitMain in 'SitMain.pas' {Main},
   SitAPI in 'SitAPI.pas',
-  PMCWAbout in 'PMCWAbout.pas' {Info};
+  PMCWAbout in 'PMCWAbout.pas';
 
 {$R *.res}
 

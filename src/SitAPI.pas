@@ -11,8 +11,8 @@ unit SitAPI;
 interface
 
 uses
-  Windows, SysUtils, Registry, ShellAPI, Winapi.SHFolder, PMCWOSUtils,
-  PMCWIniFileParser;
+  Winapi.Windows, System.SysUtils, Registry, Winapi.ShellAPI, Winapi.SHFolder,
+  PMCWOSUtils, PMCWIniFileParser;
 
 const
   { Ini-file section name constants }
@@ -20,7 +20,7 @@ const
   INI_SUPPORT_INFO = 'Support Information';
 
   { OEM information location >= Windows Vista }
-  OEMINFO_KEY      = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
+  KEY_OEMINFO      = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
 
   { Registry value name constants }
   INFO_ICON        = 'Logo';
@@ -141,10 +141,7 @@ type
     /// <summary>
     ///   Shows the current support information.
     /// </summary>
-    /// <param name="AOwner">
-    ///   Optional: A handle to the parent window if the window should be modal.
-    /// </param>
-    procedure Show(AOwner: HWND = 0); virtual; abstract;
+    procedure Show(); virtual; abstract;
 
     /// <summary>
     ///   Gets or sets the telephone support working hours.
@@ -244,10 +241,7 @@ type
     /// <summary>
     ///   Shows the current support information.
     /// </summary>
-    /// <param name="AOwner">
-    ///   Optional: A handle to the parent window if the window should be modal.
-    /// </param>
-    procedure Show(AOwner: HWND = 0); override;
+    procedure Show(); override;
   end;
 
   /// <summary>
@@ -308,11 +302,8 @@ type
     /// <summary>
     ///   Shows the current support information.
     /// </summary>
-    /// <param name="AOwner">
-    ///   Optional: A handle to the parent window if the window should be modal.
-    /// </param>
-    procedure Show(AOwner: HWND = 0); override;
-  end;  //deprecated;
+    procedure Show(); override;
+  end;  //deprecated 'Since Windows Vista';
 
 implementation
 
@@ -353,13 +344,13 @@ end;
 
 procedure TSupportInformationBase.LoadFromIni(const AFilename: string);
 var
-  ini: TIniFile;
+  Ini: TIniFile;
 
 begin
-  ini := TIniFile.Create(AFileName);
+  Ini := TIniFile.Create(AFileName);
 
   try
-    with ini do
+    with Ini do
     begin
       FIcon := ReadString(INFO_ICON, INFO_ICON);
       FMan := ReadString(INI_GENERAL, INFO_MAN);
@@ -370,7 +361,7 @@ begin
     end;  //of with
 
   finally
-    ini.Free;
+    Ini.Free;
   end;  //of try
 end;
 
@@ -411,7 +402,7 @@ begin
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    if Reg.OpenKey(OEMINFO_KEY, False) then
+    if Reg.OpenKey(KEY_OEMINFO, False) then
     begin
       // Remove icon file and registry value
       Icon := Reg.ReadString(INFO_ICON);
@@ -435,7 +426,7 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(OEMINFO_KEY, True);
+    Reg.OpenKey(KEY_OEMINFO, False);
     Result := (Reg.ValueExists(INFO_ICON) or Reg.ValueExists(INFO_MAN) or
                Reg.ValueExists(INFO_MODEL) or Reg.ValueExists(INFO_PHONE) or
                Reg.ValueExists(INFO_HOURS) or Reg.ValueExists(INFO_URL));
@@ -455,7 +446,7 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(OEMINFO_KEY, False);
+    Reg.OpenKey(KEY_OEMINFO, False);
 
     if Reg.ValueExists(INFO_ICON) then
       Result := Reg.ReadString(INFO_ICON)
@@ -472,7 +463,7 @@ procedure TSupportInformation.Load();
 var
   Reg: TRegistry;
 
-  function ReadValue(AValueName: string): string;
+  function ReadValue(const AValueName: string): string;
   begin
     if Reg.ValueExists(AValueName) then
       Result := Reg.ReadString(AValueName)
@@ -485,7 +476,7 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(OEMINFO_KEY, True);
+    Reg.OpenKey(KEY_OEMINFO, False);
 
     // Read all OEM information
     FIcon := ReadValue(INFO_ICON);
@@ -510,7 +501,7 @@ begin
   RegFile := TRegistryFile.Create(AFilename);
 
   try
-    RegSection := RegFile.GetSection(HKEY_LOCAL_MACHINE, OEMINFO_KEY);
+    RegSection := RegFile.GetSection(HKEY_LOCAL_MACHINE, KEY_OEMINFO);
     FIcon := RegFile.ReadString(RegSection, INFO_ICON);
     FMan := RegFile.ReadString(RegSection, INFO_MAN);
     FModel := RegFile.ReadString(RegSection, INFO_MODEL);
@@ -533,8 +524,8 @@ begin
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    if Reg.OpenKey(ExtractFileDir(OEMINFO_KEY), False) then
-      Result := Reg.DeleteKey(ExtractFileName(OEMINFO_KEY))
+    if Reg.OpenKey(ExtractFileDir(KEY_OEMINFO), False) then
+      Result := Reg.DeleteKey(ExtractFileName(KEY_OEMINFO))
     else
       Result := False;
 
@@ -548,7 +539,7 @@ procedure TSupportInformation.Save();
 var
   Reg: TRegistry;
 
-  procedure WriteValue(AValueName, AValue: string);
+  procedure WriteValue(const AValueName, AValue: string);
   begin
     if (AValue <> '') then
       Reg.WriteString(AValueName, AValue)
@@ -562,7 +553,7 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(OEMINFO_KEY, True);
+    Reg.OpenKey(KEY_OEMINFO, True);
 
     WriteValue(INFO_HOURS, FHours);
     WriteValue(INFO_ICON, FIcon);
@@ -587,7 +578,7 @@ begin
 
   try
     RegFile.MakeHeadline();
-    Section := RegFile.GetSection(HKEY_LOCAL_MACHINE, OEMINFO_KEY);
+    Section := RegFile.GetSection(HKEY_LOCAL_MACHINE, KEY_OEMINFO);
     RegFile.AddRemove(Section, INFO_ICON, FIcon);
     RegFile.AddRemove(Section, INFO_MAN, FMan);
     RegFile.AddRemove(Section, INFO_MODEL, FModel);
@@ -603,9 +594,9 @@ begin
   end;  //of try
 end;
 
-procedure TSupportInformation.Show(AOwner: HWND = 0);
+procedure TSupportInformation.Show();
 begin
-  ShellExecute(AOwner, nil, 'control', 'system', nil, SW_SHOWNORMAL);
+  ShellExecute(0, nil, 'control', 'system', nil, SW_SHOWNORMAL);
 end;
 
 
@@ -614,7 +605,7 @@ end;
 function TSupportInformationXP.GetOEMInfo(): string;
 begin
 {$WARN SYMBOL_DEPRECATED OFF}
-  Result := GetFolderPath(CSIDL_WINDOWS) +'\System32\OEMINFO.ini';
+  Result := GetFolderPath(CSIDL_SYSTEM) +'OEMINFO.ini';
 {$WARN SYMBOL_DEPRECATED ON}
 end;
 
@@ -640,7 +631,7 @@ end;
 function TSupportInformationXP.GetOEMIcon(): string;
 begin
 {$WARN SYMBOL_DEPRECATED OFF}
-  Result := GetFolderPath(CSIDL_WINDOWS) +'\System32\OEMLOGO.bmp';
+  Result := GetFolderPath(CSIDL_SYSTEM) +'OEMLOGO.bmp';
 {$WARN SYMBOL_DEPRECATED ON}
 end;
 
@@ -684,7 +675,7 @@ var
   OEMIcon: string;
 
 begin
-  ini := TIniFile.Create(GetOEMInfo());
+  Ini := TIniFile.Create(GetOEMInfo());
 
   try
     with Ini do
@@ -703,7 +694,7 @@ begin
     Ini.Save();
 
   finally
-    ini.Free;
+    Ini.Free;
   end;  //of try
 
   OEMIcon := GetOEMIcon();
@@ -717,21 +708,21 @@ begin
     FIcon := '';
   end  //of begin
   else
+  begin
+    // Copy logo only if paths differ
+    if ((FIcon <> '') and (FIcon <> OEMIcon)) then
     begin
-      // Copy logo only if paths differ
-      if ((FIcon <> '') and (FIcon <> OEMIcon)) then
-      begin
-        if not CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
-          raise Exception.Create(SysErrorMessage(GetLastError()));
+      if not CopyFile(PChar(FIcon), PChar(OEMIcon), False) then
+        raise Exception.Create(SysErrorMessage(GetLastError()));
 
-        FIcon := OEMIcon;
-      end;  //of begin
-    end;  //of if
+      FIcon := OEMIcon;
+    end;  //of begin
+  end;  //of if
 end;
 
-procedure TSupportInformationXP.Show(AOwner: HWND = 0);
+procedure TSupportInformationXP.Show();
 begin
-  ShellExecute(AOwner, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
+  ShellExecute(0, nil, 'sysdm.cpl', nil, nil, SW_SHOWNORMAL);
 end;
 
 end.

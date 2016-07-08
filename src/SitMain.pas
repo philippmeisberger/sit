@@ -11,10 +11,10 @@ unit SitMain;
 interface
 
 uses
-  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls,
-  Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.CommCtrl, Vcl.Menus, Vcl.Dialogs,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, SitAPI, PMCWAbout, PMCWOSUtils,
-  PMCWLanguageFile, PMCWUpdater, SHFolder;
+  Winapi.Windows, System.SysUtils, Vcl.Graphics, System.Classes, Vcl.Controls,
+  Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Winapi.SHFolder,
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Knownfolders, SitAPI,
+  PMCWAbout, PMCWOSUtils, PMCWLanguageFile, PMCWUpdater;
 
 type
   { TMain }
@@ -58,7 +58,6 @@ type
     lCopy: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure FormShow(Sender: TObject);
     procedure bAcceptClick(Sender: TObject);
     procedure bShowSupportClick(Sender: TObject);
     procedure bAddClick(Sender: TObject);
@@ -131,6 +130,12 @@ begin
     lVersion.Caption := Format('v%d.%d', [VersionInfo[VERSION_MAJOR],
       VersionInfo[VERSION_MINOR]]);
   end;  //of begin
+
+  // Copy icon only available for Vista and later
+  cbCopyIcon.Enabled := CheckWin32Version(6);
+
+  // Show support information
+  ShowValues();
 end;
 
 { TMain.FormDestroy
@@ -139,40 +144,9 @@ end;
 
 procedure TMain.FormDestroy(Sender: TObject);
 begin
-  FSupportInfo.Free;
-  FUpdateCheck.Free;
-  FLang.Free;
-end;
-
-{ TMain.FormShow
-
-  VCL event that is called when form is shown. }
-
-procedure TMain.FormShow(Sender: TObject);
-begin
-  // At least Windows 2000!
-  if not CheckWin32Version(5) then
-  begin
-    FLang.ShowMessage(FLang.Format([LID_ERROR_INCOMPATIBLE1, LID_ERROR_INCOMPATIBLE2],
-      [TOSVersion.Name]), mtError);
-    bAccept.Enabled := False;
-    mmFile.Enabled := False;
-    mmEdit.Enabled := False;
-    eLogo.Enabled := False;
-    eMan.Enabled := False;
-    ePhone.Enabled := False;
-    eHours.Enabled := False;
-    eModel.Enabled := False;
-    eUrl.Enabled := False;
-    bShowSupport.Enabled := False;
-    Exit;
-  end;  //of begin
-
-  // Copy icon only available for Vista and later
-  cbCopyIcon.Enabled := CheckWin32Version(6);
-
-  // Show support information
-  ShowValues();
+  FreeAndNil(FSupportInfo);
+  FreeAndNil(FUpdateCheck);
+  FreeAndNil(FLang);
 end;
 
 { private TMain.OnUpdate
@@ -203,7 +177,7 @@ begin
       {$ELSE}
         // Ask user to permit download of 64-Bit version
         if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
-          FLang.Format([LID_UPDATE_64BIT, LID_UPDATE_64BIT_CONFIRM], ['SIT']),
+          FLang.Format([LID_UPDATE_64BIT, LID_UPDATE_64BIT_CONFIRM], [Application.Title]),
           mtConfirmation) = IDYES)) then
           FileNameRemote := 'sit64.exe'
         else
@@ -546,7 +520,12 @@ begin
       end  //of begin
       else
         // Open picture folder of current user
-        InitialDir := GetFolderPath(CSIDL_MYPICTURES);
+        if CheckWin32Version(6) then
+          InitialDir := GetKnownFolderPath(FOLDERID_Pictures)
+        else
+        {$WARN SYMBOL_DEPRECATED OFF}
+          InitialDir := GetFolderPath(CSIDL_MYPICTURES);
+        {$WARN SYMBOL_DEPRECATED ON}
     end;  //of with
 
     // "Open" clicked
@@ -750,6 +729,7 @@ begin
   // Show confirmation
   if (FLang.ShowMessage(FLang.Format(LID_ICON_DELETE_CONFIRM, [FSupportInfo.Icon]),
     mtCustom) = IDYES) then
+  try
     if FSupportInfo.DeleteOEMIcon() then
     begin
       mmDeleteIcon.Enabled := False;
@@ -759,6 +739,11 @@ begin
     end  //of begin
     else
       FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING_ICON), mtError);
+
+  except
+    on E: Exception do
+      FLang.ShowException(FLang.GetString(LID_ERROR_DELETING_ICON), E.Message);
+  end;  //of try
 end;
 
 { TMain.mmInstallCertificateClick
