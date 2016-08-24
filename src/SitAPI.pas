@@ -12,7 +12,7 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, Registry, Winapi.ShellAPI, Winapi.SHFolder,
-  PMCWOSUtils, PMCWIniFileParser;
+  PMCW.Utils, PMCW.IniFileParser;
 
 const
   { Ini-file section name constants }

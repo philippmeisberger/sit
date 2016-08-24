@@ -6,12 +6,11 @@ program Sit;
 uses
   Vcl.Forms,
 {$IFNDEF DEBUG}
-  AdminManifest in 'AdminManifest.pas',
+  PMCW.AdminManifest,
 {$ENDIF}
-  PMCWMutex in 'PMCWMutex.pas',
+  PMCW.Application.Mutex,
   SitMain in 'SitMain.pas' {Main},
-  SitAPI in 'SitAPI.pas',
-  PMCWAbout in 'PMCWAbout.pas';
+  SitAPI in 'SitAPI.pas';
 
 {$R *.res}
 

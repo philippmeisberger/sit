@@ -14,7 +14,7 @@ uses
   Winapi.Windows, System.SysUtils, Vcl.Graphics, System.Classes, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Winapi.SHFolder,
   Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Knownfolders, SitAPI,
-  PMCWAbout, PMCWOSUtils, PMCWLanguageFile, PMCWUpdater;
+  PMCW.Dialogs.About, PMCW.Utils, PMCW.LanguageFile, PMCW.Dialogs.Updater;
 
 type
   { TMain }
@@ -82,12 +82,15 @@ type
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
-    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
-    procedure SetLanguage(Sender: TObject);
+
     function ShowCopyIconDialog(const AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
     procedure ShowValues(AReload: Boolean = True);
+    { IChangeLanguageListener }
+    procedure SetLanguage(ANewLanguage: TLocale);
+    { IUpdateListener }
+    procedure OnUpdate(const ANewBuild: Cardinal);
   end;
 
 var
@@ -153,9 +156,9 @@ end;
 
   Event that is called by TUpdateCheck when an update is available. }
 
-procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+procedure TMain.OnUpdate(const ANewBuild: Cardinal);
 var
-  Updater: TUpdate;
+  Updater: TUpdateDialog;
 
 begin
   // Ask user to permit download
@@ -163,7 +166,7 @@ begin
     FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
   begin
     // init TUpdate instance
-    Updater := TUpdate.Create(Self, FLang);
+    Updater := TUpdateDialog.Create(Self, FLang);
 
     try
       // Set updater options
@@ -222,7 +225,7 @@ end;
 
   Updates all component captions with new language text. }
 
-procedure TMain.SetLanguage(Sender: TObject);
+procedure TMain.SetLanguage(ANewLanguage: TLocale);
 begin
   with FLang do
   begin
@@ -752,10 +755,10 @@ end;
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
 var
-  Updater: TUpdate;
+  Updater: TUpdateDialog;
 
 begin
-  Updater := TUpdate.Create(Self, FLang);
+  Updater := TUpdateDialog.Create(Self, FLang);
 
   try
     // Certificate already installed?
