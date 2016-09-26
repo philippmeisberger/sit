@@ -5,9 +5,6 @@ program Sit;
 
 uses
   Vcl.Forms,
-{$IFNDEF DEBUG}
-  PMCW.AdminManifest,
-{$ENDIF}
   PMCW.Application.Mutex,
   SitMain in 'SitMain.pas' {Main},
   SitAPI in 'SitAPI.pas';
