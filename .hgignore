@@ -1,10 +1,12 @@
 syntax: glob
 BACKUP/**
-src\__history\**
+__history
 **.dcu
 **.exe
 **.zip
-**.dll
+**.mes
 **.rsm
 **.stat
 **.identcache
+**.orig
+**.local
