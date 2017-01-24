@@ -13,8 +13,8 @@ interface
 uses
   Winapi.Windows, System.SysUtils, Vcl.Graphics, System.Classes, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Winapi.SHFolder,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Knownfolders, SitAPI,
-  PMCW.Dialogs.About, PMCW.Utils, PMCW.LanguageFile, PMCW.Dialogs.Updater;
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Knownfolders, SitAPI, PMCW.Utils,
+  PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater, PMCW.FileSystem;
 
 type
   { TMain }
@@ -107,7 +107,7 @@ implementation
 
 procedure TMain.FormCreate(Sender: TObject);
 var
-  VersionInfo: TFileProductVersion;
+  FileVersion: TFileVersion;
 
 begin
   // Setup language
@@ -128,11 +128,8 @@ begin
     FSupportInfo := TSupportInformationXP.Create;
 
   // Get version information
-  if TUpdateCheck.GetFileVersion(Application.ExeName, VersionInfo) then
-  begin
-    lVersion.Caption := Format('v%d.%d', [VersionInfo[VERSION_MAJOR],
-      VersionInfo[VERSION_MINOR]]);
-  end;  //of begin
+  if FileVersion.FromFile(Application.ExeName) then
+    lVersion.Caption := FileVersion.ToString('v%d.%d');
 
   // Copy icon only available for Vista and later
   cbCopyIcon.Enabled := CheckWin32Version(6);
