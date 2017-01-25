@@ -4,6 +4,14 @@ Ein Open-Source Projekt von Philipp Meisberger (PM Code Works)
 Changelog
 =========
 
+Version 3.3.1  [??.??.17]
+
+- Updater v3.1
+  - Abhängigkeit zur "Indy"-Komponenten Bibliothek entfernt
+  - Programmdatei bis zu 1 MB kleiner
+
+----------------------------------------
+
 Version 3.3  [08.07.16]
 
 - Bug fixes:
