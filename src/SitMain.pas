@@ -2,7 +2,7 @@
 {                                                                         }
 { Support Information Tool Main Unit                                      }
 {                                                                         }
-{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2017 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -13,12 +13,13 @@ interface
 uses
   Winapi.Windows, System.SysUtils, Vcl.Graphics, System.Classes, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Winapi.SHFolder,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Knownfolders, SitAPI, PMCW.Utils,
-  PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater, PMCW.FileSystem;
+  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Winapi.Knownfolders, SitAPI,
+  PMCW.CA, PMCW.Dialogs, PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater,
+  PMCW.FileSystem;
 
 type
   { TMain }
-  TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
+  TMain = class(TForm, IChangeLanguageListener)
     lVersion: TLabel;
     bAccept: TButton;
     bShowSupport: TButton;
@@ -82,15 +83,13 @@ type
     FSupportInfo: TSupportInformationBase;
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
-
     function ShowCopyIconDialog(const AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
     procedure ShowValues(AReload: Boolean = True);
     { IChangeLanguageListener }
-    procedure SetLanguage(ANewLanguage: TLocale);
-    { IUpdateListener }
-    procedure OnUpdate(const ANewBuild: Cardinal);
+    procedure LanguageChanged();
   end;
 
 var
@@ -110,16 +109,25 @@ var
   FileVersion: TFileVersion;
 
 begin
-  // Setup language
-  FLang := TLanguageFile.Create(Self);
-  FLang.Interval := 100;
-  FLang.BuildLanguageMenu(MainMenu, mmLang);
+  // Setup languages
+  FLang := TLanguageFile.Create(100);
+
+  with FLang do
+  begin
+    AddListener(Self);
+    BuildLanguageMenu(mmLang);
+  end;  //of with
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create(Self, 'SIT', FLang);
+  FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
 
-  // Check for update on startup
-  FUpdateCheck.CheckForUpdate(False);
+  with FUpdateCheck do
+  begin
+    OnUpdate := Self.OnUpdate;
+  {$IFNDEF DEBUG}
+    CheckForUpdate();
+  {$ENDIF}
+  end;  //of with
 
   // Init support information instance
   if CheckWin32Version(6) then
@@ -153,42 +161,34 @@ end;
 
   Event that is called by TUpdateCheck when an update is available. }
 
-procedure TMain.OnUpdate(const ANewBuild: Cardinal);
+procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
 var
   Updater: TUpdateDialog;
 
 begin
+  mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
+
   // Ask user to permit download
-  if (FLang.ShowMessage(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
-    FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
+  if (TaskMessageDlg(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
+    FLang[LID_UPDATE_CONFIRM_DOWNLOAD], mtConfirmation, mbYesNo, 0) = idYes) then
   begin
-    // init TUpdate instance
     Updater := TUpdateDialog.Create(Self, FLang);
 
     try
-      // Set updater options
       with Updater do
       begin
-        Title := FLang.GetString(LID_UPDATE_DOWNLOAD);
         FileNameLocal := 'SIT.exe';
 
-      {$IFDEF WIN64}
-        FileNameRemote := 'sit64.exe';
-      {$ELSE}
-        // Ask user to permit download of 64-Bit version
-        if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
-          FLang.Format([LID_UPDATE_64BIT, LID_UPDATE_64BIT_CONFIRM], [Application.Title]),
-          mtConfirmation) = IDYES)) then
+        // Download 64-Bit version?
+        if (TOSVersion.Architecture = arIntelX64) then
           FileNameRemote := 'sit64.exe'
         else
           FileNameRemote := 'sit.exe';
-      {$ENDIF}
-      end;  //of begin
+      end;  //of with
 
       // Successfully downloaded update?
       if Updater.Execute() then
       begin
-        // Caption "Search for update"
         mmUpdate.Caption := FLang.GetString(LID_UPDATE_SEARCH);
         mmUpdate.Enabled := False;
       end;  //of begin
@@ -196,9 +196,7 @@ begin
     finally
       Updater.Free;
     end;  //of try
-  end  //of begin
-  else
-    mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
+  end;  //of begin
 end;
 
 { private TMain.RefreshEdits
@@ -218,11 +216,11 @@ begin
   end;  //of with
 end;
 
-{ private TMain.SetLanguage
+{ private TMain.LanguageChanged
 
   Updates all component captions with new language text. }
 
-procedure TMain.SetLanguage(ANewLanguage: TLocale);
+procedure TMain.LanguageChanged();
 begin
   with FLang do
   begin
@@ -256,7 +254,7 @@ begin
     eLogo.EditLabel.Caption := GetString(LID_ICON_FILE);
     cbCopyIcon.Caption := mmCopyIcon.Caption;
 
-    gbInfo.Caption := GetString(52);
+    gbInfo.Caption := GetString(LID_INFORMATION);
     eMan.EditLabel.Caption := GetString(LID_MANUFACTURER);
     ePhone.EditLabel.Caption := GetString(LID_PHONE);
     eHours.EditLabel.Caption := GetString(LID_HOURS);
@@ -309,7 +307,7 @@ begin
     Bitmap.Canvas.Draw(0, 0, Image.Graphic);
     Bitmap.SaveToFile(FileName);
 
-    FLang.ShowMessage(FLang.Format(LID_ICON_COPIED, [FileName]));
+    MessageDlg(FLang.Format(LID_ICON_COPIED, [FileName]), mtInformation, [mbOK], 0);
     Result := FileName;
 
   finally
@@ -321,7 +319,7 @@ end;
 { private TMain.ShowExportDialog
 
   Allows users to export support information as *.reg or *.ini file. }
-  
+
 procedure TMain.ShowExportDialog(AExportEdits: Boolean);
 var
   SaveDialog: TSaveDialog;
@@ -391,14 +389,12 @@ end;
 
 procedure TMain.ShowValues(AReload: Boolean = True);
 begin
-  // Set title
-  Caption := Application.Title + PLATFORM_ARCH;
+  Caption := Application.Title;
 
   // Reload support information?
   if AReload then
     FSupportInfo.Load();
 
-  // Refresh VCL
   mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
   mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
   mmDeleteValues.Enabled := FSupportInfo.Exists();
@@ -418,12 +414,13 @@ var
 
 begin
   // Confirm save progress
-  if (FLang.ShowMessage(FLang.GetString(LID_ITEMS_SAVE_CONFIRM), mtConfirmation) = IDYES) then
+  if (MessageDlg(FLang.GetString(LID_ITEMS_SAVE_CONFIRM), mtConfirmation,
+    mbYesNo, 0) = idYes) then
   try
     // Manufacturer is essential!
     if (Trim(eMan.Text) = '') then
     begin
-      FLang.EditBalloonTip(eMan.Handle, LID_ERROR, LID_NOTHING_ENTERED, biError);
+      eMan.ShowBalloonTip(FLang.GetString(LID_ERROR), FLang.GetString(LID_NOTHING_ENTERED), biError);
       Exit;
     end;  //of begin
 
@@ -434,7 +431,7 @@ begin
     begin
       if not FileExists(IconPath) then
       begin
-        FLang.EditBalloonTip(eLogo.Handle, LID_ERROR, LID_ERROR_ICON_NOT_EXIST, biError);
+        eLogo.ShowBalloonTip(FLang.GetString(LID_ERROR), FLang.GetString(LID_ERROR_ICON_NOT_EXIST), biError);
         Exit;
       end;  //of begin
 
@@ -451,7 +448,7 @@ begin
         // Icon must be a bitmap!
         if (ExtractFileExt(IconPath) <> '.bmp') then
         begin
-          FLang.EditBalloonTip(eLogo.Handle, LID_ERROR, LID_ERROR_INVALID_EXT, biError);
+          eLogo.ShowBalloonTip(FLang.GetString(LID_ERROR), FLang.GetString(LID_ERROR_INVALID_EXT), biError);
           Exit;
         end;  //of begin
     end;  //of begin
@@ -472,11 +469,11 @@ begin
     ShowValues(False);
 
     // Show success message in best case
-    FLang.ShowMessage(FLang.GetString(LID_ITEMS_SAVED));
+    MessageDlg(FLang.GetString(LID_ITEMS_SAVED), mtInformation, [mbOK], 0);
 
   except
     on E: EAbort do
-      FLang.ShowMessage(E.Message, mtWarning);
+      MessageDlg(E.Message, mtWarning, [mbOK], 0);
 
     on E: Exception do
       FLang.ShowException(FLang.GetString(LID_ERROR_SAVING), E.Message);
@@ -539,8 +536,8 @@ begin
         // Check square format of image and warn user
         if (Image.Height <> Image.Width) then
         begin
-          FLang.ShowMessage(FLang.Format([LID_ICON_NOT_SQUARE1, LID_ICON_NOT_SQUARE2],
-            [Image.Width, Image.Height]), mtWarning);
+          MessageDlg(FLang.Format([LID_ICON_NOT_SQUARE1, LID_ICON_NOT_SQUARE2],
+            [Image.Width, Image.Height]), mtWarning, [mbOK], 0);
         end;  //of begin
 
         cbCopyIcon.Checked := not (Image.Graphic is TBitmap);
@@ -594,8 +591,7 @@ begin
       // "Open" clicked
       if OpenDialog.Execute then
       begin
-        Caption := Application.Title + PLATFORM_ARCH +' - '+
-          ExtractFileName(OpenDialog.FileName);
+        Caption := Application.Title +' - '+ ExtractFileName(OpenDialog.FileName);
 
         case OpenDialog.FilterIndex of
           1: SupportInfo.LoadFromIni(OpenDialog.FileName);
@@ -634,7 +630,7 @@ procedure TMain.mmExportEditClick(Sender: TObject);
 begin
   if ((eLogo.Text = '') and (eMan.Text = '') and (eModel.Text = '') and
     (eUrl.Text = '') and (ePhone.Text = '') and (eHours.Text = '')) then
-    FLang.ShowMessage(FLang.GetString(LID_NOTHING_ENTERED), mtWarning)
+    MessageDlg(FLang.GetString(LID_NOTHING_ENTERED), mtWarning, [mbOK], 0)
   else
     ShowExportDialog(True);
 end;
@@ -655,10 +651,12 @@ end;
 procedure TMain.mmDeleteValuesClick(Sender: TObject);
 begin
   // Show confirmation before deleting
-  if (FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETE_CONFIRM), mtCustom) = IDYES) then
+  if (MessageDlg(FLang.GetString(LID_ITEMS_DELETE_CONFIRM), mtWarning,
+    mbYesNo, 0, mbNo) = idYes) then
   begin
-    if (FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETE_STORE),
-      mtConfirmation) = IDYES) then
+    // Ask user to export
+    if (MessageDlg(FLang.GetString(LID_ITEMS_DELETE_STORE), mtConfirmation,
+      mbYesNo, 0) = idYes) then
       ShowExportDialog(False);
 
     try
@@ -673,10 +671,10 @@ begin
         mmDeleteIcon.Enabled := FileExists(FSupportInfo.GetOEMIcon());
         mmCopyIcon.Enabled := mmDeleteIcon.Enabled;
         FSupportInfo.Clear;
-        FLang.ShowMessage(FLang.GetString(LID_ITEMS_DELETED));
+        MessageDlg(FLang.GetString(LID_ITEMS_DELETED), mtInformation, [mbOK], 0);
       end  //of begin
       else
-        FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING), mtError);
+        MessageDlg(FLang.GetString(LID_ERROR_DELETING), mtError, [mbOK], 0);
 
     except
       on E: Exception do
@@ -691,7 +689,7 @@ end;
 
 procedure TMain.mmDeleteEditsClick(Sender: TObject);
 begin
-  Caption := Application.Title + PLATFORM_ARCH;
+  Caption := Application.Title;
   eLogo.Clear;
   eMan.Clear;
   eModel.Clear;
@@ -713,7 +711,7 @@ begin
 
   except
     on E: EAbort do
-      FLang.ShowMessage(E.Message, mtWarning);
+      MessageDlg(E.Message, mtWarning, [mbOK], 0);
 
     on E: Exception do
       FLang.ShowException(FLang.GetString(LID_ERROR_COPYING), E.Message);
@@ -727,8 +725,8 @@ end;
 procedure TMain.mmDeleteIconClick(Sender: TObject);
 begin
   // Show confirmation
-  if (FLang.ShowMessage(FLang.Format(LID_ICON_DELETE_CONFIRM, [FSupportInfo.Icon]),
-    mtCustom) = IDYES) then
+  if (MessageDlg(FLang.Format(LID_ICON_DELETE_CONFIRM, [FSupportInfo.Icon]),
+    mtWarning, mbYesNo, 0, mbNo) = idYes) then
   try
     if FSupportInfo.DeleteOEMIcon() then
     begin
@@ -738,7 +736,7 @@ begin
       eLogo.Clear;
     end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(LID_ERROR_DELETING_ICON), mtError);
+      MessageDlg(FLang.GetString(LID_ERROR_DELETING_ICON), mtError, [mbOK], 0);
 
   except
     on E: Exception do
@@ -751,21 +749,20 @@ end;
   MainMenu entry that allows to install the PM Code Works certificate. }
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
-var
-  Updater: TUpdateDialog;
-
 begin
-  Updater := TUpdateDialog.Create(Self, FLang);
-
   try
     // Certificate already installed?
-    if not Updater.CertificateExists() then
-      Updater.InstallCertificate()
+    if CertificateExists() then
+    begin
+      MessageDlg(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
+        mtInformation, [mbOK], 0);
+    end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED), mtInformation);
+      InstallCertificate();
 
-  finally
-    Updater.Free;
+  except
+    on E: EOSError do
+      MessageDlg(E.Message, mtError, [mbOK], 0);
   end;  //of try
 end;
 
@@ -775,7 +772,8 @@ end;
 
 procedure TMain.mmUpdateClick(Sender: TObject);
 begin
-  FUpdateCheck.CheckForUpdate(True);
+  FUpdateCheck.NotifyNoUpdate := True;
+  FUpdateCheck.CheckForUpdate();
 end;
 
 { TMain.mmReportClick
@@ -795,15 +793,22 @@ end;
 procedure TMain.mmAboutClick(Sender: TObject);
 var
   AboutDialog: TAboutDialog;
+  Description, Changelog: TResourceStream;
 
 begin
   AboutDialog := TAboutDialog.Create(Self);
+  Description := TResourceStream.Create(HInstance, RESOURCE_DESCRIPTION, RT_RCDATA);
+  Changelog := TResourceStream.Create(HInstance, RESOURCE_CHANGELOG, RT_RCDATA);
 
   try
     AboutDialog.Title := StripHotkey(mmAbout.Caption);
+    AboutDialog.Description.LoadFromStream(Description);
+    AboutDialog.Changelog.LoadFromStream(Changelog);
     AboutDialog.Execute();
 
   finally
+    Changelog.Free;
+    Description.Free;
     AboutDialog.Free;
   end;  //of begin
 end;
@@ -827,12 +832,12 @@ end;
 procedure TMain.eUrlDblClick(Sender: TObject);
 begin
   // Ask user to open URL
-  if ((eUrl.Text <> '') and (FLang.ShowMessage(FLang.GetString(LID_URL_OPEN),
-    mtConfirmation) = IDYES)) then
+  if ((eUrl.Text <> '') and (MessageDlg(FLang.GetString(LID_URL_OPEN),
+    mtConfirmation, mbYesNo, 0) = idYes)) then
   begin
     // Try to open URL
     if not OpenUrl(eUrl.Text) then
-      FLang.EditBalloonTip(eUrl.Handle, LID_ERROR, LID_ERROR_INVALID_URL, biError);
+      eUrl.ShowBalloonTip(FLang.GetString(LID_ERROR), FLang.GetString(LID_ERROR_INVALID_URL), biError);
   end  //of begin
   else
     eUrl.SelectAll;
