@@ -52,7 +52,7 @@
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Build>416</VerInfo_Build>
+        <VerInfo_Build>417</VerInfo_Build>
         <DCC_ExeOutput>..\bin\$(Platform)\</DCC_ExeOutput>
         <DCC_DcuOutput>lib\$(Platform)\$(Config)\</DCC_DcuOutput>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
@@ -65,7 +65,7 @@
         <DCC_N>false</DCC_N>
         <DCC_K>false</DCC_K>
         <SanitizedProjectName>Sit</SanitizedProjectName>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.3.1.416;InternalName=SIT;LegalCopyright=Philipp Meisberger 2017;LegalTrademarks=PM Code Works;OriginalFilename=SIT.exe;ProductName=SIT;ProductVersion=3.3;Comments=Delphi XE8;CFBundleName=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Support Information Tool;FileVersion=3.3.1.417;InternalName=SIT;LegalCopyright=Philipp Meisberger 2017;LegalTrademarks=PM Code Works;OriginalFilename=SIT.exe;ProductName=SIT;ProductVersion=3.3;Comments=Delphi XE8;CFBundleName=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <Icon_MainIcon>sit.ico</Icon_MainIcon>
@@ -109,8 +109,8 @@
             <Form>Main</Form>
         </DCCReference>
         <DCCReference Include="SitAPI.pas"/>
-        <RcCompile Include="lang.rc">
-            <Form>lang.res</Form>
+        <RcCompile Include="languages.rc">
+            <Form>languages.res</Form>
         </RcCompile>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
