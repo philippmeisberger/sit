@@ -18,7 +18,6 @@ object Main: TMain
   Menu = MainMenu
   OldCreateOrder = True
   Position = poScreenCenter
-  Visible = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   DesignSize = (
@@ -26,16 +25,6 @@ object Main: TMain
     278)
   PixelsPerInch = 96
   TextHeight = 14
-  object lVersion: TLabel
-    Left = 372
-    Top = 8
-    Width = 21
-    Height = 14
-    Alignment = taRightJustify
-    Anchors = [akTop, akRight]
-    Caption = 'v3.3'
-    Transparent = True
-  end
   object lCopy: TLabel
     Left = 156
     Top = 254

@@ -20,7 +20,6 @@ uses
 type
   { TMain }
   TMain = class(TForm, IChangeLanguageListener)
-    lVersion: TLabel;
     bAccept: TButton;
     bShowSupport: TButton;
     MainMenu: TMainMenu;
@@ -105,9 +104,6 @@ implementation
   VCL event that is called when form is being created. }
 
 procedure TMain.FormCreate(Sender: TObject);
-var
-  FileVersion: TFileVersion;
-
 begin
   // Setup languages
   FLang := TLanguageFile.Create(100);
@@ -134,10 +130,6 @@ begin
     FSupportInfo := TSupportInformation.Create
   else
     FSupportInfo := TSupportInformationXP.Create;
-
-  // Get version information
-  if FileVersion.FromFile(Application.ExeName) then
-    lVersion.Caption := FileVersion.ToString('v%d.%d');
 
   // Copy icon only available for Vista and later
   cbCopyIcon.Enabled := CheckWin32Version(6);
