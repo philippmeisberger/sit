@@ -1,5 +1,5 @@
-﻿SIT alias "Support-Information-Tool" ist ein kleines Programm zum einfachen Eintragen von Herstellerinformationen in die Systemeigenschaften von Windows. IT-Firmen können so mit wenigen Klicks ihren (virtuellen) Firmenstempel auf dem Kunden PC hinterlassen.
+﻿SIT alias "Support Information Tool" is a small utility for easily entering vendor information into the system properties of Windows. IT companies can thus leave their virtual company stamp on the customer PC with just a few clicks.
 
-Copyright (C) 2011 Philipp Meisberger 
+Copyright (C) 2011 Philipp Meisberger <team@pm-codeworks.de>
 
-Dieses Programm kann durch jedermann gemäß den Bestimmungen der Deutschen Freien Software Lizenz genutzt werden. Die Lizenz kann unter http://www.d-fsl.de abgerufen werden.
+This Program may be used by anyone in accordance with the terms of the German Free Software License. The License may be obtained under <http://www.d-fsl.org>.
