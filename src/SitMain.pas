@@ -12,10 +12,10 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, Vcl.Graphics, System.Classes, Vcl.Controls,
-  Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Winapi.SHFolder,
-  Vcl.ExtDlgs, Vcl.Imaging.jpeg, System.UITypes, Winapi.Knownfolders, SitAPI,
-  PMCW.CA, PMCW.Dialogs, PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater,
-  PMCW.FileSystem;
+  Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Vcl.ExtDlgs,
+  Vcl.Imaging.jpeg, System.UITypes, Winapi.Knownfolders, SitAPI, PMCW.CA,
+  PMCW.Dialogs, PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater,
+  PMCW.SysUtils;
 
 type
   { TMain }
@@ -508,13 +508,11 @@ begin
         FileName := ExtractFileName(eLogo.Text);
       end  //of begin
       else
+      begin
         // Open picture folder of current user
         if CheckWin32Version(6) then
-          InitialDir := GetKnownFolderPath(FOLDERID_Pictures)
-        else
-        {$WARN SYMBOL_DEPRECATED OFF}
-          InitialDir := GetFolderPath(CSIDL_MYPICTURES);
-        {$WARN SYMBOL_DEPRECATED ON}
+          InitialDir := GetKnownFolderPath(FOLDERID_Pictures);
+      end;  //of if
     end;  //of with
 
     // "Open" clicked

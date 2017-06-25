@@ -10,3 +10,5 @@ __history
 **.identcache
 **.orig
 **.local
+**.map
+**.drc
