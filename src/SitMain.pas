@@ -825,8 +825,9 @@ begin
   if ((eUrl.Text <> '') and (MessageDlg(FLang.GetString(LID_URL_OPEN),
     mtConfirmation, mbYesNo, 0) = idYes)) then
   begin
-    // Try to open URL
-    if not OpenUrl(eUrl.Text) then
+    // Only open HTTP URLs
+    if ((not string(eUrl.Text).StartsWith('http://') and
+      not string(eUrl.Text).StartsWith('https://')) or not OpenUrl(eUrl.Text)) then
       eUrl.ShowBalloonTip(FLang.GetString(LID_ERROR), FLang.GetString(LID_ERROR_INVALID_URL), biError);
   end  //of begin
   else
