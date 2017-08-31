@@ -6,6 +6,7 @@ An open-source project of PM Code Works
 Version 3.3.1  [*??.??.17*]
 -------------
 
+* Bug fix: Loading primary language if requested locale could not be found in language file
 * Updater v3.1
   * Removed dependency to "Indy" component suite
   * Executable up to 1MB smaller
