@@ -1,7 +1,6 @@
 program Sit;
 
-{$R 'description.res' 'description.rc'}
-{$R 'changelog.res' 'changelog.rc'}
+{$R *.dres}
 
 uses
   Vcl.Forms,
