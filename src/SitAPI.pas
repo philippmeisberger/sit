@@ -12,23 +12,7 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, Registry, Winapi.ShellAPI, Winapi.SHFolder,
-  PMCW.IniFileParser, PMCW.SysUtils;
-
-const
-  { Ini-file section name constants }
-  INI_GENERAL      = 'General';
-  INI_SUPPORT_INFO = 'Support Information';
-
-  { OEM information location >= Windows Vista }
-  KEY_OEMINFO      = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
-
-  { Registry value name constants }
-  INFO_ICON        = 'Logo';
-  INFO_MAN         = 'Manufacturer';
-  INFO_MODEL       = 'Model';
-  INFO_PHONE       = 'SupportPhone';
-  INFO_HOURS       = 'SupportHours';
-  INFO_URL         = 'SupportURL';
+  System.IniFiles, PMCW.RegistryFile, PMCW.SysUtils;
 
 type
   /// <summary>
@@ -43,6 +27,64 @@ type
     FUrl,
     FPhone,
     FHours: string;
+  protected
+    const
+      /// <summary>
+      ///   INI file general section.
+      /// </summary>
+      SectionGeneral            = 'General';
+
+      /// <summary>
+      ///   INI file support information section.
+      /// </summary>
+      SectionSupport            = 'Support Information';
+
+      /// <summary>
+      ///   Canonical name for manufacturer icon.
+      /// </summary>
+      IconCanonicalName         = 'Logo';
+
+      /// <summary>
+      ///   Canonical name for manufacturer name.
+      /// </summary>
+      ManufacturerCanonicalName = 'Manufacturer';
+
+      /// <summary>
+      ///   Canonical name for product model.
+      /// </summary>
+      ModelCanonicalName        = 'Model';
+
+      /// <summary>
+      ///   Canonical name for phone nummer.
+      /// </summary>
+      PhoneCanonicalName        = 'SupportPhone';
+
+      /// <summary>
+      ///   Canonical name for support phone hours.
+      /// </summary>
+      HoursCanonicalName        = 'SupportHours';
+
+      /// <summary>
+      ///   Canonical name for manufacturer website.
+      /// </summary>
+      UrlCanonicalName          = 'SupportURL';
+
+    /// <summary>
+    ///   Adds or removes a value from an INI file.
+    /// </summary>
+    /// <param name="AIniFile">
+    ///   The INI file.
+    /// </param>
+    /// <param name="ASection">
+    ///   The section.
+    /// </param>
+    /// <param name="AIdent">
+    ///   The identifier.
+    /// </param>
+    /// <param name="AValue">
+    ///   The value. If empty the identifier will be deleted.
+    /// </param>
+    procedure AddRemove(AIniFile: TCustomIniFile; const ASection, AIdent, AValue: string);
   public
     /// <summary>
     ///   Constructor for creating a <c>TSupportInformationBase</c> instance
@@ -180,6 +222,17 @@ type
   /// </summary>
   TSupportInformation = class(TSupportInformationBase)
   public
+    const
+      /// <summary>
+      ///  OEM information Registry location since Windows Vista.
+      /// </summary>
+      OemInfoKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation';
+
+      /// <summary>
+      ///  Full OEM information Registry location since Windows Vista.
+      /// </summary>
+      SectionOem = 'HKEY_LOCAL_MACHINE\'+ OemInfoKey;
+
     /// <summary>
     ///   Deletes the company icon.
     /// </summary>
@@ -335,6 +388,15 @@ begin
   FUrl := ASupportInformationBase.Url;
 end;
 
+procedure TSupportInformationBase.AddRemove(AIniFile: TCustomIniFile;
+  const ASection, AIdent, AValue: string);
+begin
+  if (AValue = '') then
+    AIniFile.DeleteKey(ASection, AIdent)
+  else
+    AIniFile.WriteString(ASection, AIdent, AValue);
+end;
+
 procedure TSupportInformationBase.Clear();
 begin
   FHours := '';
@@ -355,12 +417,12 @@ begin
   try
     with Ini do
     begin
-      FIcon := ReadString(INFO_ICON, INFO_ICON);
-      FMan := ReadString(INI_GENERAL, INFO_MAN);
-      FModel := ReadString(INI_GENERAL, INFO_MODEL);
-      FUrl := ReadString(INI_GENERAL, INFO_URL);
-      FPhone := ReadString(INI_SUPPORT_INFO, INFO_PHONE);
-      FHours := ReadString(INI_SUPPORT_INFO, INFO_HOURS);
+      FIcon := ReadString(IconCanonicalName, IconCanonicalName, '');
+      FMan := ReadString(SectionGeneral, ManufacturerCanonicalName, '');
+      FModel := ReadString(SectionGeneral, ModelCanonicalName, '');
+      FUrl := ReadString(SectionGeneral, UrlCanonicalName, '');
+      FPhone := ReadString(SectionSupport, PhoneCanonicalName, '');
+      FHours := ReadString(SectionSupport, HoursCanonicalName, '');
     end;  //of with
 
   finally
@@ -373,18 +435,15 @@ var
   Ini: TIniFile;
 
 begin
-  Ini := TIniFile.Create(ChangeFileExt(AFilename, '.ini'), True);
+  Ini := TIniFile.Create(ChangeFileExt(AFilename, '.ini'));
 
   try
-    Ini.AddRemove(INFO_ICON, INFO_ICON, FIcon);
-    Ini.AddRemove(INI_GENERAL, INFO_MAN, FMan);
-    Ini.AddRemove(INI_GENERAL, INFO_MODEL, FModel);
-    Ini.AddRemove(INI_GENERAL, INFO_URL, FUrl);
-    Ini.AddRemove(INI_SUPPORT_INFO, INFO_PHONE, FPhone);
-    Ini.AddRemove(INI_SUPPORT_INFO, INFO_HOURS, FHours);
-
-    // Save file
-    Ini.Save();
+    AddRemove(Ini, IconCanonicalName, IconCanonicalName, FIcon);
+    AddRemove(Ini, SectionGeneral, ManufacturerCanonicalName, FMan);
+    AddRemove(Ini, SectionGeneral, ModelCanonicalName, FModel);
+    AddRemove(Ini, SectionGeneral, UrlCanonicalName, FUrl);
+    AddRemove(Ini, SectionSupport, PhoneCanonicalName, FPhone);
+    AddRemove(Ini, SectionSupport, HoursCanonicalName, FHours);
 
   finally
     Ini.Free;
@@ -405,11 +464,11 @@ begin
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    if Reg.OpenKey(KEY_OEMINFO, False) then
+    if Reg.OpenKey(OemInfoKey, False) then
     begin
       // Remove icon file and registry value
-      Icon := Reg.ReadString(INFO_ICON);
-      Result := DeleteFile(Icon) and Reg.DeleteValue(INFO_ICON);
+      Icon := Reg.ReadString(IconCanonicalName);
+      Result := DeleteFile(Icon) and Reg.DeleteValue(IconCanonicalName);
     end  //of begin
     else
       Result := False;
@@ -429,10 +488,10 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(KEY_OEMINFO, False);
-    Result := (Reg.ValueExists(INFO_ICON) or Reg.ValueExists(INFO_MAN) or
-               Reg.ValueExists(INFO_MODEL) or Reg.ValueExists(INFO_PHONE) or
-               Reg.ValueExists(INFO_HOURS) or Reg.ValueExists(INFO_URL));
+    Reg.OpenKey(OemInfoKey, False);
+    Result := (Reg.ValueExists(IconCanonicalName) or Reg.ValueExists(ManufacturerCanonicalName) or
+               Reg.ValueExists(ModelCanonicalName) or Reg.ValueExists(PhoneCanonicalName) or
+               Reg.ValueExists(HoursCanonicalName) or Reg.ValueExists(UrlCanonicalName));
 
   finally
     Reg.CloseKey();
@@ -449,10 +508,10 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(KEY_OEMINFO, False);
+    Reg.OpenKey(OemInfoKey, False);
 
-    if Reg.ValueExists(INFO_ICON) then
-      Result := Reg.ReadString(INFO_ICON)
+    if Reg.ValueExists(IconCanonicalName) then
+      Result := Reg.ReadString(IconCanonicalName)
     else
       Result := '';
 
@@ -479,15 +538,15 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(KEY_OEMINFO, False);
+    Reg.OpenKey(OemInfoKey, False);
 
     // Read all OEM information
-    FIcon := ReadValue(INFO_ICON);
-    FHours := ReadValue(INFO_HOURS);
-    FMan := ReadValue(INFO_MAN);
-    FModel := ReadValue(INFO_MODEL);
-    FPhone := ReadValue(INFO_PHONE);
-    FUrl := ReadValue(INFO_URL);
+    FIcon := ReadValue(IconCanonicalName);
+    FHours := ReadValue(HoursCanonicalName);
+    FMan := ReadValue(ManufacturerCanonicalName);
+    FModel := ReadValue(ModelCanonicalName);
+    FPhone := ReadValue(PhoneCanonicalName);
+    FUrl := ReadValue(UrlCanonicalName);
 
   finally
     Reg.CloseKey();
@@ -498,19 +557,17 @@ end;
 procedure TSupportInformation.LoadFromReg(const AFilename: string);
 var
   RegFile: TRegistryFile;
-  RegSection: string;
 
 begin
   RegFile := TRegistryFile.Create(AFilename);
 
   try
-    RegSection := RegFile.GetSection(HKEY_LOCAL_MACHINE, KEY_OEMINFO);
-    FIcon := RegFile.ReadString(RegSection, INFO_ICON);
-    FMan := RegFile.ReadString(RegSection, INFO_MAN);
-    FModel := RegFile.ReadString(RegSection, INFO_MODEL);
-    FPhone := RegFile.ReadString(RegSection, INFO_PHONE);
-    FHours := RegFile.ReadString(RegSection, INFO_HOURS);
-    FUrl := RegFile.ReadString(RegSection, INFO_URL);
+    FIcon := RegFile.ReadString(SectionOem, IconCanonicalName, '');
+    FMan := RegFile.ReadString(SectionOem, ManufacturerCanonicalName, '');
+    FModel := RegFile.ReadString(SectionOem, ModelCanonicalName, '');
+    FPhone := RegFile.ReadString(SectionOem, PhoneCanonicalName, '');
+    FHours := RegFile.ReadString(SectionOem, HoursCanonicalName, '');
+    FUrl := RegFile.ReadString(SectionOem, UrlCanonicalName, '');
 
   finally
     RegFile.Free;
@@ -526,7 +583,7 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Result := Reg.DeleteKey(KEY_OEMINFO);
+    Result := Reg.DeleteKey(OemInfoKey);
 
   finally
     Reg.Free;
@@ -552,15 +609,15 @@ begin
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
 
-    if not Reg.OpenKey(KEY_OEMINFO, True) then
+    if not Reg.OpenKey(OemInfoKey, True) then
       raise ERegistryException.Create(Reg.LastErrorMsg);
 
-    WriteValue(INFO_HOURS, FHours);
-    WriteValue(INFO_ICON, FIcon);
-    WriteValue(INFO_MAN, FMan);
-    WriteValue(INFO_MODEL, FModel);
-    WriteValue(INFO_PHONE, FPhone);
-    WriteValue(INFO_URL, FUrl);
+    WriteValue(HoursCanonicalName, FHours);
+    WriteValue(IconCanonicalName, FIcon);
+    WriteValue(ManufacturerCanonicalName, FMan);
+    WriteValue(ModelCanonicalName, FModel);
+    WriteValue(PhoneCanonicalName, FPhone);
+    WriteValue(UrlCanonicalName, FUrl);
 
   finally
     Reg.CloseKey();
@@ -571,23 +628,20 @@ end;
 procedure TSupportInformation.SaveAsReg(const AFilename: string);
 var
   RegFile: TRegistryFile;
-  Section: string;
 
 begin
   RegFile := TRegistryFile.Create(ChangeFileExt(AFilename, '.reg'));
 
   try
-    RegFile.MakeHeadline();
-    Section := RegFile.GetSection(HKEY_LOCAL_MACHINE, KEY_OEMINFO);
-    RegFile.AddRemove(Section, INFO_ICON, FIcon);
-    RegFile.AddRemove(Section, INFO_MAN, FMan);
-    RegFile.AddRemove(Section, INFO_MODEL, FModel);
-    RegFile.AddRemove(Section, INFO_PHONE, FPhone);
-    RegFile.AddRemove(Section, INFO_HOURS, FHours);
-    RegFile.AddRemove(Section, INFO_URL, FUrl);
+    AddRemove(RegFile, SectionOem, IconCanonicalName, FIcon);
+    AddRemove(RegFile, SectionOem, ManufacturerCanonicalName, FMan);
+    AddRemove(RegFile, SectionOem, ModelCanonicalName, FModel);
+    AddRemove(RegFile, SectionOem, PhoneCanonicalName, FPhone);
+    AddRemove(RegFile, SectionOem, HoursCanonicalName, FHours);
+    AddRemove(RegFile, SectionOem, UrlCanonicalName, FUrl);
 
     // Save file
-    RegFile.Save();
+    RegFile.UpdateFile();
 
   finally
     RegFile.Free;
@@ -646,11 +700,11 @@ begin
   try
     with Ini do
     begin
-      FMan := ReadString(INI_GENERAL, INFO_MAN);
-      FModel := ReadString(INI_GENERAL, INFO_MODEL);
-      FUrl := ReadString(INI_GENERAL, INFO_URL);
-      FPhone := ReadString(INI_SUPPORT_INFO, 'Line3');
-      FHours := ReadString(INI_SUPPORT_INFO, 'Line4');
+      FMan := ReadString(SectionGeneral, ManufacturerCanonicalName, '');
+      FModel := ReadString(SectionGeneral, ModelCanonicalName, '');
+      FUrl := ReadString(SectionGeneral, UrlCanonicalName, '');
+      FPhone := ReadString(SectionSupport, 'Line3', '');
+      FHours := ReadString(SectionSupport, 'Line4', '');
     end;  //of with
 
   finally
@@ -680,18 +734,15 @@ begin
   try
     with Ini do
     begin
-      WriteString(INI_GENERAL, INFO_MAN, FMan);
-      WriteString(INI_GENERAL, INFO_MODEL, FModel);
-      WriteString(INI_GENERAL, INFO_URL, FUrl);
-      WriteString(INI_SUPPORT_INFO, 'Line1', FMan);
-      WriteString(INI_SUPPORT_INFO, 'Line2', FModel);
-      WriteString(INI_SUPPORT_INFO, 'Line3', FPhone);
-      WriteString(INI_SUPPORT_INFO, 'Line4', FHours);
-      WriteString(INI_SUPPORT_INFO, 'Line5', FUrl);
+      WriteString(SectionGeneral, ManufacturerCanonicalName, FMan);
+      WriteString(SectionGeneral, ModelCanonicalName, FModel);
+      WriteString(SectionGeneral, UrlCanonicalName, FUrl);
+      WriteString(SectionSupport, 'Line1', FMan);
+      WriteString(SectionSupport, 'Line2', FModel);
+      WriteString(SectionSupport, 'Line3', FPhone);
+      WriteString(SectionSupport, 'Line4', FHours);
+      WriteString(SectionSupport, 'Line5', FUrl);
     end;  //of with
-  
-    // Save file
-    Ini.Save();
 
   finally
     Ini.Free;

@@ -2,7 +2,7 @@
 {                                                                         }
 { Support Information Tool Main Unit                                      }
 {                                                                         }
-{ Copyright (c) 2011-2017 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2018 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -634,7 +634,7 @@ begin
   ShowValues();
 end;
 
-{ TMain.mmDelValuesClick
+{ TMain.mmDeleteValuesClick
 
   Allows users to delete support information. }
 
