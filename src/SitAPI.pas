@@ -2,7 +2,7 @@
 {                                                                         }
 { SIT API Interface Unit                                                  }
 {                                                                         }
-{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2018 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -228,6 +228,9 @@ type
     /// <summary>
     ///   Saves the current support information.
     /// </summary>
+    /// <exception cref="ERegistryException">
+    ///   if opening key failed.
+    /// </exception>
     procedure Save(); override;
 
     /// <summary>
@@ -523,14 +526,9 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-
-    if Reg.OpenKey(ExtractFileDir(KEY_OEMINFO), False) then
-      Result := Reg.DeleteKey(ExtractFileName(KEY_OEMINFO))
-    else
-      Result := False;
+    Result := Reg.DeleteKey(KEY_OEMINFO);
 
   finally
-    Reg.CloseKey();
     Reg.Free;
   end;  //of try
 end;
@@ -553,7 +551,9 @@ begin
 
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.OpenKey(KEY_OEMINFO, True);
+
+    if not Reg.OpenKey(KEY_OEMINFO, True) then
+      raise ERegistryException.Create(Reg.LastErrorMsg);
 
     WriteValue(INFO_HOURS, FHours);
     WriteValue(INFO_ICON, FIcon);
