@@ -773,7 +773,7 @@ end;
 
 procedure TMain.mmReportClick(Sender: TObject);
 begin
-  OpenUrl(URL_CONTACT);
+  FLang.ReportBug();
 end;
 
 { TMain.mmAboutClick
