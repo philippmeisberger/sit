@@ -45,17 +45,17 @@ object Main: TMain
     OnMouseEnter = lCopyMouseEnter
     OnMouseLeave = lCopyMouseLeave
   end
-  object bAccept: TButton
+  object bApply: TButton
     Left = 8
     Top = 240
     Width = 105
     Height = 32
     Anchors = [akLeft, akBottom]
-    Caption = #220'bernehmen'
+    Caption = 'Apply'
     Default = True
     ElevationRequired = True
     TabOrder = 0
-    OnClick = bAcceptClick
+    OnClick = bApplyClick
   end
   object bShowSupport: TButton
     Left = 288
@@ -63,7 +63,7 @@ object Main: TMain
     Width = 105
     Height = 32
     Anchors = [akRight, akBottom]
-    Caption = 'Anzeigen'
+    Caption = 'Show'
     TabOrder = 3
     OnClick = bShowSupportClick
   end
@@ -73,16 +73,16 @@ object Main: TMain
     Width = 385
     Height = 121
     Anchors = [akLeft, akTop, akRight]
-    Caption = 'Informationen'
+    Caption = 'Information'
     TabOrder = 2
     object eHours: TLabeledEdit
       Left = 293
       Top = 35
       Width = 76
       Height = 22
-      EditLabel.Width = 37
+      EditLabel.Width = 29
       EditLabel.Height = 14
-      EditLabel.Caption = 'Uhrzeit:'
+      EditLabel.Caption = 'Hours'
       EditLabel.Transparent = True
       TabOrder = 3
     end
@@ -91,9 +91,9 @@ object Main: TMain
       Top = 83
       Width = 119
       Height = 22
-      EditLabel.Width = 33
+      EditLabel.Width = 28
       EditLabel.Height = 14
-      EditLabel.Caption = 'Modell:'
+      EditLabel.Caption = 'Model'
       EditLabel.Transparent = True
       TabOrder = 1
     end
@@ -102,9 +102,9 @@ object Main: TMain
       Top = 35
       Width = 125
       Height = 22
-      EditLabel.Width = 76
+      EditLabel.Width = 30
       EditLabel.Height = 14
-      EditLabel.Caption = 'Telefonnummer:'
+      EditLabel.Caption = 'Phone'
       EditLabel.Transparent = True
       TabOrder = 2
     end
@@ -113,9 +113,9 @@ object Main: TMain
       Top = 35
       Width = 119
       Height = 22
-      EditLabel.Width = 49
+      EditLabel.Width = 65
       EditLabel.Height = 14
-      EditLabel.Caption = 'Hersteller:'
+      EditLabel.Caption = 'Manufacturer'
       EditLabel.Transparent = True
       TabOrder = 0
     end
@@ -124,9 +124,9 @@ object Main: TMain
       Top = 83
       Width = 217
       Height = 22
-      EditLabel.Width = 79
+      EditLabel.Width = 39
       EditLabel.Height = 14
-      EditLabel.Caption = 'Internetadresse:'
+      EditLabel.Caption = 'Website'
       EditLabel.Transparent = True
       TabOrder = 4
       OnDblClick = eUrlDblClick
@@ -160,7 +160,7 @@ object Main: TMain
       Top = 60
       Width = 97
       Height = 17
-      Caption = 'Logo kopieren'
+      Caption = 'Copy logo'
       Enabled = False
       TabOrder = 2
     end
@@ -170,9 +170,9 @@ object Main: TMain
       Width = 316
       Height = 22
       Anchors = [akLeft, akTop, akRight]
-      EditLabel.Width = 52
+      EditLabel.Width = 48
       EditLabel.Height = 14
-      EditLabel.Caption = 'Logo Pfad:'
+      EditLabel.Caption = 'Logo path'
       EditLabel.Transparent = True
       TabOrder = 0
       OnDblClick = eLogoDblClick
@@ -181,9 +181,9 @@ object Main: TMain
   object MainMenu: TMainMenu
     Left = 336
     object mmFile: TMenuItem
-      Caption = 'Datei'
+      Caption = 'File'
       object mmImport: TMenuItem
-        Caption = 'Importieren'
+        Caption = 'Import'
         ShortCut = 112
         OnClick = mmImportClick
       end
@@ -191,25 +191,25 @@ object Main: TMain
         Caption = '-'
       end
       object mmExport: TMenuItem
-        Caption = 'Eintr'#228'ge exportieren'
+        Caption = 'Export entries'
         ShortCut = 113
         OnClick = mmExportClick
       end
       object mmExportEdit: TMenuItem
-        Caption = 'Eingaben exportieren'
+        Caption = 'Export input'
         ShortCut = 114
         OnClick = mmExportEditClick
       end
     end
     object mmEdit: TMenuItem
-      Caption = 'Bearbeiten'
+      Caption = 'Edit'
       object mmDeleteValues: TMenuItem
-        Caption = 'Eintr'#228'ge l'#246'schen'
+        Caption = 'Delete entries'
         ShortCut = 117
         OnClick = mmDeleteValuesClick
       end
       object mmDeleteEdits: TMenuItem
-        Caption = 'Eingaben l'#246'schen'
+        Caption = 'Delete input'
         ShortCut = 118
         OnClick = mmDeleteEditsClick
       end
@@ -217,20 +217,20 @@ object Main: TMain
         Caption = '-'
       end
       object mmCopyIcon: TMenuItem
-        Caption = 'Logo kopieren'
+        Caption = 'Copy logo'
         ShortCut = 119
         OnClick = mmCopyIconClick
       end
       object mmDeleteIcon: TMenuItem
-        Caption = 'Logo l'#246'schen'
+        Caption = 'Delete logo'
         ShortCut = 120
         OnClick = mmDeleteIconClick
       end
     end
     object mmView: TMenuItem
-      Caption = 'Ansicht'
+      Caption = 'View'
       object mmShow: TMenuItem
-        Caption = 'Eintr'#228'ge anzeigen'
+        Caption = 'Refresh'
         ShortCut = 116
         OnClick = mmShowClick
       end
@@ -238,31 +238,31 @@ object Main: TMain
         Caption = '-'
       end
       object mmLang: TMenuItem
-        Caption = 'Sprache w'#228'hlen'
+        Caption = 'Choose language'
       end
     end
     object mmHelp: TMenuItem
-      Caption = 'Hilfe'
+      Caption = 'Help'
       object mmUpdate: TMenuItem
-        Caption = 'Nach Update suchen'
+        Caption = 'Search for Update'
         OnClick = mmUpdateClick
       end
       object N3: TMenuItem
         Caption = '-'
       end
       object mmInstallCertificate: TMenuItem
-        Caption = 'Zertifikat installieren'
+        Caption = 'Install certificate'
         OnClick = mmInstallCertificateClick
       end
       object mmReport: TMenuItem
-        Caption = 'Fehler melden'
+        Caption = 'Report a bug'
         OnClick = mmReportClick
       end
       object N4: TMenuItem
         Caption = '-'
       end
       object mmAbout: TMenuItem
-        Caption = #220'ber SIT'
+        Caption = 'About SIT'
         OnClick = mmAboutClick
       end
     end

@@ -2,7 +2,7 @@
 {                                                                         }
 { Support Information Tool Main Unit                                      }
 {                                                                         }
-{ Copyright (c) 2011-2017 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2018 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -20,7 +20,7 @@ uses
 type
   { TMain }
   TMain = class(TForm, IChangeLanguageListener)
-    bAccept: TButton;
+    bApply: TButton;
     bShowSupport: TButton;
     MainMenu: TMainMenu;
     mmFile: TMenuItem;
@@ -58,7 +58,7 @@ type
     lCopy: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure bAcceptClick(Sender: TObject);
+    procedure bApplyClick(Sender: TObject);
     procedure bShowSupportClick(Sender: TObject);
     procedure bAddClick(Sender: TObject);
     procedure mmImportClick(Sender: TObject);
@@ -254,7 +254,7 @@ begin
     eUrl.EditLabel.Caption := GetString(LID_URL);
 
     // Set captions for buttons
-    bAccept.Caption := GetString(LID_APPLY);
+    bApply.Caption := GetString(LID_APPLY);
     bShowSupport.Caption := GetString(LID_SHOW);
     bAdd.Hint := GetString(LID_ICON_SELECT);
     lCopy.Hint := GetString(LID_TO_WEBSITE);
@@ -400,7 +400,7 @@ end;
 
   Allows user to commit changes on support information. }
 
-procedure TMain.bAcceptClick(Sender: TObject);
+procedure TMain.bApplyClick(Sender: TObject);
 var
   IconPath: string;
 
