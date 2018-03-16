@@ -229,10 +229,10 @@ object Main: TMain
     end
     object mmView: TMenuItem
       Caption = 'View'
-      object mmShow: TMenuItem
+      object mmRefresh: TMenuItem
         Caption = 'Refresh'
         ShortCut = 116
-        OnClick = mmShowClick
+        OnClick = mmRefreshClick
       end
       object N6: TMenuItem
         Caption = '-'

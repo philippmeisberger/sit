@@ -53,7 +53,7 @@ type
     bAdd: TButton;
     cbCopyIcon: TCheckBox;
     eLogo: TLabeledEdit;
-    mmShow: TMenuItem;
+    mmRefresh: TMenuItem;
     N6: TMenuItem;
     lCopy: TLabel;
     procedure FormCreate(Sender: TObject);
@@ -65,7 +65,7 @@ type
     procedure mmCopyIconClick(Sender: TObject);
     procedure mmExportClick(Sender: TObject);
     procedure mmExportEditClick(Sender: TObject);
-    procedure mmShowClick(Sender: TObject);
+    procedure mmRefreshClick(Sender: TObject);
     procedure mmDeleteValuesClick(Sender: TObject);
     procedure mmDeleteEditsClick(Sender: TObject);
     procedure mmDeleteIconClick(Sender: TObject);
@@ -86,7 +86,7 @@ type
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     function ShowCopyIconDialog(const AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
-    procedure ShowValues(AReload: Boolean = True);
+    procedure Refresh(AReload: Boolean = True);
     { IChangeLanguageListener }
     procedure LanguageChanged();
   end;
@@ -135,7 +135,7 @@ begin
   cbCopyIcon.Enabled := CheckWin32Version(6);
 
   // Show support information
-  ShowValues();
+  Refresh();
 end;
 
 { TMain.FormDestroy
@@ -224,7 +224,7 @@ begin
 
     // "Edit" menu
     mmEdit.Caption := GetString(LID_EDIT);
-    mmShow.Caption := GetString(LID_ITEMS_SHOW);
+    mmRefresh.Caption := GetString(LID_ITEMS_SHOW);
     mmDeleteValues.Caption := GetString(LID_ITEMS_DELETE);
     mmDeleteEdits.Caption := GetString(LID_INPUT_DELETE);
     mmCopyIcon.Caption := GetString(LID_ICON_COPY);
@@ -375,11 +375,11 @@ begin
   end;  //of try
 end;
 
-{ private TMain.ShowValues
+{ private TMain.Refresh
 
-  Allows users to show support information. }
+  Refreshs the support information. }
 
-procedure TMain.ShowValues(AReload: Boolean = True);
+procedure TMain.Refresh(AReload: Boolean = True);
 begin
   Caption := Application.Title;
 
@@ -396,7 +396,7 @@ begin
   RefreshEdits(FSupportInfo);
 end;
 
-{ TMain.bAcceptClick
+{ TMain.bApplyClick
 
   Allows user to commit changes on support information. }
 
@@ -457,8 +457,7 @@ begin
       Save();
     end;  //of with
 
-    // Refresh VCL
-    ShowValues(False);
+    Refresh(False);
 
     // Show success message in best case
     MessageDlg(FLang.GetString(LID_ITEMS_SAVED), mtInformation, [mbOK], 0);
@@ -627,11 +626,11 @@ end;
 
 { TMain.mmShowClick
 
-  Allows users to show support information. }
+  Refreshs the support information. }
 
-procedure TMain.mmShowClick(Sender: TObject);
+procedure TMain.mmRefreshClick(Sender: TObject);
 begin
-  ShowValues();
+  Refresh();
 end;
 
 { TMain.mmDeleteValuesClick
