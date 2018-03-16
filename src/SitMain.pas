@@ -634,7 +634,7 @@ begin
   ShowValues();
 end;
 
-{ TMain.mmDelValuesClick
+{ TMain.mmDeleteValuesClick
 
   Allows users to delete support information. }
 
