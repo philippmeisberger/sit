@@ -15,7 +15,7 @@ uses
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Vcl.ExtDlgs,
   Vcl.Imaging.jpeg, System.UITypes, Winapi.Knownfolders, SitAPI, PMCW.CA,
   PMCW.Dialogs, PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater,
-  PMCW.SysUtils;
+  PMCW.SysUtils, PMCW.Controls;
 
 type
   { TMain }
@@ -371,7 +371,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_WRITING_FILE), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_WRITING_FILE), E.Message);
   end;  //of try
 end;
 
@@ -467,7 +467,7 @@ begin
       MessageDlg(E.Message, mtWarning, [mbOK], 0);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_SAVING), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_SAVING), E.Message);
   end;  //of try
 end;
 
@@ -598,7 +598,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_IMPORTING), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_IMPORTING), E.Message);
   end;  //of try
 end;
 
@@ -667,7 +667,7 @@ begin
 
     except
       on E: Exception do
-        FLang.ShowException(FLang.GetString(LID_ERROR_DELETING), E.Message);
+        ExceptionDlg(FLang, FLang.GetString(LID_ERROR_DELETING), E.Message);
     end;  //of try
   end;  //of begin
 end;
@@ -703,7 +703,7 @@ begin
       MessageDlg(E.Message, mtWarning, [mbOK], 0);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_COPYING), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_COPYING), E.Message);
   end;  //of try
 end;
 
@@ -729,7 +729,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_DELETING_ICON), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_DELETING_ICON), E.Message);
   end;  //of try
 end;
 
@@ -739,20 +739,7 @@ end;
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
 begin
-  try
-    // Certificate already installed?
-    if CertificateExists() then
-    begin
-      MessageDlg(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
-        mtInformation, [mbOK], 0);
-    end  //of begin
-    else
-      InstallCertificate();
-
-  except
-    on E: EOSError do
-      MessageDlg(E.Message, mtError, [mbOK], 0);
-  end;  //of try
+  InstallCertificateDlg(FLang);
 end;
 
 { TMain.mmUpdateClick
@@ -772,7 +759,7 @@ end;
 
 procedure TMain.mmReportClick(Sender: TObject);
 begin
-  FLang.ReportBug();
+  ReportBugDlg(FLang, '');
 end;
 
 { TMain.mmAboutClick
@@ -780,26 +767,8 @@ end;
   MainMenu entry that shows a info page with build number and version history. }
 
 procedure TMain.mmAboutClick(Sender: TObject);
-var
-  AboutDialog: TAboutDialog;
-  Description, Changelog: TResourceStream;
-
 begin
-  AboutDialog := TAboutDialog.Create(Self);
-  Description := TResourceStream.Create(HInstance, RESOURCE_DESCRIPTION, RT_RCDATA);
-  Changelog := TResourceStream.Create(HInstance, RESOURCE_CHANGELOG, RT_RCDATA);
-
-  try
-    AboutDialog.Title := StripHotkey(mmAbout.Caption);
-    AboutDialog.Description.LoadFromStream(Description);
-    AboutDialog.Changelog.LoadFromStream(Changelog);
-    AboutDialog.Execute();
-
-  finally
-    Changelog.Free;
-    Description.Free;
-    AboutDialog.Free;
-  end;  //of begin
+  AboutDlg(StripHotkey(mmAbout.Caption));
 end;
 
 { TMain.eLogoDblClick
