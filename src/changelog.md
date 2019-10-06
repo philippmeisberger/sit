@@ -147,8 +147,8 @@ Version 1.2 [*31.03.11*]
 Version 1.1 [*10.02.11*]
 -----------
 
-- Auslesen der Bitanzahl des Betriebssystems
-- Bugs beim Im-/Export von *.ini-Dateien behoben
+- Showing bitness of OS
+- Fixed bug while importing/exporting \*.ini files
 
 Version 1.0 [*01.02.11*]
 -----------
