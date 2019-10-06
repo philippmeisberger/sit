@@ -13,13 +13,12 @@ interface
 uses
   Winapi.Windows, System.SysUtils, Vcl.Graphics, System.Classes, Vcl.Controls,
   Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Dialogs, Vcl.ExtDlgs,
-  Vcl.Imaging.jpeg, System.UITypes, Winapi.Knownfolders, SitAPI, PMCW.CA,
-  PMCW.Dialogs, PMCW.Dialogs.About, PMCW.LanguageFile, PMCW.Dialogs.Updater,
-  PMCW.SysUtils;
+  Vcl.Imaging.jpeg, System.UITypes, Winapi.Knownfolders, SitAPI, PMCW.Dialogs,
+  PMCW.LanguageFile, PMCW.SysUtils, PMCW.Controls, PMCW.Application;
 
 type
   { TMain }
-  TMain = class(TForm, IChangeLanguageListener)
+  TMain = class(TMainForm)
     bApply: TButton;
     bShowSupport: TButton;
     MainMenu: TMainMenu;
@@ -29,18 +28,12 @@ type
     mmEdit: TMenuItem;
     mmDeleteValues: TMenuItem;
     mmHelp: TMenuItem;
-    mmAbout: TMenuItem;
     mmExportEdit: TMenuItem;
     N1: TMenuItem;
     mmDeleteEdits: TMenuItem;
     mmDeleteIcon: TMenuItem;
-    mmInstallCertificate: TMenuItem;
-    mmUpdate: TMenuItem;
-    N3: TMenuItem;
-    N4: TMenuItem;
     mmView: TMenuItem;
     mmLang: TMenuItem;
-    mmReport: TMenuItem;
     mmCopyIcon: TMenuItem;
     N5: TMenuItem;
     gbInfo: TGroupBox;
@@ -69,10 +62,6 @@ type
     procedure mmDeleteValuesClick(Sender: TObject);
     procedure mmDeleteEditsClick(Sender: TObject);
     procedure mmDeleteIconClick(Sender: TObject);
-    procedure mmUpdateClick(Sender: TObject);
-    procedure mmInstallCertificateClick(Sender: TObject);
-    procedure mmReportClick(Sender: TObject);
-    procedure mmAboutClick(Sender: TObject);
     procedure eLogoDblClick(Sender: TObject);
     procedure eUrlDblClick(Sender: TObject);
     procedure lCopyClick(Sender: TObject);
@@ -80,15 +69,12 @@ type
     procedure lCopyMouseLeave(Sender: TObject);
   private
     FSupportInfo: TSupportInformationBase;
-    FLang: TLanguageFile;
-    FUpdateCheck: TUpdateCheck;
-    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     procedure RefreshEdits(ASupportInfo: TSupportInformationBase);
     function ShowCopyIconDialog(const AFile: string): string;
     procedure ShowExportDialog(AExportEdits: Boolean);
     procedure Refresh(AReload: Boolean = True);
-    { IChangeLanguageListener }
-    procedure LanguageChanged();
+  protected
+    procedure LanguageChanged(); override;
   end;
 
 var
@@ -107,23 +93,14 @@ procedure TMain.FormCreate(Sender: TObject);
 begin
   // Setup languages
   FLang := TLanguageFile.Create(100);
+  FLang.AddListener(Self);
 
-  with FLang do
-  begin
-    AddListener(Self);
-    BuildLanguageMenu(mmLang);
-  end;  //of with
+  // Build menus
+  BuildLanguageMenu(mmLang);
+  BuildHelpMenu(mmHelp);
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create('SIT', FLang);
-
-  with FUpdateCheck do
-  begin
-    OnUpdate := Self.OnUpdate;
-  {$IFNDEF DEBUG}
-    CheckForUpdate();
-  {$ENDIF}
-  end;  //of with
+  CheckForUpdate('SIT', 'sit.exe', 'sit64.exe', 'SIT.exe');
 
   // Init support information instance
   if CheckWin32Version(6) then
@@ -145,50 +122,6 @@ end;
 procedure TMain.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(FSupportInfo);
-  FreeAndNil(FUpdateCheck);
-  FreeAndNil(FLang);
-end;
-
-{ private TMain.OnUpdate
-
-  Event that is called by TUpdateCheck when an update is available. }
-
-procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
-var
-  Updater: TUpdateDialog;
-
-begin
-  mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
-
-  // Ask user to permit download
-  if (TaskMessageDlg(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
-    FLang[LID_UPDATE_CONFIRM_DOWNLOAD], mtConfirmation, mbYesNo, 0) = idYes) then
-  begin
-    Updater := TUpdateDialog.Create(Self, FLang);
-
-    try
-      with Updater do
-      begin
-        FileNameLocal := 'SIT.exe';
-
-        // Download 64-Bit version?
-        if (TOSVersion.Architecture = arIntelX64) then
-          FileNameRemote := 'sit64.exe'
-        else
-          FileNameRemote := 'sit.exe';
-      end;  //of with
-
-      // Successfully downloaded update?
-      if Updater.Execute() then
-      begin
-        mmUpdate.Caption := FLang.GetString(LID_UPDATE_SEARCH);
-        mmUpdate.Enabled := False;
-      end;  //of begin
-
-    finally
-      Updater.Free;
-    end;  //of try
-  end;  //of begin
 end;
 
 { private TMain.RefreshEdits
@@ -214,6 +147,8 @@ end;
 
 procedure TMain.LanguageChanged();
 begin
+  inherited LanguageChanged();
+
   with FLang do
   begin
     // Set captions for TMenuItems
@@ -232,14 +167,6 @@ begin
 
     // "View" menu
     mmView.Caption := GetString(LID_VIEW);
-    mmLang.Caption := GetString(LID_SELECT_LANGUAGE);
-
-    // "Help" menu
-    mmHelp.Caption := GetString(LID_HELP);
-    mmUpdate.Caption := GetString(LID_UPDATE_SEARCH);
-    mmInstallCertificate.Caption := GetString(LID_CERTIFICATE_INSTALL);
-    mmReport.Caption := GetString(LID_REPORT_BUG);
-    mmAbout.Caption := Format(LID_ABOUT, [Application.Title]);
 
     // Set captions for labels
     gbIcon.Caption := GetString(LID_ICON);
@@ -371,7 +298,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_WRITING_FILE), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_WRITING_FILE), E.Message);
   end;  //of try
 end;
 
@@ -467,7 +394,7 @@ begin
       MessageDlg(E.Message, mtWarning, [mbOK], 0);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_SAVING), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_SAVING), E.Message);
   end;  //of try
 end;
 
@@ -598,7 +525,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_IMPORTING), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_IMPORTING), E.Message);
   end;  //of try
 end;
 
@@ -667,7 +594,7 @@ begin
 
     except
       on E: Exception do
-        FLang.ShowException(FLang.GetString(LID_ERROR_DELETING), E.Message);
+        ExceptionDlg(FLang, FLang.GetString(LID_ERROR_DELETING), E.Message);
     end;  //of try
   end;  //of begin
 end;
@@ -703,7 +630,7 @@ begin
       MessageDlg(E.Message, mtWarning, [mbOK], 0);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_COPYING), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_COPYING), E.Message);
   end;  //of try
 end;
 
@@ -729,77 +656,8 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString(LID_ERROR_DELETING_ICON), E.Message);
+      ExceptionDlg(FLang, FLang.GetString(LID_ERROR_DELETING_ICON), E.Message);
   end;  //of try
-end;
-
-{ TMain.mmInstallCertificateClick
-
-  MainMenu entry that allows to install the PM Code Works certificate. }
-
-procedure TMain.mmInstallCertificateClick(Sender: TObject);
-begin
-  try
-    // Certificate already installed?
-    if CertificateExists() then
-    begin
-      MessageDlg(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
-        mtInformation, [mbOK], 0);
-    end  //of begin
-    else
-      InstallCertificate();
-
-  except
-    on E: EOSError do
-      MessageDlg(E.Message, mtError, [mbOK], 0);
-  end;  //of try
-end;
-
-{ TMain.mmUpdateClick
-
-  MainMenu entry that allows users to manually search for updates. }
-
-procedure TMain.mmUpdateClick(Sender: TObject);
-begin
-  FUpdateCheck.NotifyNoUpdate := True;
-  FUpdateCheck.CheckForUpdate();
-end;
-
-{ TMain.mmReportClick
-
-  MainMenu entry that allows users to easily report a bug by opening the web
-  browser and using the "report bug" formular. }
-
-procedure TMain.mmReportClick(Sender: TObject);
-begin
-  FLang.ReportBug();
-end;
-
-{ TMain.mmAboutClick
-
-  MainMenu entry that shows a info page with build number and version history. }
-
-procedure TMain.mmAboutClick(Sender: TObject);
-var
-  AboutDialog: TAboutDialog;
-  Description, Changelog: TResourceStream;
-
-begin
-  AboutDialog := TAboutDialog.Create(Self);
-  Description := TResourceStream.Create(HInstance, RESOURCE_DESCRIPTION, RT_RCDATA);
-  Changelog := TResourceStream.Create(HInstance, RESOURCE_CHANGELOG, RT_RCDATA);
-
-  try
-    AboutDialog.Title := StripHotkey(mmAbout.Caption);
-    AboutDialog.Description.LoadFromStream(Description);
-    AboutDialog.Changelog.LoadFromStream(Changelog);
-    AboutDialog.Execute();
-
-  finally
-    Changelog.Free;
-    Description.Free;
-    AboutDialog.Free;
-  end;  //of begin
 end;
 
 { TMain.eLogoDblClick
